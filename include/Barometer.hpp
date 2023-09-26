@@ -5,10 +5,12 @@
 class Barometer
 {
 private:
-    uint8_t m_byAddress;
+    static constexpr const char * sPressurePath = "/sys/bus/iio/devices/ms5611/in_voltage0_raw";
+    static constexpr const char * sTemperaturePath = "/sys/bus/iio/devices/ms5611/in_temp0_raw";
 
 public:
-    Barometer(uint8_t byAddress = 0x77);
+    Barometer();
 
     double GetPressure();
+    double GetTemperature();
 };
