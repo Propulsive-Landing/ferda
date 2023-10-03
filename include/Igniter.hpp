@@ -1,5 +1,6 @@
-#include <tuple>
+#pragma once
 
+#include <tuple>
 
 class Igniter
 {
