@@ -2,9 +2,9 @@
 
 State::State(Mode eInitialMode) : eCurrentMode(eInitialMode) {}
 
-Mode State::UpdateIdle();
-Mode State::UpdateLaunch();
-Mode State::UpdateLand();
+State::Mode State::UpdateIdle(){}
+State::Mode State::UpdateLaunch(){}
+State::Mode State::UpdateLand(){}
 
 
 bool State::Update()
@@ -23,4 +23,6 @@ bool State::Update()
         case Terminate:
             return false;
     }
+
+    return true;
 }

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <tuple>
-
 class TVC
 {
     public:

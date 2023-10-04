@@ -1,10 +1,10 @@
 #include "Barometer.hpp"
 #include "IMU.hpp"
+#include "State.hpp"
 
 int main()
 {
     IMU imu;
     Barometer barometer;
-
-    barometer.GetPressure();
+    State state(State::Idle);
 }

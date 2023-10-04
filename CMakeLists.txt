@@ -11,5 +11,7 @@ else()
     set(EXTRA_CODE hardware/Barometer.cpp)
 endif()
 
-add_executable(Ferda src/Main.cpp src/Controller.cpp ${EXTRA_CODE})
+FILE(GLOB CppSources src/*.cpp)
+
+add_executable(Ferda ${CppSources} ${EXTRA_CODE})
 target_include_directories(Ferda PRIVATE include)
