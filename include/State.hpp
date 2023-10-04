@@ -11,10 +11,12 @@ class State
             Terminate 
         }
 
+        Mode eCurrentMode;
+
         Mode UpdateIdle();
         Mode UpdateLaunch();
         Mode UpdateLand();
     public:
-        State() = default;
+        State(Mode eInitialMode);
         bool Update(); 
 };
