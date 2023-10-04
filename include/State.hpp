@@ -17,7 +17,7 @@ class State
             };
         
         State(State::Mode eInitialMode);
-        bool Update(IMU& imu, Barometer& barometer, TVC& tvc, Igniter& igniter); 
+        bool Update(IMU& imu, Barometer& barometer, TVC& tvc, Igniter& igniter);
     private:
         State::Mode eCurrentMode;
 
