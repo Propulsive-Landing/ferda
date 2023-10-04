@@ -7,7 +7,7 @@ State::Mode State::UpdateLaunch(){ return State::Land; }
 State::Mode State::UpdateLand(){ return State::Terminate; }
 
 
-bool State::Update()
+bool State::Update(IMU& imu, Barometer& barometer, TVC& tvc, Igniter& igniter)
 {
     switch(this->eCurrentMode)
     {

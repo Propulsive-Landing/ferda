@@ -1,5 +1,10 @@
 #pragma once
 
+#include "Barometer.hpp"
+#include "IMU.hpp"
+#include "Igniter.hpp"
+#include "TVC.hpp"
+
 class State
 {
     public:
@@ -12,9 +17,10 @@ class State
             };
         
         State(State::Mode eInitialMode);
-        bool Update(); 
+        bool Update(IMU& imu, Barometer& barometer, TVC& tvc, Igniter& igniter); 
     private:
         State::Mode eCurrentMode;
+
 
         State::Mode UpdateIdle();
         State::Mode UpdateLaunch();
