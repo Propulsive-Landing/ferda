@@ -2,9 +2,9 @@
 
 State::State(Mode eInitialMode) : eCurrentMode(eInitialMode) {}
 
-State::Mode State::UpdateIdle(){}
-State::Mode State::UpdateLaunch(){}
-State::Mode State::UpdateLand(){}
+State::Mode State::UpdateIdle(){ return State::Launch; }
+State::Mode State::UpdateLaunch(){ return State::Land; }
+State::Mode State::UpdateLand(){ return State::Terminate; }
 
 
 bool State::Update()
