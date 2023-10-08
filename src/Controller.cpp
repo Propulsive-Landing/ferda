@@ -1,21 +1,19 @@
-#include "Controller.hpp"
 #include <vector>
+#include "Controller.hpp"
+#include "TVC.hpp"
+#include "Igniter.hpp"
 
 //possibly add navigator later
 Controller::Controller(TVC tvc, Igniter igniter){
-    this.tvc = tvc;
-    this.igniter = igniter
+    this->tvc = tvc;
+    this->igniter = igniter;
 
-    vector<double> IMU;
+    std::vector<double> IMU;
     
 }
 
 
-void Controller::setTVCservos(doulbe X, double Y){
-
-}
-
-std::vector<double> Controller::getIMUData(){
+void Controller::setTVCservos(double X, double Y){
 
 }
 
