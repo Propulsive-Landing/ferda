@@ -8,10 +8,10 @@
 #include "Navigation.hpp"
 #include "Controller.hpp"
 
-class State
+class Mode
 {
     public:
-        enum Mode
+        enum Phase
             {
                 Idle,
                 Launch,
@@ -19,14 +19,14 @@ class State
                 Terminate 
             };
         
-        State(State::Mode eInitialMode);
+        Mode(Mode::Phase eInitialMode);
         bool Update(Navigation& navigation, Controller& controller);
     private:
-        State::Mode eCurrentMode;
+        Mode::Phase eCurrentMode;
 
 
-        State::Mode UpdateIdle();
-        State::Mode UpdateLaunch();
-        State::Mode UpdateLand();
+        Mode::Phase UpdateIdle();
+        Mode::Phase UpdateLaunch(Navigation navigation, Controller controller, double change_time);
+        Mode::Phase UpdateLand();
 
 };

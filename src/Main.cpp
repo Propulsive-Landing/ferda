@@ -8,7 +8,7 @@
 #include "Navigation.hpp"
 #include "Controller.hpp"
 
-#include "State.hpp"
+#include "Mode.hpp"
 
 int main()
 {
@@ -20,7 +20,7 @@ int main()
     Navigation navigation(imu, barometer, tvc, igniter); 
     Controller controller(tvc, igniter);
 
-    State state(State::Idle);
+    Mode state(Mode::Idle);
 
     std::cout << state.Update(navigation, controller) << "\n";
     std::cout << state.Update(navigation, controller) << "\n";

@@ -1,21 +1,29 @@
 #include <chrono>
 
-#include "State.hpp"
+#include "Mode.hpp"
 
 
-State::State(Mode eInitialMode) : eCurrentMode(eInitialMode) {}
+Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
-State::Mode State::UpdateIdle(){ return State::Launch; } // TODO Implement idle state behavior
-State::Mode State::UpdateLaunch(){ return State::Land; } // TODO Implement launch state behavior
-State::Mode State::UpdateLand(){ return State::Terminate; } // TODO Implement land state behavior
+Mode::Phase Mode::UpdateIdle(){ return Mode::Launch; } // TODO Implement idle state behavior
+
+Mode::Phase Mode::UpdateLaunch(Navigation navigation, Controller controller, double change_time){
 
 
-bool State::Update(Navigation& navigation, Controller& controller)
+
+    return Mode::Land;
+} // TODO Implement launch state behavior
+
+Mode::Phase Mode::UpdateLand(){ return Mode::Terminate; } // TODO Implement land state behavior
+
+
+bool Mode::Update(Navigation& navigation, Controller& controller)
 {
     static auto last_time = std::chrono::high_resolution_clock::now();
     auto time_now = std::chrono::high_resolution_clock::now();
     double change_time = (time_now.time_since_epoch() - last_time.time_since_epoch()).count();
     last_time = time_now;
+
 
 
     switch(this->eCurrentMode)
@@ -24,7 +32,7 @@ bool State::Update(Navigation& navigation, Controller& controller)
             this->eCurrentMode = UpdateIdle();
             break;
         case Launch:
-            this->eCurrentMode = UpdateLaunch();
+            this->eCurrentMode = UpdateLaunch(navigation, controller, change_time);
             break;
         case Land:
             this->eCurrentMode = UpdateLand();
