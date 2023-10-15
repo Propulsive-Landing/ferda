@@ -1,8 +1,6 @@
 #include <Eigen/Dense>
 
 #include "Controller.hpp"
-#include "TVC.hpp"
-#include "Igniter.hpp"
 
 
 Controller::Controller(TVC& tvc, Igniter& igniter) : tvc(tvc), igniter(igniter)
@@ -23,7 +21,7 @@ void Controller::updateGround(){
 }
 
 
-void Controller::updateLaunch(){
+void Controller::updateLaunch(Navigation& navigation){
 
 }
 

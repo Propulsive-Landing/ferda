@@ -7,12 +7,16 @@ Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
 Mode::Phase Mode::UpdateIdle(){ return Mode::Launch; } // TODO Implement idle state behavior
 
+
 Mode::Phase Mode::UpdateLaunch(Navigation navigation, Controller controller, double change_time){
+    
+    navigation.UpdateNavigation();
+    controller.updateLaunch(navigation);
 
-
+    // TODO Calculate next stage
 
     return Mode::Land;
-} // TODO Implement launch state behavior
+}
 
 Mode::Phase Mode::UpdateLand(){ return Mode::Terminate; } // TODO Implement land state behavior
 

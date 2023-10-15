@@ -20,10 +20,10 @@ int main()
     Navigation navigation(imu, barometer, tvc, igniter); 
     Controller controller(tvc, igniter);
 
-    Mode state(Mode::Idle);
+    Mode mode(Mode::Idle);
 
-    std::cout << state.Update(navigation, controller) << "\n";
-    std::cout << state.Update(navigation, controller) << "\n";
-    std::cout << state.Update(navigation, controller) << "\n";
-    std::cout << state.Update(navigation, controller) << "\n";
+    std::cout << mode.Update(navigation, controller) << "\n";
+    std::cout << mode.Update(navigation, controller) << "\n";
+    std::cout << mode.Update(navigation, controller) << "\n";
+    std::cout << mode.Update(navigation, controller) << "\n";
 }

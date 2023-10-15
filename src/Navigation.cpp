@@ -20,7 +20,7 @@ Eigen::Matrix<double, 3, 1> Navigation::GetNavigation()
 
 }
 
-void Navigation::UpdateNavigation(Eigen::Matrix<double, 4, 1> updates){
+void Navigation::UpdateNavigation(){
     // TODO Calculate navigation state (angle, position, etc) from the input 
     // TODO Update the navigation state 
 }

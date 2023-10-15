@@ -3,8 +3,11 @@
 #include <vector>
 #include <Eigen/Dense>
 
-#include "TVC.hpp"
+#include "Barometer.hpp"
+#include "IMU.hpp"
 #include "Igniter.hpp"
+#include "TVC.hpp"
+#include "Navigation.hpp"
 
 class Controller{
 
@@ -16,7 +19,6 @@ private:
 
 
 public:
-
     Controller(TVC& tvc, Igniter& igniter);
 
     void setTVCservos(double X, double Y);
@@ -25,7 +27,7 @@ public:
 
 
     void updateGround();
-    void updateLaunch();
+    void updateLaunch(Navigation& navigation);
     void updateLand();
     void updateSafe();
 
