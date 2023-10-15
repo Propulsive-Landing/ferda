@@ -4,6 +4,11 @@
 #include "TVC.hpp"
 #include "Igniter.hpp"
 
+
+Controller::Controller(TVC& tvc, Igniter& igniter) : tvc(tvc), igniter(igniter)
+{
+}
+
 void Controller::ignite(){
 
 }

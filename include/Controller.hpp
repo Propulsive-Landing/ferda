@@ -17,7 +17,7 @@ private:
 
 public:
 
-    Controller() = default;
+    Controller(TVC& tvc, Igniter& igniter);
 
     void setTVCservos(double X, double Y);
     void ignite();

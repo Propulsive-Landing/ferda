@@ -2,6 +2,10 @@
 
 #include "Navigation.hpp"
 
+Navigation::Navigation(IMU& imu, Barometer& barometer, TVC& tvc, Igniter& igniter) : imu(imu), barometer(barometer), tvc(tvc), igniter(igniter) 
+{
+}
+
 Eigen::Matrix<double, 3, 1> Navigation::GetNavigation()
 {
     // TODO Return the current navigation state
