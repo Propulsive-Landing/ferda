@@ -5,6 +5,9 @@
 #include "Igniter.hpp"
 #include "TVC.hpp"
 
+#include "Navigation.hpp"
+#include "Controller.hpp"
+
 class State
 {
     public:
@@ -17,7 +20,7 @@ class State
             };
         
         State(State::Mode eInitialMode);
-        bool Update(IMU& imu, Barometer& barometer, TVC& tvc, Igniter& igniter);
+        bool Update(Navigation& navigation, Controller& controller);
     private:
         State::Mode eCurrentMode;
 

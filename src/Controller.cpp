@@ -1,21 +1,8 @@
-#include <vector>
+#include <Eigen/Dense>
+
 #include "Controller.hpp"
 #include "TVC.hpp"
 #include "Igniter.hpp"
-
-//possibly add navigator later
-Controller::Controller(TVC tvc, Igniter igniter){
-    this->tvc = tvc;
-    this->igniter = igniter;
-
-    std::vector<double> IMU;
-    
-}
-
-
-void Controller::setTVCservos(double X, double Y){
-
-}
 
 void Controller::ignite(){
 

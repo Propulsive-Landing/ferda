@@ -1,5 +1,8 @@
 #pragma once
+
 #include <vector>
+#include <Eigen/Dense>
+
 #include "TVC.hpp"
 #include "Igniter.hpp"
 
@@ -14,7 +17,7 @@ private:
 
 public:
 
-    Controller(TVC tvc, Igniter igniter);
+    Controller() = default;
 
     void setTVCservos(double X, double Y);
     void ignite();

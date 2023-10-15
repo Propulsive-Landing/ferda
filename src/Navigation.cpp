@@ -1,3 +1,5 @@
+#include <Eigen/Dense>
+
 #include "Navigation.hpp"
 
 Eigen::Matrix<double, 3, 1> Navigation::GetNavigation()

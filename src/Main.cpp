@@ -5,6 +5,9 @@
 #include "Igniter.hpp"
 #include "TVC.hpp"
 
+#include "Navigation.hpp"
+#include "Controller.hpp"
+
 #include "State.hpp"
 
 int main()
@@ -13,10 +16,14 @@ int main()
     Barometer barometer;
     TVC tvc;
     Igniter igniter;
+
+    Navigation navigation(imu, barometer, tvc, igniter); 
+    Controller controller(tvc, igniter);
+
     State state(State::Idle);
 
-    std::cout << state.Update(imu, barometer, tvc, igniter) << "\n";
-    std::cout << state.Update(imu, barometer, tvc, igniter) << "\n";
-    std::cout << state.Update(imu, barometer, tvc, igniter) << "\n";
-    std::cout << state.Update(imu, barometer, tvc, igniter) << "\n";
+    std::cout << state.Update(navigation, controller) << "\n";
+    std::cout << state.Update(navigation, controller) << "\n";
+    std::cout << state.Update(navigation, controller) << "\n";
+    std::cout << state.Update(navigation, controller) << "\n";
 }
