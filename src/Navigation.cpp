@@ -6,11 +6,11 @@ Navigation::Navigation(IMU& imu, Barometer& barometer, TVC& tvc, Igniter& ignite
 {
 }
 
-Eigen::Matrix<double, 3, 1> Navigation::GetNavigation()
+Eigen::Matrix<double, 12, 1> Navigation::GetNavigation()
 {
     // TODO Return the current navigation state
 
-    Eigen::Matrix<double, 3, 1> m = {      // construct a 2x2 matrix
+    Eigen::Matrix<double, 12, 1> m = {      // construct a 2x2 matrix
       {1},     // first row
       {3},      // second row
       {5},      // Third row
