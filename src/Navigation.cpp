@@ -10,13 +10,9 @@ Eigen::Matrix<double, 12, 1> Navigation::GetNavigation()
 {
     // TODO Return the current navigation state
 
-    Eigen::Matrix<double, 12, 1> m = {      // construct a 2x2 matrix
-      {1},     // first row
-      {3},      // second row
-      {5},      // Third row
-    };
+    Eigen::Matrix<double, 12, 1> m;
    
-   return m;
+    return m;
 
 }
 

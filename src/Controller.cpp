@@ -16,21 +16,21 @@ void Controller::launch(){
 }
 
 //listen for ground control commands
-void Controller::updateGround(){
+void Controller::UpdateGround(){
 
 }
 
 
-void Controller::updateLaunch(Navigation& navigation){
+void Controller::UpdateLaunch(Navigation& navigation){
 
 }
 
 //communicate with TVC
-void Controller::updateLand(){
+void Controller::UpdateLand(){
 
 }
 
 //shut down rocket functions
-void Controller::updateSafe(){
+void Controller::UpdateSafe(){
 
 }

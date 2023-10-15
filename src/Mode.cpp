@@ -11,7 +11,7 @@ Mode::Phase Mode::UpdateIdle(){ return Mode::Launch; } // TODO Implement idle st
 Mode::Phase Mode::UpdateLaunch(Navigation navigation, Controller controller, double change_time){
 
     navigation.UpdateNavigation();
-    controller.updateLaunch(navigation);
+    controller.UpdateLaunch(navigation);
 
     // TODO Calculate next stage
 

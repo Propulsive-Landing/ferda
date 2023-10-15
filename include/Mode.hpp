@@ -13,7 +13,9 @@ class Mode
         enum Phase
             {
                 Idle,
+                StartLaunch, // Not used yet
                 Launch,
+                PostLaunch, // Not used yet
                 Land,
                 Terminate 
             };

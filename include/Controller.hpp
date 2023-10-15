@@ -26,10 +26,10 @@ public:
     void launch();
 
 
-    void updateGround();
-    void updateLaunch(Navigation& navigation);
-    void updateLand();
-    void updateSafe();
+    void UpdateGround();
+    void UpdateLaunch(Navigation& navigation);
+    void UpdateLand();
+    void UpdateSafe();
 
 
 
