@@ -1,20 +1,10 @@
-#include <vector>
+#include <Eigen/Dense>
+
 #include "Controller.hpp"
-#include "TVC.hpp"
-#include "Igniter.hpp"
-
-//possibly add navigator later
-Controller::Controller(TVC tvc, Igniter igniter){
-    this->tvc = tvc;
-    this->igniter = igniter;
-
-    std::vector<double> IMU;
-    
-}
 
 
-void Controller::setTVCservos(double X, double Y){
-
+Controller::Controller(TVC& tvc, Igniter& igniter) : tvc(tvc), igniter(igniter)
+{
 }
 
 void Controller::ignite(){
@@ -26,21 +16,21 @@ void Controller::launch(){
 }
 
 //listen for ground control commands
-void Controller::updateGround(){
+void Controller::UpdateGround(){
 
 }
 
 
-void Controller::updateLaunch(){
+void Controller::UpdateLaunch(Navigation& navigation){
 
 }
 
 //communicate with TVC
-void Controller::updateLand(){
+void Controller::UpdateLand(){
 
 }
 
 //shut down rocket functions
-void Controller::updateSafe(){
+void Controller::UpdateSafe(){
 
 }

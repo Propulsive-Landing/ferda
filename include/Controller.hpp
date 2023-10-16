@@ -1,7 +1,13 @@
 #pragma once
+
 #include <vector>
-#include "TVC.hpp"
+#include <Eigen/Dense>
+
+#include "Barometer.hpp"
+#include "IMU.hpp"
 #include "Igniter.hpp"
+#include "TVC.hpp"
+#include "Navigation.hpp"
 
 class Controller{
 
@@ -13,18 +19,17 @@ private:
 
 
 public:
-
-    Controller(TVC tvc, Igniter igniter);
+    Controller(TVC& tvc, Igniter& igniter);
 
     void setTVCservos(double X, double Y);
     void ignite();
     void launch();
 
 
-    void updateGround();
-    void updateLaunch();
-    void updateLand();
-    void updateSafe();
+    void UpdateGround();
+    void UpdateLaunch(Navigation& navigation);
+    void UpdateLand();
+    void UpdateSafe();
 
 
 
