@@ -8,15 +8,12 @@ Navigation::Navigation(IMU& imu, Barometer& barometer, TVC& tvc, Igniter& ignite
 
 Eigen::Matrix<double, 12, 1> Navigation::GetNavigation()
 {
-    // TODO Return the current navigation state
-
-    Eigen::Matrix<double, 12, 1> m;
-   
-    return m;
-
+    return stateMat;
 }
 
 void Navigation::UpdateNavigation(){
+    Eigen::Matrix<double, 12, 1> newState;
     // TODO Calculate navigation state (angle, position, etc) from the input 
-    // TODO Update the navigation state 
+    // TODO Update the navigation state
+    stateMat = newState;
 }

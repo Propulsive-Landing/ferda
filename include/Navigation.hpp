@@ -15,9 +15,9 @@ class Navigation
         TVC& tvc;
         Igniter& igniter;
 
-        Eigen::Matrix<double, 12, 1> currentNavigation;
+        Eigen::Matrix<double, 12, 1> stateMat;
     public:
         Navigation(IMU& imu, Barometer& barometer, TVC& tvc, Igniter& igniter);
-        Eigen::Matrix<double, 12, 1> GetNavigation(); // Defintion of navigation matrix: TODO (determine dimensions and document form)
+        Eigen::Matrix<double, 12, 1> GetNavigation(); // Defintion of state matrix: TODO (determine dimensions and document form)
         void UpdateNavigation(); // Defintion updates: TODO (determine dimensions and document form)
 };
