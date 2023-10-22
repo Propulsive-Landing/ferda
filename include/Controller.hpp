@@ -21,16 +21,7 @@ private:
 public:
     Controller(TVC& tvc, Igniter& igniter);
 
-    void setTVCservos(double X, double Y);
-    void ignite();
-    void launch();
-
-
-    void UpdateGround();
     void UpdateLaunch(Navigation& navigation);
     void UpdateLand();
     void UpdateSafe();
-
-
-
 };

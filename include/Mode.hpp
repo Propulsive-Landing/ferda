@@ -13,9 +13,10 @@ class Mode
         enum Phase
             {
                 Idle,
-                StartLaunch, // Not used yet
+                StartLaunch,
                 Launch,
-                PostLaunch, // Not used yet
+                Freefall,
+                StartLand,
                 Land,
                 Terminate 
             };
@@ -27,7 +28,10 @@ class Mode
 
 
         Mode::Phase UpdateIdle();
-        Mode::Phase UpdateLaunch(Navigation navigation, Controller controller, double change_time);
+        Mode::Phase UpdateStartLaunch();
+        Mode::Phase UpdateLaunch(Navigation& navigation, Controller& controller, double change_time);
+        Mode::Phase UpdateFreefall();
+        Mode::Phase UpdateStartLand();
         Mode::Phase UpdateLand();
 
 };

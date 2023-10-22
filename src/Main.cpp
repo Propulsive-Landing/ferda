@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "Barometer.hpp"
 #include "IMU.hpp"
 #include "Igniter.hpp"
@@ -22,8 +20,7 @@ int main()
 
     Mode mode(Mode::Idle);
 
-    std::cout << mode.Update(navigation, controller) << "\n";
-    std::cout << mode.Update(navigation, controller) << "\n";
-    std::cout << mode.Update(navigation, controller) << "\n";
-    std::cout << mode.Update(navigation, controller) << "\n";
+    while( mode.Update(navigation, controller) ) {}
+
+    return 0;
 }
