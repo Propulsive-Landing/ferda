@@ -27,3 +27,23 @@ void Controller::UpdateLand(){
 void Controller::UpdateSafe(){
     // TODO. Center TVC, turn off reaction wheel, etc.
 }
+
+// Handle whichever abort gets called
+void Controller::HandleAborts(int abort) {
+    switch(abort) {
+        case 1:
+            // code
+            break;
+        case 2:
+            // code
+            break;
+        case 3:
+            // code
+            break;
+        case 4:
+            // code
+            break;
+        default:
+            break;
+    }
+}
