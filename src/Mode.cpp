@@ -28,11 +28,17 @@ Mode::Phase Mode::UpdateLaunch(Navigation navigation, Controller controller, dou
 Mode::Phase Mode::UpdateFreefall() {
     // some checks
     navigation.UpdateNavigation();
-
+        abort_threshold=0;
+        calibration_time=0;
+        thrust_duration=0;
+        descent_time=0;
     // if angle is too far, abort
     // x[4]
-    // stateMat = [x, y, z, xdot, ydot, zdot, phi, theta, psi, phidot, thetadot, psidot]
+    // xhat = [x, y, z, xdot, ydot, zdot, phi, theta, psi, phidot, thetadot, psidot]
+    //
+    return Mode::Terminate;
 }
+
 
 Mode::Phase Mode::UpdateLand() {
     return Mode::Terminate;
