@@ -38,13 +38,10 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, d
 
     // TODO Calculate next phase
 
-    return Mode::Launch;
+    return Mode::Land;
 }
 
-
-Mode::Phase Mode::UpdateFreefall(){ return Mode::Terminate; } // TODO Implement freefall phase behavior and return next phase
-Mode::Phase Mode::UpdateStartLand(){ return Mode::Terminate; } // TODO Implement start-land phase behavior and return next phase
-Mode::Phase Mode::UpdateLand(){ return Mode::Terminate; } // TODO Implement land phase behavior and return next phase
+Mode::Phase Mode::UpdateLand(){ return Mode::Terminate; } // TODO Implement land state behavior
 
 
 bool Mode::Update(Navigation& navigation, Controller& controller)
