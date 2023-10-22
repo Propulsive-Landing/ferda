@@ -38,15 +38,24 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, d
 
     // TODO Calculate next phase
 
-    return Mode::Land;
+    return Mode::Launch;
 }
 
-Mode::Phase Mode::UpdateLand(){ return Mode::Terminate; } // TODO Implement land state behavior
+UpdateFreefall() {
+    // some checks
+    navigation.UpdateNavigation();
+
+    // if angle is too far, abort
+    // x[4]
+    // stateMat = [x, y, z, xdot, ydot, zdot, phi, theta, psi, phidot, thetadot, psidot]
+}
+
+Mode::Phase Mode::UpdateLand() {
+    return Mode::Terminate;
+} // TODO Implement land state behavior
 
 
-bool Mode::Update(Navigation& navigation, Controller& controller)
-{
-    /* Start calculating time change*/
+bool Mode::Update(Navigation& navigation, Controller& controller) {
     static auto last_time = std::chrono::high_resolution_clock::now();
     auto time_now = std::chrono::high_resolution_clock::now();
     double change_time = (time_now.time_since_epoch() - last_time.time_since_epoch()).count();
