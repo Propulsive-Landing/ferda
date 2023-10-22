@@ -31,7 +31,6 @@ class Mode
         Mode::Phase UpdateStartLaunch(Navigation& navigation, Controller& controller, double change_time);
         Mode::Phase UpdateLaunch(Navigation& navigation, Controller& controller, double change_time);
         Mode::Phase UpdateFreefall();
-        Mode::Phase UpdateStartLand();
         Mode::Phase UpdateLand();
 
 };

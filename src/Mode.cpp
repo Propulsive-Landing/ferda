@@ -41,7 +41,7 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, d
     return Mode::Launch;
 }
 
-UpdateFreefall() {
+Mode::Phase Mode::UpdateFreefall() {
     // some checks
     navigation.UpdateNavigation();
 
