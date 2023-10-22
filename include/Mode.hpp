@@ -28,6 +28,7 @@ class Mode
 
         Mode::Phase UpdateIdle();
         Mode::Phase UpdateLaunch(Navigation navigation, Controller controller, double change_time);
+        Mode::Phase UpdateFreefall();
         Mode::Phase UpdateLand();
 
 };
