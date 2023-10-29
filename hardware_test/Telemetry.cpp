@@ -5,14 +5,23 @@
 #include "Mode.hpp"
 #include "Telemetry.hpp"
 
-void HardwareSaveFrame(Navigation& navigation, Controller& controller)
+void Telemetry::HardwareSaveFrame(Navigation& navigation, Controller& controller)
 {
     // TODO write data to hardware file
+    auto time_now = std::chrono::system_clock::now();
+    auto in_time_t = std::chrono::system_clock::to_time_t(time_now);
+
+    // TODO Write time to file
+    HardwareSaved << std::to_string(navigation.GetNavigation().coeff(0, 0)) << "\n";
 }
 
-void RfSendFrame(Navigation& navigation, Controller& controller)
+void Telemetry::RfSendFrame(Navigation& navigation, Controller& controller)
 {
     // TODO write data to rf file
+    auto time_now = std::chrono::high_resolution_clock::now();
+
+    // TODO Write time to file
+    RFSent << std::to_string(navigation.GetNavigation().coeff(1, 0)) << "\n";
 }
 
 
