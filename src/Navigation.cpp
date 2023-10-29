@@ -7,8 +7,9 @@
 
 #include "Navigation.hpp"
 
-Navigation::Navigation(IMU& imu, Barometer& barometer, TVC& tvc, Igniter& igniter) : imu(imu), barometer(barometer), tvc(tvc), igniter(igniter) 
+Navigation::Navigation(IMU& imu, Barometer& barometer, TVC& tvc, Igniter& igniter) : imu(imu), barometer(barometer), tvc(tvc), igniter(igniter), count(0) 
 {
+    
 }
 
 Eigen::Matrix<double, 12, 1> Navigation::GetNavigation()
@@ -42,14 +43,6 @@ void Navigation::UpdateNavigation(){
     // Calculate n
     int n = nav_theta_dot_smooth/fsw_loop_time;
    
-    // Create a static vector that has deque properties (meaning you can add and delete from the front and back) 
-    // to hold d_theta_queue_reckon and make sure it retains its values throughout function calls
-    static std::deque<std::vector<double>> d_theta_queue_reckon;
-
-    // Create a static variable count for the calculations for smoothing angular velocity and update it every time this function is called
-    // to represent what entry d_theta_now is on
-    static int count = 0;
-    count += 1;
 
     // Get phi, theta, and psi
     double phi = stateMat(6);
@@ -87,6 +80,10 @@ void Navigation::UpdateNavigation(){
     
     // Add the vector, d_theta_now, to d_theta_queue_reckon
     d_theta_queue_reckon.push_back(d_theta_now);
+
+
+    // Update count to represent what entry d_theta_queue_reckon is on
+    count += 1;
 
     // Determine if the amount of entries in d_theta_reckon is less than or equal to n, and if that is true, 
     // set divisor to the amount of entries in d_theta_reckon. If it's not true, pop the first entry and set divisor
@@ -126,4 +123,12 @@ void Navigation::UpdateNavigation(){
     // Assign the new state to stateMat;
     stateMat = newState;
     
+}
+
+void Navigation::Reset()
+{
+    count = 0;
+    stateMat = stateMat.setZero();
+    d_theta_queue_reckon.clear();
+
 }
