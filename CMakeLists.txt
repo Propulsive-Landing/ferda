@@ -6,9 +6,9 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 11)
 
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
-    set(EXTRA_CODE hardware_test/Barometer.cpp)
+    FILE(GLOB EXTRA_CODE hardware_test/*.cpp)
 else()
-    set(EXTRA_CODE hardware/Barometer.cpp)
+    FILE(GLOB EXTRA_CODE hardware/*.cpp)
 endif()
 
 FILE(GLOB CppSources src/*.cpp)
