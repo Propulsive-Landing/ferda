@@ -1,5 +1,5 @@
 #include <chrono>
-
+#include <cmath>
 #include "Mode.hpp"
 #include "Telemetry.hpp"
 
@@ -48,10 +48,17 @@ Mode::Phase Mode::UpdateFreefall() {
         calibration_time=0;
         thrust_duration=0;
         descent_time=0;
+        Eigen::Matrix <double>xhat=navigation.GetNavigation();
+        phi=pow(xhat[6],2);
+        theta=pow(xhat[7],2);
+        mag=sqrt(pow(phi+theta));
     // if angle is too far, abort
     // x[4]
     // xhat = [x, y, z, xdot, ydot, zdot, phi, theta, psi, phidot, thetadot, psidot]
-    //
+        if (mag>abort_threshold)
+             Mode::Terminate;
+        else
+            continue;
     return Mode::Terminate;
 }
 
