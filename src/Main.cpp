@@ -22,11 +22,9 @@ int main()
     Mode mode(Mode::Idle);
 
 
-    Telemetry::GetInstance().SendString("HELLO");
+    Telemetry::GetInstance().SendString("Starting!");
 
-    while( mode.Update(navigation, controller) ) {
-        Telemetry::GetInstance().CheckAndHandleCommand();
-    }
+    while( mode.Update(navigation, controller) ) {}
 
     return 0;
 }
