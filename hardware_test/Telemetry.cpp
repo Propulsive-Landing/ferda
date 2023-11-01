@@ -1,35 +1,53 @@
 #include <string>
 #include <iostream>
 #include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <stdio.h>
+#include <sys/poll.h> 
 
 #include "Mode.hpp"
 #include "Telemetry.hpp"
 
 void Telemetry::HardwareSaveFrame(Navigation& navigation, Controller& controller)
 {
-    // TODO write data to hardware file
+    // write time to hardware file
     auto time_now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(time_now);
 
-    // TODO Write time to file
-    HardwareSaved << std::to_string(navigation.GetNavigation().coeff(0, 0)) << "\n";
+    HardwareSaved << std::put_time(std::localtime(&in_time_t), "%c") << ",";
+
+    // Write data to file
+    HardwareSaved << std::to_string(navigation.GetNavigation().coeff(0, 0)) << "\n" << std::flush;
 }
 
 void Telemetry::RfSendFrame(Navigation& navigation, Controller& controller)
 {
-    // TODO write data to rf file
-    auto time_now = std::chrono::high_resolution_clock::now();
+    // write data to rf file
+    auto now = std::chrono::system_clock::now();
+    auto in_time_t = std::chrono::system_clock::to_time_t(now);
 
-    // TODO Write time to file
-    RFSent << std::to_string(navigation.GetNavigation().coeff(1, 0)) << "\n";
+    // Print data to stdout
+    std::cout << std::to_string(navigation.GetNavigation().coeff(1, 0));
+
+     // Write time to file
+    RFSent << std::put_time(std::localtime(&in_time_t), "%c") << ",";
+    
+    //Write data to file
+    RFSent << std::to_string(navigation.GetNavigation().coeff(1, 0)) << "\n" << std::flush;;
 }
 
 
 void Telemetry::SendString(std::string message) {
+    // Add time tag to file
+    auto now = std::chrono::system_clock::now();
+    auto in_time_t = std::chrono::system_clock::to_time_t(now);
 
-    // TODO write log to file
-    std::cout << message;
-    this->Logs << message << "\n";
+    std::cout << message << "\n";
+
+    // write time to file
+    this->Logs << std::put_time(std::localtime(&in_time_t), "%c") << ",";
+    this->Logs << message << "\n" << std::flush;
 }
 
 void Telemetry::RunTelemetry(Navigation& navigation, Controller& controller, float HardwareSaveDelta, float RFSendDelta) {
@@ -49,15 +67,28 @@ void Telemetry::RunTelemetry(Navigation& navigation, Controller& controller, flo
         }
 }
 
-void Telemetry::CheckAndHandleCommand(Mode::Phase &eCurrentMode) {
-    
+void Telemetry::CheckAndHandleCommand() {
+    struct pollfd fds;
+    int ret;
+    fds.fd = 0; /* this is STDIN */
+    fds.events = POLLIN;
+    ret = poll(&fds, 1, 0);
+
+    if(ret != 1) // Return if no data
+        return;
+
+    std::string input_line;
+    getline(std::cin, input_line);
+    this->Logs << "GOT: " << input_line << "\n" << std::flush;
 }
 
 Telemetry::Telemetry()
 {
-    Logs.open ("logs.txt");
-    RFSent.open ("RFlogs.txt");;
-    HardwareSaved.open ("data.txt");;
+    Logs.open ("../logs/logs.txt");
+    RFSent.open ("../logs/RFlogs.txt");;
+    HardwareSaved.open ("../logs/data.txt");;
+
+    //TODO Write headers to data file where needed
 }
 
 Telemetry::~Telemetry()

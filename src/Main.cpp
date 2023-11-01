@@ -5,6 +5,7 @@
 
 #include "Navigation.hpp"
 #include "Controller.hpp"
+#include "Telemetry.hpp"
 
 #include "Mode.hpp"
 
@@ -20,7 +21,12 @@ int main()
 
     Mode mode(Mode::Idle);
 
-    while( mode.Update(navigation, controller) ) {}
+
+    Telemetry::GetInstance().SendString("HELLO");
+
+    while( mode.Update(navigation, controller) ) {
+        Telemetry::GetInstance().CheckAndHandleCommand();
+    }
 
     return 0;
 }
