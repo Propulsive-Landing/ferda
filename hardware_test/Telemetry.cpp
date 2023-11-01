@@ -67,7 +67,7 @@ void Telemetry::RunTelemetry(Navigation& navigation, Controller& controller, flo
         }
 }
 
-Mode::Phase Telemetry::CheckAndHandleCommand() {
+void Telemetry::CheckAndHandleCommand() {
     struct pollfd fds;
     int ret;
     fds.fd = 0; /* this is STDIN */
