@@ -2,12 +2,12 @@
 
 #include "IMU.hpp"
 
-tuple<double, double, double> IMU::GetBodyAngularRate()
+std::tuple<double, double, double> IMU::GetBodyAngularRate()
 {
-    return make_tuple(0.0,0.0,0.0);
+    return std::make_tuple(0.0,0.0,0.0);
 }
 
-tuple<double, double, double> IMU::GetBodyAcceleration()
+std::tuple<double, double, double> IMU::GetBodyAcceleration()
 {
-    return make_tuple(0.0,0.0,0.0);
+    return std::make_tuple(0.0,0.0,0.0);
 }

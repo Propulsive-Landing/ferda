@@ -6,7 +6,7 @@
 Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
 Mode::Phase Mode::UpdateIdle(){ return Mode::Launch; } // TODO Implement idle phase behavior and return next phase
-Mode::Phase Mode::UpdateStartLaunch(){ return Mode::Terminate; } // TODO Implement start-land phase behavior and return next phase
+Mode::Phase Mode::UpdateStartLaunch(){ return Mode::Launch; } // TODO Implement start-land phase behavior and return next phase
 
 
 Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, double change_time){
@@ -16,7 +16,7 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, d
 
     // TODO Calculate next phase
 
-    return Mode::Land;
+    return Mode::Launch;
 }
 
 
@@ -60,5 +60,6 @@ bool Mode::Update(Navigation& navigation, Controller& controller)
             return false;
     }
 
-    return false; // State number is not handled if this is reached
+    return true; 
+
 }

@@ -5,6 +5,7 @@
 
 #include "Navigation.hpp"
 #include "Controller.hpp"
+#include "Telemetry.hpp"
 
 #include "Mode.hpp"
 
@@ -19,6 +20,9 @@ int main()
     Controller controller(tvc, igniter);
 
     Mode mode(Mode::Idle);
+
+
+    Telemetry::GetInstance().SendString("Starting!");
 
     while( mode.Update(navigation, controller) ) {}
 

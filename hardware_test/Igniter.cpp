@@ -1,6 +1,6 @@
 #include "Igniter.hpp"
 
-void Igniter::Ignite()
+void Igniter::Ignite(Igniter::IgnitionSpecifier ignite)
 {
     return;
 }

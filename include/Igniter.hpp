@@ -5,6 +5,11 @@
 class Igniter
 {
     public:
+        enum IgnitionSpecifier {
+            LAUNCH,
+            LAND
+        };
+
         Igniter() = default;
-        void Ignite();
+        void Ignite(IgnitionSpecifier ignite);
 };

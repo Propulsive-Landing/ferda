@@ -16,11 +16,13 @@ private:
     TVC tvc;
     Igniter igniter;
     std::vector<double> IMU;
-
+    Eigen::Matrix<double, 2, 1> lastCommand;
 
 public:
     Controller(TVC& tvc, Igniter& igniter);
 
+    Eigen::Matrix<double, 2, 1> stateMat;
+    
     void UpdateLaunch(Navigation& navigation);
     void UpdateLand();
     void UpdateSafe();
