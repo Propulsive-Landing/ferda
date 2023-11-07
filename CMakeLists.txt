@@ -16,6 +16,6 @@ FILE(GLOB CppSources src/*.cpp)
 find_package (Eigen3 REQUIRED NO_MODULE)
 
 add_executable(Ferda ${CppSources} ${EXTRA_CODE})
-target_include_directories(Ferda PRIVATE include)
+target_include_directories(Ferda PRIVATE include hardware_test/simulation/sims)
 
-target_link_libraries (Ferda Eigen3::Eigen)
+target_link_libraries (Ferda Eigen3::Eigen -L"/workspaces/ferda/hardware_test/simulation/build")
