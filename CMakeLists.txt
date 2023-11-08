@@ -1,23 +1,12 @@
 cmake_minimum_required(VERSION 3.5)
+include(CMakePrintHelpers)
 
 project(Ferda C CXX)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 11)
 
-if(CMAKE_BUILD_TYPE STREQUAL Debug)
-    FILE(GLOB EXTRA_CODE hardware_test/*.cpp)
-else()
-    FILE(GLOB EXTRA_CODE hardware/*.cpp)
-endif()
-
-FILE(GLOB CppSources src/*.cpp)
-
-find_package (Eigen3 REQUIRED NO_MODULE)
-
-
-
-
+# MACRO to recursively find header files
 MACRO(HEADER_DIRECTORIES return_list)
     FILE(GLOB_RECURSE new_list *.h)
     SET(dir_list "")
@@ -28,11 +17,32 @@ MACRO(HEADER_DIRECTORIES return_list)
     LIST(REMOVE_DUPLICATES dir_list)
     SET(${return_list} ${dir_list})
 ENDMACRO()
-header_directories(model_includes)
+# End macro
 
 
+# Use different source files depending on if we are in debug or release.
+if(CMAKE_BUILD_TYPE STREQUAL Debug)
+    FILE(GLOB EXTRA_CODE hardware_test/*.cpp)
+    set(using_simulator Yes)
+else()
+    FILE(GLOB EXTRA_CODE hardware/*.cpp)
+endif()
+
+FILE(GLOB CppSources src/*.cpp)
+
+find_package (Eigen3 REQUIRED NO_MODULE)
 add_executable(Ferda ${CppSources} ${EXTRA_CODE})
 
-target_include_directories(Ferda PRIVATE include ${model_includes})
+
+# If using the simulator, we add the includes and link the library.
+if(using_simulator)
+    header_directories(model_includes)
+    set(model_library :simulation_win64_win64.so)
+    target_link_libraries (Ferda ${model_library} )
+    target_include_directories(Ferda PRIVATE ${model_includes})
+endif()
+
+
+target_include_directories(Ferda PRIVATE include)
 target_link_directories(Ferda PRIVATE hardware_test/simulation/build)
-target_link_libraries (Ferda Eigen3::Eigen sim)
+target_link_libraries (Ferda Eigen3::Eigen)
