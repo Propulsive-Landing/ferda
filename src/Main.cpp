@@ -8,6 +8,10 @@
 #include "Controller.hpp"
 #include "Telemetry.hpp"
 
+extern "C" {
+    #include "simulation.h"
+}
+
 #include "Mode.hpp"
 
 int main()
@@ -19,6 +23,12 @@ int main()
 
     Navigation navigation(imu, barometer, tvc, igniter); 
     Controller controller(tvc, igniter);
+
+    simulation_initialize();
+    simulation_step();
+
+    Telemetry::GetInstance().SendString(std::to_string(simulation_Y.truestate[4]));
+
 
     Mode mode(Mode::Idle);
 

@@ -15,7 +15,24 @@ FILE(GLOB CppSources src/*.cpp)
 
 find_package (Eigen3 REQUIRED NO_MODULE)
 
-add_executable(Ferda ${CppSources} ${EXTRA_CODE})
-target_include_directories(Ferda PRIVATE include hardware_test/simulation/sims)
 
-target_link_libraries (Ferda Eigen3::Eigen -L"/workspaces/ferda/hardware_test/simulation/build")
+
+
+MACRO(HEADER_DIRECTORIES return_list)
+    FILE(GLOB_RECURSE new_list *.h)
+    SET(dir_list "")
+    FOREACH(file_path ${new_list})
+        GET_FILENAME_COMPONENT(dir_path ${file_path} PATH)
+        SET(dir_list ${dir_list} ${dir_path})
+    ENDFOREACH()
+    LIST(REMOVE_DUPLICATES dir_list)
+    SET(${return_list} ${dir_list})
+ENDMACRO()
+header_directories(model_includes)
+
+
+add_executable(Ferda ${CppSources} ${EXTRA_CODE})
+
+target_include_directories(Ferda PRIVATE include ${model_includes})
+target_link_directories(Ferda PRIVATE hardware_test/simulation/build)
+target_link_libraries (Ferda Eigen3::Eigen sim)
