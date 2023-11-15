@@ -60,9 +60,9 @@ Mode::Phase Mode::UpdateFreefall() {
     if (mag>abort_threshold && mag_vel.norm()<5 && calibration_time + thrust_duration < total_time && descent_time==0)
         return Mode::Terminate;
     //add else if check height;if true swtich to land.
-    else
-        return;
-    return Mode::Terminate;
+    else if(){}
+
+    return Mode::Freefall;
 }
 
 

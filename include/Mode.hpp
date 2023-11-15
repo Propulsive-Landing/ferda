@@ -15,8 +15,7 @@ class Mode
                 Idle,
                 StartLaunch,
                 Launch,
-                Freefall,
-                StartLand,
+                Freefall, // Not used yet
                 Land,
                 Terminate 
             };
