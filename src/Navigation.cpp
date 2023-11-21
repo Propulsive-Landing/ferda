@@ -146,5 +146,4 @@ Eigen::Matrix3d Navigation::CreateRotationalMatrix(double phi, double theta, dou
     rotationalMatrix(2,2) = cos(phi)*cos(theta);
 
     return rotationalMatrix;
-
 }
