@@ -35,11 +35,8 @@ void Navigation::UpdateNavigation(){
     std::tuple<double,double,double> linearAcceleration = imu.GetBodyAcceleration();
     std::tuple<double,double,double> angularRate = imu.GetBodyAngularRate();
 
-    // Convert the linear acceleration tuple to a Matrix so we can muliply the Eigen matrix R by another Eigen Matrix with the same dimensions
-    Eigen::Matrix<double,3,3> linearAccelerationMatrix;
-    linearAccelerationMatrix << std::get<0>(linearAcceleration), 0 ,0,
-                                std::get<1>(linearAcceleration), 0, 0,
-                                std::get<2>(linearAcceleration), 0, 0;
+    // Convert the linear acceleration tuple to a Vector so we can muliply the Eigen matrix R by another Eigen type which in this case is a vector
+    Eigen::Vector3d linearAccelerationVector(std::get<0>(linearAcceleration), std::get<1>(linearAcceleration), std::get<2>(linearAcceleration));
    
     // Get phi, theta, and psi
     double phi = stateMat(6);
@@ -52,8 +49,7 @@ void Navigation::UpdateNavigation(){
     // Update the linear positions
     newState.segment(0,3) = stateMat.segment(3,3) * fsw_loop_time + stateMat.segment(0,3);
     // Update the linear velocities
-    Eigen::Vector3d vectorProduct = linearAccelerationMatrix * R * Eigen::Vector3d::Ones();
-    newState.segment(3,3) = vectorProduct * fsw_loop_time + stateMat.segment(3,3);
+    newState.segment(3,3) = R * linearAccelerationVector * fsw_loop_time + stateMat.segment(3,3);
     // Account for gravity
     newState(5) = newState(5) - 9.81*fsw_loop_time;
     // Update the angles
@@ -116,9 +112,9 @@ std::tuple<double,double,double> Navigation::ComputeAngularRollingAverage(){
    
     for (int i = 0; i < divisor; i++)
     {
-        p += d_theta_queue_reckon[i][0];
-        q += d_theta_queue_reckon[i][1];
-        r += d_theta_queue_reckon[i][2];
+        p += d_theta_queue_reckon[0][i];
+        q += d_theta_queue_reckon[1][i];
+        r += d_theta_queue_reckon[2][i];
     }
 
     // Get an average by dividing over the number of entries so far
@@ -146,4 +142,5 @@ Eigen::Matrix3d Navigation::CreateRotationalMatrix(double phi, double theta, dou
     rotationalMatrix(2,2) = cos(phi)*cos(theta);
 
     return rotationalMatrix;
+
 }
