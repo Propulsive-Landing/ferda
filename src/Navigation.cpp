@@ -116,9 +116,9 @@ std::tuple<double,double,double> Navigation::ComputeAngularRollingAverage(){
    
     for (int i = 0; i < divisor; i++)
     {
-        p += d_theta_queue_reckon[0][i];
-        q += d_theta_queue_reckon[1][i];
-        r += d_theta_queue_reckon[2][i];
+        p += d_theta_queue_reckon[i][0];
+        q += d_theta_queue_reckon[i][1];
+        r += d_theta_queue_reckon[i][2];
     }
 
     // Get an average by dividing over the number of entries so far
