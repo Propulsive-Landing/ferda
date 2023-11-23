@@ -6,6 +6,12 @@
 Controller::Controller(TVC& tvc, Igniter& igniter) : tvc(tvc), igniter(igniter) {}
 
 
+void Controller::UpdateGround(Navigation& navigation) {
+    // TODO. Calculate desired control inputs for ground
+    navigation.GetNavigation();
+    // TODO. Actuate all control surfaces accordingly
+}
+
 void Controller::UpdateLaunch(Navigation& navigation) {
     // TODO. Calculate desired control inputs for launch
     // TODO. Actuate all control surfaces accordingly
