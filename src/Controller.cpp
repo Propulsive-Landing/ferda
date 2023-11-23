@@ -6,9 +6,9 @@
 Controller::Controller(TVC& tvc, Igniter& igniter) : tvc(tvc), igniter(igniter) {}
 
 
-void Controller::UpdateGround(Navigation& navigation) {
+void Controller::UpdateIdle(Navigation& navigation) {
+    Eigen::Matrix<double, 12, 1> x = navigation.GetNavigation();
     // TODO. Calculate desired control inputs for ground
-    navigation.GetNavigation();
     // TODO. Actuate all control surfaces accordingly
 }
 

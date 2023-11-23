@@ -1,15 +1,39 @@
 #include <chrono>
 
 #include "Mode.hpp"
-
+#include "Telemetry.hpp"
 
 Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
-Mode::Phase Mode::UpdateIdle(){ return Mode::Launch; } // TODO Implement idle phase behavior and return next phase
-Mode::Phase Mode::UpdateStartLaunch(){ return Mode::Launch; } // TODO Implement start-land phase behavior and return next phase
+Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, Telemetry& telemetry) {
+    navigation.UpdateNavigation();
+    controller.UpdateIdle(navigation);
+    telemetry.RunTelemetry(navigation, controller, 0.1, 0.1);
+    Telemetry::Command cmd = telemetry.CheckForCommand();
+    if (cmd == Telemetry::Command::Startup) {
+        return Mode::StartLaunch;
+    }
+    return Mode::Idle;
+} // TODO Implement idle phase behavior and return next phase
+
+Mode::Phase Mode::UpdateStartLaunch(Navigation& navigation, Controller& controller, Telemetry& telemetry, double change_time) {
+    // loop for 10 seconds (this is countdown)
+        // update navigation
+        // send telemetry
+    static auto start_time = std::chrono::high_resolution_clock::now().count();
+    while (std::chrono::high_resolution_clock::now().count() - start_time < 10000) {
+        navigation.UpdateNavigation();
+        telemetry.RunTelemetry(navigation, controller, 0.1, 0.1);
+    }
+    // send ignite command to launch pad
+    telemetry.SendCommand(Telemetry::Command::Ignite);
+    // clamps let go (if we have clamps)
+    telemetry.SendCommand(Telemetry::Command::Release);
+    return Mode::Launch;
+} // TODO Implement start-launch phase behavior and return next phase
 
 
-Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, double change_time){
+Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, double change_time) {
 
     navigation.UpdateNavigation();
     controller.UpdateLaunch(navigation);
@@ -25,7 +49,7 @@ Mode::Phase Mode::UpdateStartLand(){ return Mode::Terminate; } // TODO Implement
 Mode::Phase Mode::UpdateLand(){ return Mode::Terminate; } // TODO Implement land phase behavior and return next phase
 
 
-bool Mode::Update(Navigation& navigation, Controller& controller)
+bool Mode::Update(Navigation& navigation, Controller& controller, Telemetry& telemetry)
 {
     /* Start calculate time change*/
     static auto last_time = std::chrono::high_resolution_clock::now();
@@ -39,10 +63,10 @@ bool Mode::Update(Navigation& navigation, Controller& controller)
     switch(this->eCurrentMode)
     {
         case Idle:
-            this->eCurrentMode = UpdateIdle();
+            this->eCurrentMode = UpdateIdle(navigation, controller, telemetry);
             break;
         case StartLaunch:
-            this->eCurrentMode = UpdateStartLaunch();
+            this->eCurrentMode = UpdateStartLaunch(navigation, controller, telemetry, change_time);
             break;
         case Launch:
             this->eCurrentMode = UpdateLaunch(navigation, controller, change_time);

@@ -23,7 +23,7 @@ public:
 
     Eigen::Matrix<double, 2, 1> stateMat;
     
-    void UpdateGround(Navigation& navigation);
+    void UpdateIdle(Navigation& navigation);
     void UpdateLaunch(Navigation& navigation);
     void UpdateLand();
     void UpdateSafe();
