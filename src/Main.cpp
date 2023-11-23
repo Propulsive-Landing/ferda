@@ -18,13 +18,14 @@ int main()
 
     Navigation navigation(imu, barometer, tvc, igniter); 
     Controller controller(tvc, igniter);
+    Telemetry telemetry;
 
     Mode mode(Mode::Idle);
 
 
     Telemetry::GetInstance().SendString("Starting!");
 
-    while( mode.Update(navigation, controller) ) {}
+    while( mode.Update(navigation, controller, telemetry) ) {}
 
     return 0;
 }
