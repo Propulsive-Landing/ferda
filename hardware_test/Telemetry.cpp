@@ -67,7 +67,7 @@ void Telemetry::RunTelemetry(Navigation& navigation, Controller& controller, flo
         }
 }
 
-void Telemetry::CheckAndHandleCommand() {
+Telemetry::Command Telemetry::CheckAndHandleCommand() {
     struct pollfd fds;
     int ret;
     fds.fd = 0; /* this is STDIN */
@@ -75,11 +75,21 @@ void Telemetry::CheckAndHandleCommand() {
     ret = poll(&fds, 1, 0);
 
     if(ret != 1) // Return if no data
-        return;
+        return Telemetry::Command::None;
 
     std::string input_line;
     getline(std::cin, input_line);
     this->Logs << "GOT: " << input_line << "\n" << std::flush;
+
+    // if statement for which command to return
+    if(input_line == "ABORT")
+        return Telemetry::Command::ABORT;
+    else if(input_line == "Startup")
+        return Telemetry::Command::Startup;
+    else if(input_line == "Ignite")
+        return Telemetry::Command::Ignite;
+    else if(input_line == "Release")
+        return Telemetry::Command::Release;
 }
 
 Telemetry::Telemetry()
