@@ -8,29 +8,27 @@ Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, Telemetry& telemetry) {
     navigation.UpdateNavigation();
     controller.UpdateIdle(navigation);
-    telemetry.RunTelemetry(navigation, controller, 0.1, 0.1);
+    telemetry.RunTelemetry(navigation, controller, 0.1, 0.1); // The two data rates will be put in a MissonConstants file
     Telemetry::Command cmd = telemetry.CheckForCommand();
     if (cmd == Telemetry::Command::Startup) {
         return Mode::StartLaunch;
     }
     return Mode::Idle;
-} // TODO Implement idle phase behavior and return next phase
+}
 
 Mode::Phase Mode::UpdateStartLaunch(Navigation& navigation, Controller& controller, Telemetry& telemetry, double change_time) {
     // loop for 10 seconds (this is countdown)
-        // update navigation
-        // send telemetry
     static auto start_time = std::chrono::high_resolution_clock::now().count();
     while (std::chrono::high_resolution_clock::now().count() - start_time < 10000) {
         navigation.UpdateNavigation();
-        telemetry.RunTelemetry(navigation, controller, 0.1, 0.1);
+        telemetry.RunTelemetry(navigation, controller, 0.1, 0.1); // The two data rates will be put in a MissonConstants file
     }
     // send ignite command to launch pad
     telemetry.SendCommand(Telemetry::Command::Ignite);
-    // clamps let go (if we have clamps)
-    telemetry.SendCommand(Telemetry::Command::Release);
+    // // clamps let go (if we have clamps)
+    // telemetry.SendCommand(Telemetry::Command::Release);
     return Mode::Launch;
-} // TODO Implement start-launch phase behavior and return next phase
+}
 
 
 Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, double change_time) {
