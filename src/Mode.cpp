@@ -7,7 +7,7 @@ Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
 Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, Telemetry& telemetry) {
     navigation.UpdateNavigation();
-    controller.UpdateIdle(navigation);
+    controller.UpdateIdle(navigation);  // Might not need this at all. It's here as a placeholder for now
     telemetry.RunTelemetry(navigation, controller, 0.1, 0.1); // The two data rates will be put in a MissonConstants file
     Telemetry::Command cmd = telemetry.CheckForCommand();
     if (cmd == Telemetry::Command::Startup) {
