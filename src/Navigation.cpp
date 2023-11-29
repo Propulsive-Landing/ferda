@@ -83,7 +83,7 @@ void Navigation::Reset(){
     // Resets count, the state, and d_theta_queue_reckon //
 
     count = 0;
-    stateMat = stateMat.setZero();
+    stateMat.setZero();
     d_theta_queue_reckon.clear();
 }
 
