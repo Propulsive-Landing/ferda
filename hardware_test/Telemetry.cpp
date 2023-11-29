@@ -66,14 +66,16 @@ void Telemetry::RunTelemetry(Navigation& navigation, Controller& controller, flo
         /* Start calculate time change*/
         static auto last_time = std::chrono::high_resolution_clock::now();
         auto time_now = std::chrono::high_resolution_clock::now();
-        double change_time = (time_now.time_since_epoch() - last_time.time_since_epoch()).count();
+        auto change_time = time_now - last_time;
         /* End calculate time change*/
 
-        if(change_time >= HardwareSaveDelta){
+        
+
+        if(std::chrono::duration_cast<std::chrono::seconds>(change_time).count() >= HardwareSaveDelta){
             HardwareSaveFrame(navigation, controller);
             last_time = std::chrono::high_resolution_clock::now();
         }
-        if(change_time >= RFSendDelta){
+        if(std::chrono::duration_cast<std::chrono::seconds>(change_time).count() >= RFSendDelta ){
             RfSendFrame(navigation, controller);
             last_time = std::chrono::high_resolution_clock::now();
         }
