@@ -29,10 +29,18 @@ class Telemetry {
         void RfSendFrame(Navigation& navigation, Controller& controller);
 
     public:
+        enum Command {
+            None,
+            ABORT,
+            Startup,
+            Ignite,
+            Release
+        };
         void RunTelemetry(Navigation& navigation, Controller& controller, float HardwareSaveDelta, float RFSendDelta);
         void SendString(std::string message); // Send string over RF
+        void SendCommand(Command command);
         void SendData(Navigation &navigation, Controller &controller); // Send navigation data over RF
-        void CheckAndHandleCommand(); // Will check for commands and modify mode if needed
+        Telemetry::Command GetCommand(); // Will check for commands and return the received command. Non-blocking.
 
 
         static Telemetry& GetInstance()

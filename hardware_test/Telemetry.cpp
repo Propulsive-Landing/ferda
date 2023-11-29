@@ -50,24 +50,38 @@ void Telemetry::SendString(std::string message) {
     this->Logs << message << "\n" << std::flush;
 }
 
+void Telemetry::SendCommand(Command command) {
+    // Add time tag to file
+    auto now = std::chrono::system_clock::now();
+    auto in_time_t = std::chrono::system_clock::to_time_t(now);
+
+    std::cout << "Virtual command sent: " << std::to_string(command) << "\n";
+
+    // write time to file
+    this->Logs << std::put_time(std::localtime(&in_time_t), "%c") << ",";
+    this->Logs << "Virtual command sent: " << std::to_string(command) << "\n" << std::flush;
+}
+
 void Telemetry::RunTelemetry(Navigation& navigation, Controller& controller, float HardwareSaveDelta, float RFSendDelta) {
         /* Start calculate time change*/
         static auto last_time = std::chrono::high_resolution_clock::now();
         auto time_now = std::chrono::high_resolution_clock::now();
-        double change_time = (time_now.time_since_epoch() - last_time.time_since_epoch()).count();
+        auto change_time = time_now - last_time;
         /* End calculate time change*/
 
-        if(change_time >= HardwareSaveDelta){
+        
+
+        if(std::chrono::duration_cast<std::chrono::seconds>(change_time).count() >= HardwareSaveDelta){
             HardwareSaveFrame(navigation, controller);
             last_time = std::chrono::high_resolution_clock::now();
         }
-        if(change_time >= RFSendDelta){
+        if(std::chrono::duration_cast<std::chrono::seconds>(change_time).count() >= RFSendDelta ){
             RfSendFrame(navigation, controller);
             last_time = std::chrono::high_resolution_clock::now();
         }
 }
 
-void Telemetry::CheckAndHandleCommand() {
+Telemetry::Command Telemetry::GetCommand() {
     struct pollfd fds;
     int ret;
     fds.fd = 0; /* this is STDIN */
@@ -75,11 +89,23 @@ void Telemetry::CheckAndHandleCommand() {
     ret = poll(&fds, 1, 0);
 
     if(ret != 1) // Return if no data
-        return;
+        return Telemetry::Command::None;
 
     std::string input_line;
     getline(std::cin, input_line);
     this->Logs << "GOT: " << input_line << "\n" << std::flush;
+
+    // if statement for which command to return
+    if(input_line == "ABORT")
+        return Telemetry::Command::ABORT;
+    else if(input_line == "Startup")
+        return Telemetry::Command::Startup;
+    else if(input_line == "Ignite")
+        return Telemetry::Command::Ignite;
+    else if(input_line == "Release")
+        return Telemetry::Command::Release;
+    else
+        return Telemetry::Command::None;
 }
 
 Telemetry::Telemetry()
