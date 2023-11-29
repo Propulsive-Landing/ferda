@@ -50,6 +50,18 @@ void Telemetry::SendString(std::string message) {
     this->Logs << message << "\n" << std::flush;
 }
 
+void Telemetry::SendCommand(Command command) {
+    // Add time tag to file
+    auto now = std::chrono::system_clock::now();
+    auto in_time_t = std::chrono::system_clock::to_time_t(now);
+
+    std::cout << "Virtual command sent: " << std::to_string(command) << "\n";
+
+    // write time to file
+    this->Logs << std::put_time(std::localtime(&in_time_t), "%c") << ",";
+    this->Logs << "Virtual command sent: " << std::to_string(command) << "\n" << std::flush;
+}
+
 void Telemetry::RunTelemetry(Navigation& navigation, Controller& controller, float HardwareSaveDelta, float RFSendDelta) {
         /* Start calculate time change*/
         static auto last_time = std::chrono::high_resolution_clock::now();
@@ -90,6 +102,8 @@ Telemetry::Command Telemetry::GetCommand() {
         return Telemetry::Command::Ignite;
     else if(input_line == "Release")
         return Telemetry::Command::Release;
+    else
+        return Telemetry::Command::None;
 }
 
 Telemetry::Telemetry()

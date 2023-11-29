@@ -38,6 +38,7 @@ class Telemetry {
         };
         void RunTelemetry(Navigation& navigation, Controller& controller, float HardwareSaveDelta, float RFSendDelta);
         void SendString(std::string message); // Send string over RF
+        void SendCommand(Command command);
         void SendData(Navigation &navigation, Controller &controller); // Send navigation data over RF
         Telemetry::Command GetCommand(); // Will check for commands and return the received command. Non-blocking.
 
