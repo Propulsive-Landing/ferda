@@ -52,7 +52,7 @@ Mode::Phase Mode::UpdateFreefall() {
     // some checks
     navigation.UpdateNavigation();
  
-    Eigen::Matrix <double>xhat=navigation.GetNavigation();
+    Eigen::Matrix<double> xhat = navigation.GetNavigation();
     double phi = pow(xhat[6],2);
     double theta = pow(xhat[7],2);
     double mag = sqrt(pow(phi+theta));
