@@ -29,6 +29,10 @@ private:
 
 
 public:
+
+    Eigen::Vector2d input_;
+    Eigen::Vector2d tvc_;
+
     Controller(TVC& tvc, Igniter& igniter);
     
     Eigen::Matrix<double, 2, 1> stateMat;
