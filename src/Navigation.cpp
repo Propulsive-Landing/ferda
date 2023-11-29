@@ -14,7 +14,7 @@ double fsw_loop_time = 1;
 
 Navigation::Navigation(IMU& imu, Barometer& barometer, TVC& tvc, Igniter& igniter) : imu(imu), barometer(barometer), tvc(tvc), igniter(igniter), count(0) 
 {
-    
+    stateMat = Eigen::Matrix<double, 12, 1>::Zero();
 }
 
 Eigen::Matrix<double, 12, 1> Navigation::GetNavigation()
@@ -45,7 +45,7 @@ void Navigation::UpdateNavigation(){
     double phi = stateMat(6);
     double theta = stateMat(7);
     double psi = stateMat(8);
-
+    
     // Convert the three euler angles to a rotation matrix that can move a vector from the body fixed frame into the ground fixed frame
     Eigen::Matrix<double, 3, 3> R = CreateRotationalMatrix(phi, theta, psi);
 
@@ -116,9 +116,9 @@ std::tuple<double,double,double> Navigation::ComputeAngularRollingAverage(){
    
     for (int i = 0; i < divisor; i++)
     {
-        p += d_theta_queue_reckon[0][i];
-        q += d_theta_queue_reckon[1][i];
-        r += d_theta_queue_reckon[2][i];
+        p += d_theta_queue_reckon[i][0];
+        q += d_theta_queue_reckon[i][1];
+        r += d_theta_queue_reckon[i][2];
     }
 
     // Get an average by dividing over the number of entries so far

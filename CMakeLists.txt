@@ -15,7 +15,11 @@ FILE(GLOB CppSources src/*.cpp)
 
 find_package (Eigen3 REQUIRED NO_MODULE)
 
+
 add_executable(Ferda ${CppSources} ${EXTRA_CODE})
+
+target_compile_options(Ferda PRIVATE -Wall -ggdb)
+
 target_include_directories(Ferda PRIVATE include)
 
 target_link_libraries (Ferda Eigen3::Eigen)
