@@ -1,7 +1,14 @@
 #include <chrono>
-
+#include <cmath>
 #include "Mode.hpp"
-#include "Telemetry.hpp"
+
+//CONSTANTS TO BE FIGURED OUT LATER
+int abort_threshold = 1;
+int calibration_time = 1;
+int thrust_duration = 1;
+int descent_time = 1;
+int total_time = 1;
+double ignition_height = 1;
 
 Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
@@ -41,15 +48,35 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, d
     return Mode::Launch;
 }
 
+Mode::Phase Mode::UpdateFreefall() {
+    // some checks
+    navigation.UpdateNavigation();
+ 
+    Eigen::Matrix<double> xhat = navigation.GetNavigation();
+    double phi = pow(xhat[6],2);
+    double theta = pow(xhat[7],2);
+    double mag = sqrt(pow(phi+theta));
+    Eigen::Matrix<double> mag_vel = {xhat[3],xhat[4],xhat[5]};
+    
+    double cur_height = navigation.GetHeight();
+    if (mag > abort_threshold && mag_vel.norm() < 5 && calibration_time + thrust_duration < total_time && descent_time == 0)
+        return Mode::Terminate;
+    //add else if check height;if true swtich to land.
+    else if(cur_height <= ignition_height){
+        return Mode::StartLand;
+    }
+    return Mode::Freefall;
+}
 
-Mode::Phase Mode::UpdateFreefall(){ return Mode::Terminate; } // TODO Implement freefall phase behavior and return next phase
-Mode::Phase Mode::UpdateStartLand(){ return Mode::Terminate; } // TODO Implement start-land phase behavior and return next phase
-Mode::Phase Mode::UpdateLand(){ return Mode::Terminate; } // TODO Implement land phase behavior and return next phase
+Mode::Phase Mode::UpdateStartLand() {
+    return Mode::Terminate;
+} // TODO Implement start-land phase behavior and return next phase
 
+Mode::Phase Mode::UpdateLand() {
+    return Mode::Terminate;
+} // TODO Implement land state behavior
 
-bool Mode::Update(Navigation& navigation, Controller& controller)
-{
-    /* Start calculating time change*/
+bool Mode::Update(Navigation& navigation, Controller& controller) {
     static auto last_time = std::chrono::high_resolution_clock::now();
     auto time_now = std::chrono::high_resolution_clock::now();
     double change_time = (time_now.time_since_epoch() - last_time.time_since_epoch()).count();

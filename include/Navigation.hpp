@@ -28,4 +28,5 @@ class Navigation
         void Reset();
         std::tuple<double,double,double> ComputeAngularRollingAverage();
         Eigen::Matrix3d CreateRotationalMatrix(double phi, double theta, double psi);
+        double GetHeight();
 };

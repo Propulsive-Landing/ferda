@@ -22,6 +22,10 @@ Eigen::Matrix<double, 12, 1> Navigation::GetNavigation()
     return stateMat;
 }
 
+double Navigation::GetHeight() {
+    double pressure = barometer.GetPressure();
+    return pressure;//Need the right equation for height
+}
     
 void Navigation::UpdateNavigation(){
     // Updates stateMat //
