@@ -68,6 +68,10 @@ Mode::Phase Mode::UpdateFreefall() {
     return Mode::Freefall;
 }
 
+Mode::Phase Mode::UpdateStartLand() {
+    return Mode::Terminate;
+} // TODO Implement start-land phase behavior and return next phase
+
 Mode::Phase Mode::UpdateLand() {
     return Mode::Terminate;
 } // TODO Implement land state behavior
