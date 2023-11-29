@@ -2,14 +2,13 @@
 #include <cmath>
 #include "Mode.hpp"
 
-double control
 //CONSTANTS TO BE FIGURED OUT LATER
-int abort_threshold=1;
-int calibration_time=1;
-int thrust_duration=1;
-int descent_time=1;
-int total_time=1;
-double ignition_height=1;
+int abort_threshold = 1;
+int calibration_time = 1;
+int thrust_duration = 1;
+int descent_time = 1;
+int total_time = 1;
+double ignition_height = 1;
 
 Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
@@ -57,26 +56,21 @@ Mode::Phase Mode::UpdateFreefall() {
     double phi = pow(xhat[6],2);
     double theta = pow(xhat[7],2);
     double mag = sqrt(pow(phi+theta));
-    Eigen::Matrix <double>mag_vel={xhat[3],xhat[4],xhat[5]};
-    // if angle is too far, abort
-    // x[4]
-    // xhat = [x, y, z, xdot, ydot, zdot, phi, theta, psi, phidot, thetadot, psidot]
+    Eigen::Matrix<double> mag_vel = {xhat[3],xhat[4],xhat[5]};
     
-    double height = navigation.GetHeight();
-    if (mag>abort_threshold && mag_vel.norm()<5 && calibration_time + thrust_duration < total_time && descent_time==0)
+    double cur_height = navigation.GetHeight();
+    if (mag > abort_threshold && mag_vel.norm() < 5 && calibration_time + thrust_duration < total_time && descent_time == 0)
         return Mode::Terminate;
     //add else if check height;if true swtich to land.
-    else if(height <= ignition_height){
+    else if(cur_height <= ignition_height){
         return Mode::StartLand;
     }
     return Mode::Freefall;
 }
 
-
 Mode::Phase Mode::UpdateLand() {
     return Mode::Terminate;
 } // TODO Implement land state behavior
-
 
 bool Mode::Update(Navigation& navigation, Controller& controller) {
     static auto last_time = std::chrono::high_resolution_clock::now();
