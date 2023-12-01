@@ -31,6 +31,7 @@ private:
 public:
     Controller(TVC& tvc, Igniter& igniter);    
     void UpdateLaunch(Navigation& navigation);
+    void UpdateIdle(Navigation& navigation);
     void UpdateLand();
     void UpdateSafe();
     void CalculateK(double startTime);
@@ -38,4 +39,5 @@ public:
     Eigen::Vector2d TvcMath(Eigen::Vector2d input);
     void Start();
     void Center();
+    void HandleAborts(int abort);
 };
