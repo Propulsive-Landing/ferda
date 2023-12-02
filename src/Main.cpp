@@ -18,6 +18,12 @@ int main()
 #ifdef NDEBUG
     if (gpioInitialise() < 0)
         throw std::runtime_error("failed to initialize gpio");
+
+    gpioSetMode(4, PI_OUTPUT);
+    gpioSetMode(17, PI_OUTPUT);
+
+    gpioWrite(4, 0);
+    gpioWrite(17, 0);
 #endif
 
     IMU imu;
