@@ -22,11 +22,11 @@ double Barometer::GetPressure()
     if (!ifstream.is_open())
         throw std::runtime_error("barometer not present");
 
-    double nPressure;
-    ifstream >> nPressure;
+    double dPressure;
+    ifstream >> dPressure;
 
     ifstream.close();
-    return nPressure;
+    return dPressure;
 }
 
 double Barometer::GetTemperature()
@@ -35,9 +35,9 @@ double Barometer::GetTemperature()
     if (!ifstream.is_open())
         throw std::runtime_error("barometer not present");
 
-    double nTemperature;
-    ifstream >> nTemperature;
+    double dTemperature;
+    ifstream >> dTemperature;
 
     ifstream.close();
-    return nTemperature * 0.001;
+    return dTemperature * 0.001;
 }
