@@ -1,4 +1,9 @@
 #include "Barometer.hpp"
+
+Barometer::Barometer()
+{
+}
+
 double Barometer::GetPressure()
 {
     return 0;
