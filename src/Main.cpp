@@ -10,9 +10,16 @@
 #include "Mode.hpp"
 
 #include <iostream>
+#include <pigpio.h>
+#include <stdexcept>
 
 int main()
 {
+#ifdef NDEBUG
+    if (gpioInitialise() < 0)
+        throw std::runtime_error("failed to initialize gpio");
+#endif
+
     IMU imu;
     Barometer barometer;
     TVC tvc;
@@ -33,5 +40,8 @@ int main()
 
     while( mode.Update(navigation, controller) ) {}
 
+#ifdef NDEBUG
+    gpioTerminate();
+#endif
     return 0;
 }
