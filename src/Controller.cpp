@@ -26,6 +26,12 @@ void Controller::Start(){
     tvc_start_time = 0;
 }
 
+void Controller::UpdateIdle(Navigation& navigation) {
+    Eigen::Matrix<double, 12, 1> x = navigation.GetNavigation();
+    // TODO. Calculate desired control inputs for ground
+    // TODO. Actuate all control surfaces accordingly
+}
+
 void Controller::UpdateLaunch(Navigation& navigation) {
     // Calculate desired control inputs for launch and actuate all control surfaces accordingly
 
@@ -150,4 +156,3 @@ void Controller::HandleAborts(int abort) {
             break;
     }
 }
-
