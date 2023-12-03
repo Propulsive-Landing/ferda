@@ -5,12 +5,12 @@
 
 Barometer::Barometer()
 {
-    std::ifstream ifstream(sPressurePath);
+    std::ifstream ifstream("/sys/bus/iio/devices/iio:device1/in_pressure_input");
     if (!ifstream.is_open())
         throw std::runtime_error("barometer not present");
     ifstream.close();
 
-    ifstream = std::ifstream(sTemperaturePath);
+    ifstream = std::ifstream("/sys/bus/iio/devices/iio:device1/in_temp_input");
     if (!ifstream.is_open())
         throw std::runtime_error("barometer not present");
     ifstream.close();
@@ -18,26 +18,26 @@ Barometer::Barometer()
 
 double Barometer::GetPressure()
 {
-    std::ifstream ifstream(sPressurePath);
+    std::ifstream ifstream("/sys/bus/iio/devices/iio:device1/in_pressure_input");
     if (!ifstream.is_open())
         throw std::runtime_error("barometer not present");
 
-    int nPressure;
-    ifstream >> nPressure;
+    double dPressure;
+    ifstream >> dPressure;
 
     ifstream.close();
-    return nPressure;
+    return dPressure;
 }
 
 double Barometer::GetTemperature()
 {
-    std::ifstream ifstream(sTemperaturePath);
+    std::ifstream ifstream("/sys/bus/iio/devices/iio:device1/in_temp_input");
     if (!ifstream.is_open())
         throw std::runtime_error("barometer not present");
 
-    int nTemperature;
-    ifstream >> nTemperature;
+    double dTemperature;
+    ifstream >> dTemperature;
 
     ifstream.close();
-    return nTemperature;
+    return dTemperature * 0.001;
 }

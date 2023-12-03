@@ -1,6 +1,8 @@
 #include <chrono>
 #include <cmath>
 #include "Mode.hpp"
+#include "Telemetry.hpp"
+#include "Navigation.hpp"
 
 //CONSTANTS TO BE FIGURED OUT LATER
 int abort_threshold = 1;
@@ -48,15 +50,15 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, d
     return Mode::Launch;
 }
 
-Mode::Phase Mode::UpdateFreefall() {
+Mode::Phase Mode::UpdateFreefall(Navigation& navigation) {
     // some checks
     navigation.UpdateNavigation();
  
-    Eigen::Matrix<double> xhat = navigation.GetNavigation();
+    Eigen::Matrix<double, 12, 1> xhat = navigation.GetNavigation();
     double phi = pow(xhat[6],2);
     double theta = pow(xhat[7],2);
-    double mag = sqrt(pow(phi+theta));
-    Eigen::Matrix<double> mag_vel = {xhat[3],xhat[4],xhat[5]};
+    double mag = sqrt(phi+theta);
+    Eigen::Matrix<double, 3, 1> mag_vel = {xhat[3],xhat[4],xhat[5]};
     
     double cur_height = navigation.GetHeight();
     if (mag > abort_threshold && mag_vel.norm() < 5 && calibration_time + thrust_duration < total_time && descent_time == 0)
@@ -97,7 +99,7 @@ bool Mode::Update(Navigation& navigation, Controller& controller) {
             this->eCurrentMode = UpdateLaunch(navigation, controller, change_time);
             break;
         case Freefall:
-            this->eCurrentMode = UpdateFreefall();
+            this->eCurrentMode = UpdateFreefall(navigation);
             break;
         case StartLand:
             this->eCurrentMode = UpdateStartLand();

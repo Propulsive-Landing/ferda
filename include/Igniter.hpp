@@ -7,7 +7,7 @@ class Igniter
     public:
         enum IgnitionSpecifier {
             LAUNCH,
-            LAND
+            ABORT
         };
 
         Igniter() = default;
