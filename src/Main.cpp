@@ -24,6 +24,9 @@ int main()
 
     gpioWrite(4, 0);
     gpioWrite(17, 0);
+
+    gpioSetMode(18, PI_OUTPUT);
+    gpioSetMode(5, PI_OUTPUT);
 #endif
 
     IMU imu;
