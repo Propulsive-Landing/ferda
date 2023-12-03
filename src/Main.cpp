@@ -10,8 +10,11 @@
 #include "Mode.hpp"
 
 #include <iostream>
-#include <pigpio.h>
 #include <stdexcept>
+
+#ifdef NDEBUG
+    #include <pigpio.h>
+#endif
 
 int main()
 {

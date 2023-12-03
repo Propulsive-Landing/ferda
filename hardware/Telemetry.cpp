@@ -12,6 +12,12 @@
 #include "Mode.hpp"
 #include "Telemetry.hpp"
 
+#define FRAME_MAGIC_NUMBER 0xDEADBEEF  // signals a new data frame, used in RF transmission
+#define STRING_MAGIC_NUMBER 0xBABAFACE // Signals a new string, used in RF transmission
+#define LOG_CHAR_LENGTH 256
+#define RF_FOOTER 0xCAFEFADE // Footer to validate RF data, used in RF transmission
+
+
 void Telemetry::HardwareSaveFrame(Navigation& navigation, Controller& controller)
 {
     // write time to hardware file
@@ -30,21 +36,62 @@ void Telemetry::RfSendFrame(Navigation& navigation, Controller& controller)
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
 
-    // Print data to stdout
-    std::cout << std::to_string(navigation.GetNavigation().coeff(1, 0));
 
-    // Write data to serial port
-    std::string data = std::to_string(navigation.GetNavigation().coeff(1, 0)) + "\n";
-    fwrite(data.c_str(), data.size(), 1, SerialPort);
-    fflush(SerialPort);
+    // TODO
 }
 
-void Telemetry::SendString(std::string message) {
+void Telemetry::SendString(std::string text) {
     // Add time tag to file
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
 
-    std::cout << message << "\n";
+
+    const char * str = text.c_str();
+
+    for(length = 0; length <= 254 && str[length] != '\0'; length++){} //Gets size of str without requirement for strnlen include
+
+
+    unsigned int packet_size = sizeof(uint32_t) + sizeof(uint8_t) + length + sizeof(uint32_t); //packet size (derived from packet structure above)
+
+    uint8_t packet[packet_size];
+
+    uint32_t header = STRING_MAGIC_NUMBER;
+    uint32_t ending = RF_FOOTER;
+
+    uint8_t * ending_ptr = (uint8_t *) &ending;
+    uint8_t * header_ptr = (uint8_t *) &header;
+
+    unsigned int packet_index = 0;
+
+    //add header to packet
+    for(unsigned int i = 0; i < sizeof(uint32_t); i++)
+    {
+        packet[packet_index] = header_ptr[i];
+        packet_index++;
+    }
+
+    //add size byte to packet
+    packet[packet_index] = length;
+    packet_index++;
+
+    //add string to packet
+    for(unsigned int i = 0; i < length; i++)
+    {
+        packet[packet_index] = str[i];
+        packet_index++;
+    }
+
+    //add footer to packet
+    for(unsigned int i = 0; i < sizeof(uint32_t); i++)
+    {
+        packet[packet_index] = ending_ptr[i];
+        packet_index++;
+    }
+
+    std::string result((char *) packet, packet_size);
+
+    fwrite(result.c_str(), sizeof(char), result.size(), SerialPort);
+    fflush(SerialPort);
 
     // write time to file
     this->Logs << std::put_time(std::localtime(&in_time_t), "%c") << ",";
