@@ -48,7 +48,7 @@ void Telemetry::SendString(std::string text) {
 
     const char * str = text.c_str();
 
-    int length;
+    unsigned char length;
     for(length = 0; length <= 254 && str[length] != '\0'; length++){} //Gets size of str without requirement for strnlen include
 
 
