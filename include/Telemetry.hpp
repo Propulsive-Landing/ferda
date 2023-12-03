@@ -1,5 +1,6 @@
 #include <string>
 #include <fstream>
+#include <stdio.h>
 
 #include "Mode.hpp"
 #include "Navigation.hpp"
@@ -9,6 +10,8 @@ class Telemetry {
         std::ofstream Logs;
         std::ofstream RFSent;
         std::ofstream HardwareSaved;
+
+	FILE *SerialPort;
 
         Telemetry();
         ~Telemetry();
@@ -48,6 +51,6 @@ class Telemetry {
             static Telemetry telem;
 
             return telem;
-        } 
+        }
 
 };

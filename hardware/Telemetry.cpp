@@ -4,7 +4,10 @@
 #include <ctime>
 #include <iomanip>
 #include <stdio.h>
-#include <sys/poll.h> 
+#include <stdexcept>
+#include <sys/poll.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "Mode.hpp"
 #include "Telemetry.hpp"
@@ -30,13 +33,11 @@ void Telemetry::RfSendFrame(Navigation& navigation, Controller& controller)
     // Print data to stdout
     std::cout << std::to_string(navigation.GetNavigation().coeff(1, 0));
 
-     // Write time to file
-    RFSent << std::put_time(std::localtime(&in_time_t), "%c") << ",";
-    
-    //Write data to file
-    RFSent << std::to_string(navigation.GetNavigation().coeff(1, 0)) << "\n" << std::flush;;
+    // Write data to serial port
+    std::string data = std::to_string(navigation.GetNavigation().coeff(1, 0)) + "\n";
+    fwrite(data.c_str(), data.size(), 1, SerialPort);
+    fflush(SerialPort);
 }
-
 
 void Telemetry::SendString(std::string message) {
     // Add time tag to file
@@ -69,8 +70,6 @@ void Telemetry::RunTelemetry(Navigation& navigation, Controller& controller, flo
         auto change_time = time_now - last_time;
         /* End calculate time change*/
 
-        
-
         if(std::chrono::duration_cast<std::chrono::seconds>(change_time).count() >= HardwareSaveDelta){
             HardwareSaveFrame(navigation, controller);
             last_time = std::chrono::high_resolution_clock::now();
@@ -84,15 +83,17 @@ void Telemetry::RunTelemetry(Navigation& navigation, Controller& controller, flo
 Telemetry::Command Telemetry::GetCommand() {
     struct pollfd fds;
     int ret;
-    fds.fd = 0; /* this is STDIN */
+    fds.fd = fileno(SerialPort);
     fds.events = POLLIN;
     ret = poll(&fds, 1, 0);
 
-    if(ret != 1) // Return if no data
+    if (ret != 1) // Return if no data
         return Telemetry::Command::None;
 
-    std::string input_line;
-    getline(std::cin, input_line);
+    char cmd[1024];
+    size_t len = sizeof(cmd);
+    getline((char **)&cmd, &len, SerialPort);
+    std::string input_line(cmd);
     this->Logs << "GOT: " << input_line << "\n" << std::flush;
 
     // if statement for which command to return
@@ -110,9 +111,12 @@ Telemetry::Command Telemetry::GetCommand() {
 
 Telemetry::Telemetry()
 {
-    Logs.open ("../logs/logs.txt");
-    RFSent.open ("../logs/RFlogs.txt");;
-    HardwareSaved.open ("../logs/data.txt");;
+    Logs.open("../logs/logs.txt");
+    HardwareSaved.open("../logs/data.txt");
+
+    SerialPort = fopen("/dev/ttyS0", "rw");
+    if (SerialPort < 0)
+        throw std::runtime_error("failed to open serial port");
 
     //TODO Write headers to data file where needed
 }
@@ -120,6 +124,7 @@ Telemetry::Telemetry()
 Telemetry::~Telemetry()
 {
     Logs.close();
-    RFSent.close();
     HardwareSaved.close();
+
+    fclose(SerialPort);
 }
