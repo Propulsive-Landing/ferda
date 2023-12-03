@@ -11,22 +11,37 @@
 
 class Controller{
 
+//Constant to be figured out later
+//int numberControllerGains = 1;
 
 private:
     TVC tvc;
     Igniter igniter;
-    std::vector<double> IMU;
-    Eigen::Matrix<double, 2, 1> lastCommand;
+    std::vector<std::vector<double>> euler_queue;
+    Eigen::Matrix<double, 8, 1> x_control;
+    Eigen::Matrix<double, 1*2, 8> controller_gains; 
+    int current_iteration_index = 0;
+    float next_tvc_time;
+    float tvc_start_time;
+    std::vector<float> controller_gain_times;
+    Eigen::Vector2d input;
+    Eigen::Vector2d tvc_angles;
+
+
 
 public:
-    Controller(TVC& tvc, Igniter& igniter);
+    Controller(TVC& tvc, Igniter& igniter);    
 
-    Eigen::Matrix<double, 2, 1> stateMat;
-    
-    void UpdateIdle(Navigation& navigation);
     void UpdateLaunch(Navigation& navigation);
+    void UpdateIdle(Navigation& navigation);
     void UpdateLand();
     void UpdateSafe();
-    void HandleAborts(); // Method to handle any abort that comes in (might need enum of aborts)
+
+    void CalculateK(double startTime);
+    void CalculateInput();
+    Eigen::Vector2d TvcMath(Eigen::Vector2d input);
+    void Start();
+    void Center();
+    void HandleAborts(int abort);
 
 };
