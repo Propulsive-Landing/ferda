@@ -1,11 +1,9 @@
 #include "Barometer.hpp"
 #include "IMU.hpp"
-#include "Igniter.hpp"
 #include "TVC.hpp"
 
 #include "Navigation.hpp"
 #include "Controller.hpp"
-#include "Telemetry.hpp"
 
 #include "Mode.hpp"
 
@@ -18,34 +16,28 @@
 
 int main()
 {
-#ifdef NDEBUG
-    if (gpioInitialise() < 0)
-        throw std::runtime_error("failed to initialize gpio");
+    #ifdef NDEBUG
+        if (gpioInitialise() < 0)
+            throw std::runtime_error("failed to initialize gpio");
 
-    gpioSetMode(4, PI_OUTPUT);
-    gpioSetMode(17, PI_OUTPUT);
-
-    gpioWrite(4, 0);
-    gpioWrite(17, 0);
-
-    gpioSetMode(18, PI_OUTPUT);
-    gpioSetMode(5, PI_OUTPUT);
-#endif
+        gpioSetMode(18, PI_OUTPUT);
+        gpioSetMode(5, PI_OUTPUT);
+    #endif
 
     IMU imu;
     Barometer barometer;
     TVC tvc;
-    Igniter igniter;
 
-    Navigation navigation(imu, barometer, tvc, igniter);
-    Controller controller(tvc, igniter);
+    Navigation navigation(imu, barometer, tvc);
+    Controller controller(tvc);
 
     Mode mode(Mode::TestTVC);
 
     while( mode.Update(navigation, controller) ) {}
 
-#ifdef NDEBUG
-    gpioTerminate();
-#endif
+    #ifdef NDEBUG
+        gpioTerminate();
+    #endif
+
     return 0;
 }

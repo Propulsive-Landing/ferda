@@ -1,6 +1,5 @@
 #include <Eigen/Dense>
 
-
 #include "Controller.hpp"
 #include <cmath>
 
@@ -19,7 +18,7 @@ namespace {
 
 
 
-Controller::Controller(TVC& tvc, Igniter& igniter) : tvc(tvc), igniter(igniter) {}
+Controller::Controller(TVC& tvc) : tvc(tvc) {}
 
 void Controller::Start(){
     // Initialize variables 
@@ -32,7 +31,6 @@ void Controller::Start(){
 void Controller::UpdateIdle(Navigation& navigation) {
     Eigen::Matrix<double, 12, 1> x = navigation.GetNavigation();
     // TODO. Calculate desired control inputs for ground
-    // TODO. Actuate all control surfaces accordingly
 }
 
 void Controller::UpdateTestTVC(double testTime) {
@@ -142,9 +140,16 @@ Eigen::Vector2d Controller::TvcMath(Eigen::Vector2d input){
 void Controller::Center(){
     // Center the tvc 
 
+    
+
     input(0) = 0;
     input(1) = 1;
+
     tvc_angles = TvcMath(input);
+
+    
+    tvc.SetXServo(tvc_angles(0));
+    tvc.SetYServo(tvc_angles(1));
 }
 
 // Handle whichever abort gets called

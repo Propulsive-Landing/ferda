@@ -5,7 +5,6 @@
 
 #include "Barometer.hpp"
 #include "IMU.hpp"
-#include "Igniter.hpp"
 #include "TVC.hpp"
 #include "Navigation.hpp"
 
@@ -16,7 +15,6 @@ class Controller{
 
 private:
     TVC tvc;
-    Igniter igniter;
     std::vector<std::vector<double>> euler_queue;
     Eigen::Matrix<double, 8, 1> x_control;
     Eigen::Matrix<double, 1*2, 8> controller_gains; 
@@ -30,7 +28,7 @@ private:
 
 
 public:
-    Controller(TVC& tvc, Igniter& igniter);    
+    Controller(TVC& tvc);
 
     void UpdateLaunch(Navigation& navigation);
     void UpdateIdle(Navigation& navigation);

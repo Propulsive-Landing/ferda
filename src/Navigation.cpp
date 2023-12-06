@@ -4,7 +4,6 @@
 #include <vector>
 #include <iostream>
 
- 
 #include "Navigation.hpp"
 
 //CONSTANTS TO BE FIGURED OUT LATER
@@ -12,7 +11,7 @@ double nav_theta_dot_smooth = 1;
 double fsw_loop_time = 1;
 
 
-Navigation::Navigation(IMU& imu, Barometer& barometer, TVC& tvc, Igniter& igniter) : imu(imu), barometer(barometer), tvc(tvc), igniter(igniter), count(0) 
+Navigation::Navigation(IMU& imu, Barometer& barometer, TVC& tvc) : imu(imu), barometer(barometer), tvc(tvc), count(0) 
 {
     stateMat = Eigen::Matrix<double, 12, 1>::Zero();
 }

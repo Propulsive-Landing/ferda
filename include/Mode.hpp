@@ -2,7 +2,6 @@
 
 #include "Barometer.hpp"
 #include "IMU.hpp"
-#include "Igniter.hpp"
 #include "TVC.hpp"
 #include "Navigation.hpp"
 #include "Controller.hpp"
@@ -14,11 +13,7 @@ class Mode
             {
                 Idle,
                 TestTVC,
-                StartLaunch,
                 Launch,
-                Freefall,
-                StartLand,
-                Land,
                 Terminate 
             };
         
@@ -29,11 +24,5 @@ class Mode
 
         Mode::Phase UpdateTestTVC(Controller& controller);
         Mode::Phase UpdateIdle(Navigation& navigation, Controller& controller);
-        Mode::Phase UpdateStartLaunch(Navigation& navigation, Controller& controller, double change_time);
         Mode::Phase UpdateLaunch(Navigation& navigation, Controller& controller, double change_time);
-        Mode::Phase UpdateFreefall(Navigation& navigation);
-        Mode::Phase UpdateStartLand();
-        Mode::Phase UpdateLand();
-        
-
 };

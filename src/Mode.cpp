@@ -1,7 +1,6 @@
 #include <chrono>
 #include <cmath>
 #include "Mode.hpp"
-#include "Telemetry.hpp"
 #include "Navigation.hpp"
 
 //CONSTANTS TO BE FIGURED OUT LATER
@@ -14,84 +13,6 @@ double ignition_height = 1;
 
 Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
-Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller) {
-    navigation.UpdateNavigation();
-    controller.UpdateIdle(navigation);  // Might not need this at all. It's here as a placeholder for now
-    Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.1, 0.1); // The two data rates will be put in a MissonConstants file
-    Telemetry::Command cmd =  Telemetry::GetInstance().GetCommand();
-    if (cmd == Telemetry::Command::Startup) {
-        return Mode::StartLaunch;
-    }
-    return Mode::Idle;
-}
-
-Mode::Phase Mode::UpdateTestTVC(Controller& controller) {
-    static auto start_time = std::chrono::high_resolution_clock::now();
-    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-    double seconds = milliseconds_since_start / 1000.0;
-    
-    controller.UpdateTestTVC(seconds);
-
-    if(seconds > 5.0){
-        static auto start_time = std::chrono::high_resolution_clock::now();
-        return Mode::Idle;
-    }
-
-    return Mode::TestTVC;
-}
-
-Mode::Phase Mode::UpdateStartLaunch(Navigation& navigation, Controller& controller, double change_time) {
-    // loop for 10 seconds (this is countdown)
-    static auto start_time = std::chrono::high_resolution_clock::now();
-    while ( std::chrono::high_resolution_clock::now() - start_time < std::chrono::seconds(10)) {
-        navigation.UpdateNavigation();
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.1, 0.1); // The two data rates will be put in a MissonConstants file
-    }
-    // send ignite command to launch pad
-    Telemetry::GetInstance().SendCommand(Telemetry::Command::Ignite);
-    // // clamps let go (if we have clamps)
-    // telemetry.SendCommand(Telemetry::Command::Release);
-    return Mode::Launch;
-}
-
-
-Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, double change_time) {
-
-    navigation.UpdateNavigation();
-    controller.UpdateLaunch(navigation);
-
-    // TODO Calculate next phase
-
-    return Mode::Launch;
-}
-
-Mode::Phase Mode::UpdateFreefall(Navigation& navigation) {
-    // some checks
-    navigation.UpdateNavigation();
- 
-    Eigen::Matrix<double, 12, 1> xhat = navigation.GetNavigation();
-    double phi = pow(xhat[6],2);
-    double theta = pow(xhat[7],2);
-    double mag = sqrt(phi+theta);
-    Eigen::Matrix<double, 3, 1> mag_vel = {xhat[3],xhat[4],xhat[5]};
-    
-    double cur_height = navigation.GetHeight();
-    if (mag > abort_threshold && mag_vel.norm() < 5 && calibration_time + thrust_duration < total_time && descent_time == 0)
-        return Mode::Terminate;
-    //add else if check height;if true swtich to land.
-    else if(cur_height <= ignition_height){
-        return Mode::StartLand;
-    }
-    return Mode::Freefall;
-}
-
-Mode::Phase Mode::UpdateStartLand() {
-    return Mode::Terminate;
-} // TODO Implement start-land phase behavior and return next phase
-
-Mode::Phase Mode::UpdateLand() {
-    return Mode::Terminate;
-} // TODO Implement land state behavior
 
 bool Mode::Update(Navigation& navigation, Controller& controller) {
     static auto last_time = std::chrono::high_resolution_clock::now();
@@ -110,20 +31,8 @@ bool Mode::Update(Navigation& navigation, Controller& controller) {
         case TestTVC:
             this->eCurrentMode = UpdateTestTVC(controller);
             break;
-        case StartLaunch:
-            this->eCurrentMode = UpdateStartLaunch(navigation, controller, change_time);
-            break;
         case Launch:
             this->eCurrentMode = UpdateLaunch(navigation, controller, change_time);
-            break;
-        case Freefall:
-            this->eCurrentMode = UpdateFreefall(navigation);
-            break;
-        case StartLand:
-            this->eCurrentMode = UpdateStartLand();
-            break;
-        case Land:
-            this->eCurrentMode = UpdateLand();
             break;
         case Terminate:
             return false;
@@ -132,3 +41,50 @@ bool Mode::Update(Navigation& navigation, Controller& controller) {
     return true; 
 
 }
+
+
+Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller) {
+    navigation.UpdateNavigation();
+    controller.UpdateIdle(navigation);  // Might not need this at all. It's here as a placeholder for now
+
+
+    static auto start_time = std::chrono::high_resolution_clock::now();
+    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+    double seconds = milliseconds_since_start / 1000.0;
+
+    if(seconds > 5.0){
+        static auto start_time = std::chrono::high_resolution_clock::now();
+        return Mode::Launch;
+    }
+
+
+    return Mode::Idle;
+}
+
+Mode::Phase Mode::UpdateTestTVC(Controller& controller) {
+    static auto start_time = std::chrono::high_resolution_clock::now();
+    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+    double seconds = milliseconds_since_start / 1000.0;
+    
+    controller.UpdateTestTVC(seconds);
+
+    if(seconds > 5.0){
+        static auto start_time = std::chrono::high_resolution_clock::now();
+        return Mode::Idle;
+    }
+
+    return Mode::TestTVC;
+}
+
+
+Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, double change_time) {
+
+    navigation.UpdateNavigation();
+    controller.UpdateLaunch(navigation);
+
+    // TODO Calculate next phase
+    return Mode::Launch;
+}
+
+
+
