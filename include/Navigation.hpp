@@ -25,8 +25,9 @@ class Navigation
         Navigation(IMU& imu, Barometer& barometer, TVC& tvc, Igniter& igniter);
         Eigen::Matrix<double, 12, 1> GetNavigation(); // Defintion of state matrix: TODO (determine dimensions and document form)
         void UpdateNavigation(); // Defintion updates: TODO (determine dimensions and document form)
-        void Reset();
+        void Start();
         std::tuple<double,double,double> ComputeAngularRollingAverage();
         Eigen::Matrix3d CreateRotationalMatrix(double phi, double theta, double psi);
         double GetHeight();
+        std::tuple<double, double, double> GetBodyAcceleration();
 };

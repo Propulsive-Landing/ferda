@@ -11,7 +11,7 @@ class Telemetry {
         std::ofstream RFSent;
         std::ofstream HardwareSaved;
 
-	FILE *SerialPort;
+	    FILE *SerialPort;
 
         Telemetry();
         ~Telemetry();

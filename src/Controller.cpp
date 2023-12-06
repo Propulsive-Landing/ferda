@@ -11,19 +11,17 @@ double kPi = 3.1415926535897932384626433;
 double kDeg2Rad = kPi/180;
 double kRad2Deg = 180/kPi;
 double kMaximumTvcAngle = 7.5*kDeg2Rad;
-double kDeg2PulseWidth = ((float) 1000.0)/((float) 90.0);
+double kDeg2PulseWidth = ((double) 1000.0)/((double) 90.0);
 double kTvcXCenterPulseWidth = 1529;
 double kTvcYCenterPulseWidth = 915;
 
 
-Controller::Controller(TVC& tvc, Igniter& igniter) : tvc(tvc), igniter(igniter) {}
+Controller::Controller(TVC& tvc, Igniter& igniter) : tvc(tvc), igniter(igniter), x_control(Eigen::Matrix<double, 8, 1>::Zero()){}
 
-void Controller::Start(){
+void Controller::Start(double current_time){
     // Initialize variables 
 
-    x_control.setZero();
-    next_tvc_time = 0;
-    tvc_start_time = 0;
+    tvc_start_time = current_time;
 }
 
 void Controller::UpdateIdle(Navigation& navigation) {
@@ -32,9 +30,12 @@ void Controller::UpdateIdle(Navigation& navigation) {
     // TODO. Actuate all control surfaces accordingly
 }
 
-void Controller::UpdateLaunch(Navigation& navigation) {
+void Controller::UpdateLaunch(Navigation& navigation, double current_time) {
     // Calculate desired control inputs for launch and actuate all control surfaces accordingly
-
+    
+    if(current_iteration_index < kNumberControllerGains - 1){
+        CalculateK(current_time);
+    }
     // Create a variable to determine the max amount of Euler Entries;
     int maxEulerEntries = control_integral_period/fsw_loop_time;
 
@@ -76,7 +77,6 @@ void Controller::UpdateLaunch(Navigation& navigation) {
 
     // Calculate what angle we need to tell the tvc to move
     CalculateInput();
-    
 }
 
 
@@ -135,6 +135,8 @@ void Controller::Center(){
     input(0) = 0;
     input(1) = 1;
     tvc_angles = TvcMath(input);
+    tvc.SetXServo(tvc_angles(0));
+    tvc.SetYServo(tvc_angles(1));
 }
 
 // Handle whichever abort gets called
