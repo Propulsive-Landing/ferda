@@ -13,6 +13,7 @@ class Mode
         enum Phase
             {
                 Idle,
+                TestTVC,
                 StartLaunch,
                 Launch,
                 Freefall,
@@ -26,7 +27,7 @@ class Mode
     private:
         Mode::Phase eCurrentMode;
 
-
+        Mode::Phase UpdateTestTVC(Controller& controller);
         Mode::Phase UpdateIdle(Navigation& navigation, Controller& controller);
         Mode::Phase UpdateStartLaunch(Navigation& navigation, Controller& controller, double change_time);
         Mode::Phase UpdateLaunch(Navigation& navigation, Controller& controller, double change_time);

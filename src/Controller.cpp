@@ -5,15 +5,18 @@
 #include <cmath>
 
 // constants to be figured out later 
-double control_integral_period = 1;
-double fsw_loop_time = 1;
-double kPi = 3.1415926535897932384626433;
-double kDeg2Rad = kPi/180;
-double kRad2Deg = 180/kPi;
-double kMaximumTvcAngle = 7.5*kDeg2Rad;
-double kDeg2PulseWidth = ((float) 1000.0)/((float) 90.0);
-double kTvcXCenterPulseWidth = 1529;
-double kTvcYCenterPulseWidth = 915;
+namespace {
+    double control_integral_period = 1;
+    double fsw_loop_time = 1;
+    double kPi = 3.1415926535897932384626433;
+    double kDeg2Rad = kPi/180;
+    double kRad2Deg = 180/kPi;
+    double kMaximumTvcAngle = 7.5*kDeg2Rad;
+    double kDeg2PulseWidth = ((float) 1000.0)/((float) 90.0);
+    double kTvcXCenterPulseWidth = 1529;
+    double kTvcYCenterPulseWidth = 915;
+}
+
 
 
 Controller::Controller(TVC& tvc, Igniter& igniter) : tvc(tvc), igniter(igniter) {}
@@ -30,6 +33,13 @@ void Controller::UpdateIdle(Navigation& navigation) {
     Eigen::Matrix<double, 12, 1> x = navigation.GetNavigation();
     // TODO. Calculate desired control inputs for ground
     // TODO. Actuate all control surfaces accordingly
+}
+
+void Controller::UpdateTestTVC(double testTime) {
+    double angle = sin(testTime)*90 + 90;
+
+    tvc.SetXServo(angle);
+    tvc.SetYServo(angle);
 }
 
 void Controller::UpdateLaunch(Navigation& navigation) {

@@ -37,18 +37,10 @@ int main()
     TVC tvc;
     Igniter igniter;
 
-    std::cout << "Pressure: " << barometer.GetPressure() << " kPa\n";
-    std::cout << "Temperature: " << barometer.GetTemperature() << " C\n";
-    std::cout << "Acceleration: <" << std::get<0>(imu.GetBodyAcceleration()) << ", " << std::get<1>(imu.GetBodyAcceleration()) << ", " << std::get<2>(imu.GetBodyAcceleration()) << "> m/s^2\n";
-    std::cout << "Angular Velocity <" << std::get<0>(imu.GetBodyAngularRate()) << ", " << std::get<1>(imu.GetBodyAngularRate()) << ", " << std::get<2>(imu.GetBodyAngularRate()) << "> radians/s\n";
-
     Navigation navigation(imu, barometer, tvc, igniter);
     Controller controller(tvc, igniter);
 
-    Mode mode(Mode::Idle);
-
-
-    Telemetry::GetInstance().SendString("Starting!");
+    Mode mode(Mode::TestTVC);
 
     while( mode.Update(navigation, controller) ) {}
 

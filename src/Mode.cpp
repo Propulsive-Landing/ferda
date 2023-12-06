@@ -25,6 +25,21 @@ Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller) {
     return Mode::Idle;
 }
 
+Mode::Phase Mode::UpdateTestTVC(Controller& controller) {
+    static auto start_time = std::chrono::high_resolution_clock::now();
+    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+    double seconds = milliseconds_since_start / 1000.0;
+    
+    controller.UpdateTestTVC(seconds);
+
+    if(seconds > 5.0){
+        static auto start_time = std::chrono::high_resolution_clock::now();
+        return Mode::Idle;
+    }
+
+    return Mode::TestTVC;
+}
+
 Mode::Phase Mode::UpdateStartLaunch(Navigation& navigation, Controller& controller, double change_time) {
     // loop for 10 seconds (this is countdown)
     static auto start_time = std::chrono::high_resolution_clock::now();
@@ -91,6 +106,9 @@ bool Mode::Update(Navigation& navigation, Controller& controller) {
     {
         case Idle:
             this->eCurrentMode = UpdateIdle(navigation, controller);
+            break;
+        case TestTVC:
+            this->eCurrentMode = UpdateTestTVC(controller);
             break;
         case StartLaunch:
             this->eCurrentMode = UpdateStartLaunch(navigation, controller, change_time);

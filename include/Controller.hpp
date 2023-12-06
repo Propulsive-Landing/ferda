@@ -34,6 +34,7 @@ public:
 
     void UpdateLaunch(Navigation& navigation);
     void UpdateIdle(Navigation& navigation);
+    void UpdateTestTVC(double testTime);
     void UpdateLand();
     void UpdateSafe();
 
