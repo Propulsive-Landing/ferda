@@ -132,18 +132,16 @@ Eigen::Vector2d Controller::TvcMath(Eigen::Vector2d input){
     output(0) = -.000095801*powf(input(0), 4) - .0027781*powf(input(0), 3) + .0012874*powf(input(0), 2) - 3.1271*input(0) -16.129;
     output(1) = - .0002314576*powf(input(1), 4) - .002425139*powf(input(1), 3) - .01204116*powf(input(1), 2) - 2.959760*input(1) + 57.18794;
     //convert to pulse width
-    output(0) = std::round(output(0)*kDeg2PulseWidth + kTvcXCenterPulseWidth);
-    output(1) = std::round(output(1)*kDeg2PulseWidth + kTvcYCenterPulseWidth);
+    // output(0) = std::round(output(0)*kDeg2PulseWidth + kTvcXCenterPulseWidth);
+    // output(1) = std::round(output(1)*kDeg2PulseWidth + kTvcYCenterPulseWidth);
     return output;
 }
 
 void Controller::Center(){
     // Center the tvc 
 
-    
-
     input(0) = 0;
-    input(1) = 1;
+    input(1) = 0;
 
     tvc_angles = TvcMath(input);
 
@@ -152,22 +150,4 @@ void Controller::Center(){
     tvc.SetYServo(tvc_angles(1));
 }
 
-// Handle whichever abort gets called
-void Controller::HandleAborts(int abort) {
-    switch(abort) {
-        case 1:
-            // code
-            break;
-        case 2:
-            // code
-            break;
-        case 3:
-            // code
-            break;
-        case 4:
-            // code
-            break;
-        default:
-            break;
-    }
-}
+

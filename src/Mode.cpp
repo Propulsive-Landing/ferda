@@ -70,6 +70,7 @@ Mode::Phase Mode::UpdateTestTVC(Controller& controller) {
 
     if(seconds > 5.0){
         static auto start_time = std::chrono::high_resolution_clock::now();
+        controller.Center();
         return Mode::Idle;
     }
 

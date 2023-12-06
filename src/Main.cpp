@@ -33,6 +33,10 @@ int main()
 
     Mode mode(Mode::TestTVC);
 
+    controller.Center();
+
+    return 0;
+
     while( mode.Update(navigation, controller) ) {}
 
     #ifdef NDEBUG

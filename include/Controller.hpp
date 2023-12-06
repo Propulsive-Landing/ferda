@@ -41,6 +41,5 @@ public:
     Eigen::Vector2d TvcMath(Eigen::Vector2d input);
     void Start();
     void Center();
-    void HandleAborts(int abort);
 
 };
