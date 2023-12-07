@@ -6,11 +6,10 @@
 
  
 #include "Navigation.hpp"
+#include "MissionConstants.hpp"
 
 //CONSTANTS TO BE FIGURED OUT LATER
-double nav_theta_dot_smooth = 1;
-double fsw_loop_time = 1;
-
+double MissionConstants::kNavThetaDotSmooth = 1;
 
 Navigation::Navigation(IMU& imu, Barometer& barometer, TVC& tvc, Igniter& igniter) : imu(imu), barometer(barometer), tvc(tvc), igniter(igniter), count(0) 
 {
@@ -51,13 +50,13 @@ void Navigation::UpdateNavigation(){
     Eigen::Matrix<double, 3, 3> R = CreateRotationalMatrix(phi, theta, psi);
 
     // Update the linear positions
-    newState.segment(0,3) = stateMat.segment(3,3) * fsw_loop_time + stateMat.segment(0,3);
+    newState.segment(0,3) = stateMat.segment(3,3) * MissionConstants::kFswLoopTime + stateMat.segment(0,3);
     // Update the linear velocities
-    newState.segment(3,3) = R * linearAccelerationVector * fsw_loop_time + stateMat.segment(3,3);
+    newState.segment(3,3) = R * linearAccelerationVector * MissionConstants::kFswLoopTime + stateMat.segment(3,3);
     // Account for gravity
-    newState(5) = newState(5) - 9.81*fsw_loop_time;
+    newState(5) = newState(5) - 9.81*MissionConstants::kFswLoopTime;
     // Update the angles
-    newState.segment(6,3) = stateMat.segment(9,3) * fsw_loop_time + stateMat.segment(6,3);
+    newState.segment(6,3) = stateMat.segment(9,3) * MissionConstants::kFswLoopTime + stateMat.segment(6,3);
 
     // Create a vector that will hold d_theta and set all of the elements to 0 and get the angular rate
     std::vector<double> d_theta_now = {0,0,0};
@@ -95,7 +94,7 @@ std::tuple<double,double,double> Navigation::ComputeAngularRollingAverage(){
     // Computes a rolling average of the angular velocities //
     
     // Calculate the maximum amount of entries that d_theta_queue_reckon can have
-    int max_theta_dot_smooth_entries = nav_theta_dot_smooth/fsw_loop_time;
+    int max_theta_dot_smooth_entries = MissionConstants::kNavThetaDotSmooth/MissionConstants::kFswLoopTime;
 
     // Determine if the amount of entries in d_theta_reckon is less than or equal to max_theta_dot_smooth_entries, and if that is true, 
     // set divisor to the amount of entries in d_theta_reckon. If it's not true, pop the first entry and set divisor

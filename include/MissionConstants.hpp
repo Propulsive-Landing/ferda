@@ -9,21 +9,22 @@ namespace MissionConstants {
     // }
     
     // Physical constants
-    const float kPi = 3.1415926535897932384626433;
-    const float kGravity = 9.80298; //calculated at Ashford Town Park using https://www.sensorsone.com/local-gravity-calculator/#height
-    const float kPressureH = 0.0; //TODO: calculate H
-    const float kRad2Deg = 180/kPi;
-    const float kDeg2Rad = kPi/180;
+    const double kPi = 3.1415926535897932384626433;
+    const double kGravity = 9.80298; //calculated at Ashford Town Park using https://www.sensorsone.com/local-gravity-calculator/#height
+    const double kPressureH = 0.0; //TODO: calculate H
+    const double kRad2Deg = 180/kPi;
+    const double kDeg2Rad = kPi/180;
 
     // Navigation constants
-    const float kNavThetaDot_smooth
+    const double kNavThetaDotSmooth = 1;
+    const double kFswLoopTime = 1;
 
     // Controller constants, TODO: USER EDIT PRE-FLIGHT
-    const float kMaximumTvcAngle = 7.5*kDeg2Rad;
-    const float kControlIntegralPeriod = 0.25;
-    const float kDeg2PulseWidth = ((float) 1000.0)/((float) 90.0);
-    const float kTvcXCenterPulseWidth = 1529;
-    const float kTvcYCenterPulseWidth = 915;
+    const double kMaximumTvcAngle = 7.5*kDeg2Rad;
+    const double kControlIntegralPeriod = 0.25;
+    const double kDeg2PulseWidth = ((double) 1000.0)/((double) 90.0);
+    const double kTvcXCenterPulseWidth = 1529;
+    const double kTvcYCenterPulseWidth = 915;
     const int kTvcXPin = 19;
     const int kTvcYPin = 18;
     const std::string kKMatrixFile = "k_matrix.csv";
@@ -33,8 +34,8 @@ namespace MissionConstants {
     const int kIgnitionPin = 6;
     
     // Voltage reading, TODO: USER EDIT PRE-FLIGHT
-    const float kR1 = 100000;
-    const float kR2 = 10000;
+    const double kR1 = 100000;
+    const double kR2 = 10000;
 
     // Telemetry Constants
     const int BAUD_RATE = 9600;
