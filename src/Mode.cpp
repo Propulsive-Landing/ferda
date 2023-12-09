@@ -93,27 +93,28 @@ bool Mode::Update(Navigation& navigation, Controller& controller) {
 
     std::cout << std::to_string(eCurrentMode) << "\n";
 
+
     /* Handle behavior based on current phase. Update phase*/
     switch(this->eCurrentMode)
     {
         case Calibration:
-            // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
+            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
             this->eCurrentMode = UpdateCalibration(navigation, controller);
             break;
         case Idle:
-            // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
+            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
             this->eCurrentMode = UpdateIdle(navigation, controller);
             break;
         case TestTVC:
-            // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
+            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
             this->eCurrentMode = UpdateTestTVC(controller);
             break;
         case Launch:
-            // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.1);
+            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
             this->eCurrentMode = UpdateLaunch(navigation, controller, change_time);
             break;
         case Freefall:
-            // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
+            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
             this->eCurrentMode = UpdateFreefall(navigation);
             break;
         case Safe:

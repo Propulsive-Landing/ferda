@@ -43,6 +43,7 @@ int main()
 
     Mode mode(Mode::Calibration);
 
+
     while(mode.Update(navigation, controller)) {}
 
     #ifdef NDEBUG

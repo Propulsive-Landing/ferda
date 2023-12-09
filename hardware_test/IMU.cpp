@@ -13,5 +13,5 @@ std::tuple<double, double, double> IMU::GetBodyAngularRate()
 
 std::tuple<double, double, double> IMU::GetBodyAcceleration()
 {
-    return std::make_tuple(1.0,1.0,10.0);
+    return std::make_tuple(0,0,10.0);
 }

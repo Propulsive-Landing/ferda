@@ -7,9 +7,6 @@
 
 class Telemetry {
     private:
-        std::ofstream Logs;
-        std::ofstream HardwareSaved;
-
         Telemetry();
         ~Telemetry();
 
@@ -17,6 +14,9 @@ class Telemetry {
         void HardwareSaveFrame(Navigation& navigation, Controller& controller);
 
     public:
+        std::ofstream Logs;
+        std::ofstream HardwareSaved;
+
         void RunTelemetry(Navigation& navigation, Controller& controller, float HardwareSaveDelta);
         void Log(std::string message);
 
