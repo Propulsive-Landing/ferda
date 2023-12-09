@@ -23,7 +23,7 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
     if(seconds >= 1){
         Telemetry::GetInstance().Log("Switching mode from calibration to idle");
         navigation.Start();
-        controller.ImportControlParameters("12-9-k-matrix.csv");
+        controller.ImportControlParameters("../12-9-k-matrix.csv");
         return Mode::Idle;
 
     }
@@ -50,6 +50,7 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, d
     std::tuple<double,double,double> acceleration = navigation.GetBodyAcceleration();
     double acceleration_vector = (sqrt(pow(std::get<0>(acceleration),2) + pow(std::get<1>(acceleration), 2) + pow(std::get<2>(acceleration), 2)));
     if(abs(acceleration_vector) < 1){ 
+        Telemetry::GetInstance().Log("Switching mode from launch to freefall");
         return Mode::Freefall;
     }
     else{

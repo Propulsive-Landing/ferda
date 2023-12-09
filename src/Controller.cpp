@@ -33,7 +33,7 @@ void Controller::Start(double current_time){
 
 
 void Controller::UpdateTestTVC(double testTime) {
-    double angle = sin(testTime)*90 + 90;
+    double angle = sin(testTime)*90;
 
     tvc.SetXServo(angle);
     tvc.SetYServo(angle);
