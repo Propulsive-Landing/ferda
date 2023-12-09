@@ -14,9 +14,18 @@ double ignition_height = 1;
 Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
 Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controller) {
-    navigation.Start();
-    controller.Center();
-    return Mode::Idle;
+    static auto start_time = std::chrono::high_resolution_clock::now();
+    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+    double seconds = milliseconds_since_start / 1000.0;
+    static bool centered = false;
+
+
+    if(seconds >= 1){
+        navigation.Start();
+        return Mode::Idle;
+    }
+    
+    return Mode::Calibration;
 }
 
 Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, double change_time) {
@@ -111,7 +120,7 @@ Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller) {
     int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
     double seconds = milliseconds_since_start / 1000.0;
 
-    if(seconds > 0.5){
+    if(seconds > 1){
         static auto start_time = std::chrono::high_resolution_clock::now();
         return Mode::Launch;
     }
@@ -128,7 +137,7 @@ Mode::Phase Mode::UpdateTestTVC(Controller& controller) {
     controller.UpdateTestTVC(seconds);
 
     if(seconds > 5.0){
-        static auto start_time = std::chrono::high_resolution_clock::now();
+        start_time = std::chrono::high_resolution_clock::now();
         controller.Center();
         return Mode::Calibration;
     }
