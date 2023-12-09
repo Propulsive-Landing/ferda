@@ -35,6 +35,9 @@ int main()
 
     Telemetry::GetInstance().Log("Starting program...");
 
+
+    // TODO we need to set controller iteration gains or there is a segmentation fault.
+
     Mode mode(Mode::TestTVC);
 
     while(mode.Update(navigation, controller)) {}
