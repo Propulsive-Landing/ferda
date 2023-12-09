@@ -66,9 +66,6 @@ void Navigation::UpdateNavigation(){
     
     // Append the vector, d_theta_now, to d_theta_queue_reckon
     d_theta_queue_reckon.push_back(d_theta_now);
-
-    // Update count to represent what entry d_theta_queue_reckon is on
-    count += 1;
     
     // Call ComputeAngularRollingAverage to sum up all of the data so far for p,q,r which represent the angular velocity in x, y, and z direction
     std::tuple<double,double,double> rollingAngularAverage = ComputeAngularRollingAverage();
@@ -82,12 +79,10 @@ void Navigation::UpdateNavigation(){
     stateMat = newState;
 }
 
-void Navigation::Reset(){
-    // Resets count, the state, and d_theta_queue_reckon //
+void Navigation::Start(){
+    // Sets the state vector to all zeros //
 
-    count = 0;
-    stateMat.setZero();
-    d_theta_queue_reckon.clear();
+    stateMat = Eigen::Matrix<double, 12, 1>::Zero();
 }
 
 std::tuple<double,double,double> Navigation::ComputeAngularRollingAverage(){
@@ -96,34 +91,22 @@ std::tuple<double,double,double> Navigation::ComputeAngularRollingAverage(){
     // Calculate the maximum amount of entries that d_theta_queue_reckon can have
     int max_theta_dot_smooth_entries = nav_theta_dot_smooth/fsw_loop_time;
 
-    // Determine if the amount of entries in d_theta_reckon is less than or equal to max_theta_dot_smooth_entries, and if that is true, 
-    // set divisor to the amount of entries in d_theta_reckon. If it's not true, pop the first entry and set divisor
-    // to the maximum number of entries which is max_theta_dot_smooth_entries
-    int divisor = 0;
-    if (count <= max_theta_dot_smooth_entries)
-    {
-         divisor = count;
-    }
-    else 
-    {
+    // Determine if the amount of entries in d_theta_reckon is greater than max_theta_dot_smooth_entries,
+    // and if that is true, pop the first entry 
+    if(d_theta_queue_reckon.size() > max_theta_dot_smooth_entries){
         d_theta_queue_reckon.pop_front();
-        divisor = max_theta_dot_smooth_entries;
     }
 
     // Sum up all of the data so far for p,q,r which represent the angular velocity in x, y, and z direction
     double p = 0, q = 0, r = 0;
    
-    for (int i = 0; i < divisor; i++)
+    for (int i = 0; i < d_theta_queue_reckon.size(); i++)
     {
-        p += d_theta_queue_reckon[i][0];
-        q += d_theta_queue_reckon[i][1];
-        r += d_theta_queue_reckon[i][2];
+        p += d_theta_queue_reckon[i][0] / d_theta_queue_reckon.size();
+        q += d_theta_queue_reckon[i][1] / d_theta_queue_reckon.size();
+        r += d_theta_queue_reckon[i][2] / d_theta_queue_reckon.size();
     }
 
-    // Get an average by dividing over the number of entries so far
-    p /= divisor;
-    q /= divisor;
-    r /= divisor;
 
     // Return a tuple of the rolling average of p,q, and r
     return std::make_tuple(p,q,r);
@@ -146,4 +129,9 @@ Eigen::Matrix3d Navigation::CreateRotationalMatrix(double phi, double theta, dou
 
     return rotationalMatrix;
 
+}
+
+std::tuple<double, double, double> Navigation::GetBodyAcceleration()
+{
+    return imu.GetBodyAcceleration();
 }

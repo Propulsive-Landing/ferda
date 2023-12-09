@@ -31,13 +31,11 @@ int main()
     Navigation navigation(imu, barometer, tvc);
     Controller controller(tvc);
 
-    Mode mode(Mode::TestTVC);
-
-    controller.Center();
+    Mode mode(Mode::Calibration);
 
     return 0;
 
-    while( mode.Update(navigation, controller) ) {}
+    while(mode.Update(navigation, controller)) {}
 
     #ifdef NDEBUG
         gpioTerminate();

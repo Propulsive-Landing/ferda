@@ -11,10 +11,15 @@ class Mode
     public:
         enum Phase
             {
+                Calibration,
                 Idle,
                 TestTVC,
                 Launch,
-                Terminate 
+                Freefall,
+                StartLand,
+                Land,
+                Terminate,
+                Safe 
             };
         
         Mode(Mode::Phase eInitialMode);
@@ -22,7 +27,14 @@ class Mode
     private:
         Mode::Phase eCurrentMode;
 
-        Mode::Phase UpdateTestTVC(Controller& controller);
+        Mode::Phase UpdateCalibration(Navigation& navigation, Controller& controller);
         Mode::Phase UpdateIdle(Navigation& navigation, Controller& controller);
-        Mode::Phase UpdateLaunch(Navigation& navigation, Controller& controller, double change_time);
+        Mode::Phase UpdateStartLaunch(Navigation& navigation, Controller& controller, double change_time);
+        Mode::Phase UpdateLaunch(Navigation& navigation, Controller& controller, double current_time);
+        Mode::Phase UpdateFreefall(Navigation& navigation);
+        Mode::Phase UpdateSafeMode(Navigation& navigation, Controller& controller);
+        Mode::Phase UpdateStartLand();
+        Mode::Phase UpdateLand();
+        
+
 };

@@ -2,6 +2,10 @@
 
 #include "Controller.hpp"
 #include <cmath>
+#include <string>
+#include <fstream>
+#include <sstream>
+#include <iostream>
 
 // constants to be figured out later 
 namespace {
@@ -11,21 +15,19 @@ namespace {
     double kDeg2Rad = kPi/180;
     double kRad2Deg = 180/kPi;
     double kMaximumTvcAngle = 7.5*kDeg2Rad;
-    double kDeg2PulseWidth = ((float) 1000.0)/((float) 90.0);
+    double kDeg2PulseWidth = ((double) 1000.0)/((double) 90.0);
     double kTvcXCenterPulseWidth = 1529;
     double kTvcYCenterPulseWidth = 915;
+    int kNumberControllerGains = 10;
 }
 
 
+Controller::Controller(TVC& tvc) : tvc(tvc), x_control(Eigen::Matrix<double, 8, 1>::Zero()){}
 
-Controller::Controller(TVC& tvc) : tvc(tvc) {}
-
-void Controller::Start(){
+void Controller::Start(double current_time){
     // Initialize variables 
 
-    x_control.setZero();
-    next_tvc_time = 0;
-    tvc_start_time = 0;
+    tvc_start_time = current_time;
 }
 
 void Controller::UpdateIdle(Navigation& navigation) {
@@ -40,9 +42,12 @@ void Controller::UpdateTestTVC(double testTime) {
     tvc.SetYServo(angle);
 }
 
-void Controller::UpdateLaunch(Navigation& navigation) {
+void Controller::UpdateLaunch(Navigation& navigation, double current_time) {
     // Calculate desired control inputs for launch and actuate all control surfaces accordingly
-
+    
+    if(current_iteration_index < kNumberControllerGains - 1){
+        CalculateK(current_time);
+    }
     // Create a variable to determine the max amount of Euler Entries;
     int maxEulerEntries = control_integral_period/fsw_loop_time;
 
@@ -84,7 +89,6 @@ void Controller::UpdateLaunch(Navigation& navigation) {
 
     // Calculate what angle we need to tell the tvc to move
     CalculateInput();
-    
 }
 
 
@@ -131,9 +135,7 @@ Eigen::Vector2d Controller::TvcMath(Eigen::Vector2d input){
 
     output(0) = -.000095801*powf(input(0), 4) - .0027781*powf(input(0), 3) + .0012874*powf(input(0), 2) - 3.1271*input(0) -16.129;
     output(1) = - .0002314576*powf(input(1), 4) - .002425139*powf(input(1), 3) - .01204116*powf(input(1), 2) - 2.959760*input(1) + 57.18794;
-    //convert to pulse width
-    // output(0) = std::round(output(0)*kDeg2PulseWidth + kTvcXCenterPulseWidth);
-    // output(1) = std::round(output(1)*kDeg2PulseWidth + kTvcYCenterPulseWidth);
+
     return output;
 }
 
@@ -142,12 +144,27 @@ void Controller::Center(){
 
     input(0) = 0;
     input(1) = 0;
-
     tvc_angles = TvcMath(input);
-
-    
     tvc.SetXServo(tvc_angles(0));
     tvc.SetYServo(tvc_angles(1));
 }
 
+void Controller::Import(std::string file_name){
+    // Imports the kmatrix file into controller_gains and the time values into controller_gain_times
+    
+    char separator = ',';
+    std::string row, item;
+    std::ifstream in(file_name);
+    for (int i=0; i<kNumberControllerGains; i++){
+        std::getline(in, row);
+        std::stringstream ss(row);
+        std::getline(ss, item, separator);
+        controller_gain_times.push_back(stof(item));
+        for (int j=0; j<16; j++){
+            std::getline(ss, item, separator);
+            controller_gains(i*2+j/8, j%8) = stof(item);
+        }
+    }
+    in.close();
+}
 
