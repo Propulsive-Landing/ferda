@@ -91,6 +91,8 @@ bool Mode::Update(Navigation& navigation, Controller& controller) {
     navigation.loopTime = change_time;
     controller.loopTime = change_time;
 
+    std::cout << std::to_string(eCurrentMode) << "\n";
+
     /* Handle behavior based on current phase. Update phase*/
     switch(this->eCurrentMode)
     {

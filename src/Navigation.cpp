@@ -46,6 +46,8 @@ void Navigation::UpdateNavigation(){
     double phi = stateMat(6);
     double theta = stateMat(7);
     double psi = stateMat(8);
+
+    std::cout << " phi: " << std::to_string(phi) << " theta: " << std::to_string(theta) << " psi: " << std::to_string(psi) << "\n";
     
     // Convert the three euler angles to a rotation matrix that can move a vector from the body fixed frame into the ground fixed frame
     Eigen::Matrix<double, 3, 3> R = CreateRotationalMatrix(phi, theta, psi);
