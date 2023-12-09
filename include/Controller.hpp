@@ -12,14 +12,14 @@
 class Controller{
 
 //Constant to be figured out later
-int kNumberControllerGains = 1;
+//int kNumberControllerGains = 10;
 
 private:
     TVC tvc;
     Igniter igniter;
     std::vector<std::vector<double>> euler_queue;
     Eigen::Matrix<double, 8, 1> x_control;
-    Eigen::Matrix<double, 1*2, 8> controller_gains; 
+    Eigen::Matrix<double, 10*2, 8> controller_gains; 
     double next_tvc_time;
     double tvc_start_time;
     std::vector<float> controller_gain_times;
@@ -28,11 +28,10 @@ private:
     int current_iteration_index = 0;
 
 
-
 public:
 
     Controller(TVC& tvc, Igniter& igniter);    
-    void UpdateLaunch(Navigation& navigation, double curren_time);
+    void UpdateLaunch(Navigation& navigation, double current_time);
     void UpdateIdle(Navigation& navigation);
     void UpdateLand();
     void UpdateSafe();
@@ -42,5 +41,7 @@ public:
     void Start(double current_time);
     void Center();
     void HandleAborts(int abort);
+    void Import(std::string file_name);
+
 
 };

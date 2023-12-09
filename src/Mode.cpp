@@ -15,7 +15,9 @@ double ignition_height = 1;
 Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
 Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controller) {
+    
     navigation.Start();
+    //controller.Import(MissionConstants::kKMatrixFile)
     controller.Center();
     Telemetry::GetInstance().SendString("Calibration is completed. Going to IDLE");
     return Mode::Idle;
@@ -47,17 +49,21 @@ Mode::Phase Mode::UpdateStartLaunch(Navigation& navigation, Controller& controll
 }
 */
 
-Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, double start_time, double change_time) {
+Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, double change_time) {
    
    // Create a static variable to initalize the Start time so cotroller can call start the first time this method is called
+    static auto start_time = std::chrono::high_resolution_clock::now();
+    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+    double seconds = milliseconds_since_start / 1000.0;
+
     static int iteration = 1;
-    while(iteration > 0){
-        controller.Start(start_time);
+    if(iteration > 0){
+        controller.Start(seconds);
         iteration--;
     }
     navigation.UpdateNavigation();
     // Added chang_time so updateLaunch includes iteratng through K
-    controller.UpdateLaunch(navigation, change_time);
+    controller.UpdateLaunch(navigation, seconds);
     
     std::tuple<double,double,double> acceleration = navigation.GetBodyAcceleration();
     double acceleration_vector = (sqrt(pow(std::get<0>(acceleration),2) + pow(std::get<1>(acceleration), 2) + pow(std::get<2>(acceleration), 2)));
@@ -119,7 +125,6 @@ Mode::Phase Mode::UpdateLand() {
 bool Mode::Update(Navigation& navigation, Controller& controller) {
     static auto last_time = std::chrono::high_resolution_clock::now();
     auto time_now = std::chrono::high_resolution_clock::now();
-    double start_time = time_now.time_since_epoch().count();
     double change_time = (time_now.time_since_epoch() - last_time.time_since_epoch()).count();
     last_time = time_now;
     /* Finish calculating time change*/
@@ -138,7 +143,7 @@ bool Mode::Update(Navigation& navigation, Controller& controller) {
             this->eCurrentMode = UpdateStartLaunch(navigation, controller, change_time);
             break;
         case Launch:
-            this->eCurrentMode = UpdateLaunch(navigation, controller,start_time, change_time);
+            this->eCurrentMode = UpdateLaunch(navigation, controller, change_time);
             break;
         case Freefall:
             this->eCurrentMode = UpdateFreefall(navigation);

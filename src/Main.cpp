@@ -45,12 +45,12 @@ int main()
     Navigation navigation(imu, barometer, tvc, igniter);
     Controller controller(tvc, igniter);
 
-    Mode mode(Mode::Idle);
+    Mode mode(Mode::Calibration);
 
 
     Telemetry::GetInstance().SendString("Starting!");
 
-    while( mode.Update(navigation, controller) ) {}
+    while(mode.Update(navigation, controller)) {}
 
 #ifdef NDEBUG
     gpioTerminate();
