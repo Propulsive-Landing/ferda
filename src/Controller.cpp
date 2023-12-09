@@ -30,10 +30,6 @@ void Controller::Start(double current_time){
     tvc_start_time = current_time;
 }
 
-void Controller::UpdateIdle(Navigation& navigation) {
-    Eigen::Matrix<double, 12, 1> x = navigation.GetNavigation();
-    // TODO. Calculate desired control inputs for ground
-}
 
 void Controller::UpdateTestTVC(double testTime) {
     double angle = sin(testTime)*90 + 90;
@@ -149,7 +145,7 @@ void Controller::Center(){
     tvc.SetYServo(tvc_angles(1));
 }
 
-void Controller::Import(std::string file_name){
+void Controller::ImportControlParameters(std::string file_name){
     // Imports the kmatrix file into controller_gains and the time values into controller_gain_times
     
     char separator = ',';

@@ -7,9 +7,6 @@
 #include "Navigation.hpp"
 #include "MissionConstants.hpp"
 
-//CONSTANTS TO BE FIGURED OUT LATER
-double MissionConstants::kNavThetaDotSmooth = 1;
-
 Navigation::Navigation(IMU& imu, Barometer& barometer, TVC& tvc) : imu(imu), barometer(barometer), tvc(tvc), count(0) 
 {
     stateMat = Eigen::Matrix<double, 12, 1>::Zero();

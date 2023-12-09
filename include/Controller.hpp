@@ -29,7 +29,6 @@ private:
 public:
     Controller(TVC& tvc);   
     void UpdateLaunch(Navigation& navigation, double current_time);
-    void UpdateIdle(Navigation& navigation);
     void UpdateTestTVC(double testTime);
     void UpdateLand();
     void UpdateSafe();
@@ -38,5 +37,7 @@ public:
     Eigen::Vector2d TvcMath(Eigen::Vector2d input);
     void Start(double current_time);
     void Center();
+
+    void ImportControlParameters(std::string file_name);
 
 };

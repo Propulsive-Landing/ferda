@@ -16,8 +16,6 @@ class Mode
                 TestTVC,
                 Launch,
                 Freefall,
-                StartLand,
-                Land,
                 Terminate,
                 Safe 
             };
@@ -33,8 +31,7 @@ class Mode
         Mode::Phase UpdateLaunch(Navigation& navigation, Controller& controller, double current_time);
         Mode::Phase UpdateFreefall(Navigation& navigation);
         Mode::Phase UpdateSafeMode(Navigation& navigation, Controller& controller);
-        Mode::Phase UpdateStartLand();
         Mode::Phase UpdateLand();
-        
+        Mode::Phase UpdateTestTVC(Controller& controller);
 
 };

@@ -16,18 +16,6 @@ Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controller) {
     navigation.Start();
     controller.Center();
-    Telemetry::GetInstance().SendString("Calibration is completed. Going to IDLE");
-    return Mode::Idle;
-}
-
-Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller) {
-    navigation.UpdateNavigation();
-    controller.UpdateIdle(navigation);  // Might not need this at all. It's here as a placeholder for now
-    Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.1, 0.1); // The two data rates will be put in a MissonConstants file
-    Telemetry::Command cmd =  Telemetry::GetInstance().GetCommand();
-    if (cmd == Telemetry::Command::Startup) {
-        return Mode::Launch;
-    }
     return Mode::Idle;
 }
 
@@ -75,7 +63,6 @@ Mode::Phase Mode::UpdateFreefall(Navigation& navigation) {
 Mode::Phase Mode::UpdateSafeMode(Navigation& navigation, Controller& controller){
     //continue collection data
     navigation.UpdateNavigation();
-    Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.1, 0.1);
 
     return Mode::Safe;
 }
@@ -106,12 +93,6 @@ bool Mode::Update(Navigation& navigation, Controller& controller) {
         case Freefall:
             this->eCurrentMode = UpdateFreefall(navigation);
             break;
-        case StartLand:
-            this->eCurrentMode = UpdateStartLand();
-            break;
-        case Land:
-            this->eCurrentMode = UpdateLand();
-            break;
         case Safe:
             this->eCurrentMode = UpdateSafeMode(navigation, controller);
         case Terminate:
@@ -125,14 +106,12 @@ bool Mode::Update(Navigation& navigation, Controller& controller) {
 
 Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller) {
     navigation.UpdateNavigation();
-    controller.UpdateIdle(navigation);  // Might not need this at all. It's here as a placeholder for now
-
 
     static auto start_time = std::chrono::high_resolution_clock::now();
     int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
     double seconds = milliseconds_since_start / 1000.0;
 
-    if(seconds > 5.0){
+    if(seconds > 0.5){
         static auto start_time = std::chrono::high_resolution_clock::now();
         return Mode::Launch;
     }
@@ -151,21 +130,12 @@ Mode::Phase Mode::UpdateTestTVC(Controller& controller) {
     if(seconds > 5.0){
         static auto start_time = std::chrono::high_resolution_clock::now();
         controller.Center();
-        return Mode::Idle;
+        return Mode::Calibration;
     }
 
     return Mode::TestTVC;
 }
 
-
-Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, double change_time) {
-
-    navigation.UpdateNavigation();
-    controller.UpdateLaunch(navigation);
-
-    // TODO Calculate next phase
-    return Mode::Launch;
-}
 
 
 

@@ -31,9 +31,7 @@ int main()
     Navigation navigation(imu, barometer, tvc);
     Controller controller(tvc);
 
-    Mode mode(Mode::Calibration);
-
-    return 0;
+    Mode mode(Mode::TestTVC);
 
     while(mode.Update(navigation, controller)) {}
 
