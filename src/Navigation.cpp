@@ -3,6 +3,7 @@
 #include <deque>
 #include <vector>
 #include <iostream>
+#include <chrono>
 
 #include "Navigation.hpp"
 #include "MissionConstants.hpp"
@@ -24,6 +25,10 @@ double Navigation::GetHeight() {
     
 void Navigation::UpdateNavigation(){
     // Updates stateMat //
+
+    static auto start_time = std::chrono::high_resolution_clock::now();
+    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+    double seconds = milliseconds_since_start / 1000.0;
    
    
     // Create a matrix to hold the new State value and then set all of the elements to 0
@@ -46,13 +51,13 @@ void Navigation::UpdateNavigation(){
     Eigen::Matrix<double, 3, 3> R = CreateRotationalMatrix(phi, theta, psi);
 
     // Update the linear positions
-    newState.segment(0,3) = stateMat.segment(3,3) * MissionConstants::kFswLoopTime + stateMat.segment(0,3);
+    newState.segment(0,3) = stateMat.segment(3,3) * loopTime + stateMat.segment(0,3);
     // Update the linear velocities
-    newState.segment(3,3) = R * linearAccelerationVector * MissionConstants::kFswLoopTime + stateMat.segment(3,3);
+    newState.segment(3,3) = R * linearAccelerationVector * loopTime + stateMat.segment(3,3);
     // Account for gravity
-    newState(5) = newState(5) - 9.81*MissionConstants::kFswLoopTime;
+    newState(5) = newState(5) - 9.81*loopTime;
     // Update the angles
-    newState.segment(6,3) = stateMat.segment(9,3) * MissionConstants::kFswLoopTime + stateMat.segment(6,3);
+    newState.segment(6,3) = stateMat.segment(9,3) * loopTime + stateMat.segment(6,3);
 
     // Create a vector that will hold d_theta and set all of the elements to 0 and get the angular rate
     std::vector<double> d_theta_now = {0,0,0};
@@ -85,7 +90,7 @@ std::tuple<double,double,double> Navigation::ComputeAngularRollingAverage(){
     // Computes a rolling average of the angular velocities //
     
     // Calculate the maximum amount of entries that d_theta_queue_reckon can have
-    int max_theta_dot_smooth_entries = MissionConstants::kNavThetaDotSmooth/MissionConstants::kFswLoopTime;
+    int max_theta_dot_smooth_entries = MissionConstants::kNavThetaDotSmooth/loopTime;
 
     // Determine if the amount of entries in d_theta_reckon is greater than max_theta_dot_smooth_entries,
     // and if that is true, pop the first entry 

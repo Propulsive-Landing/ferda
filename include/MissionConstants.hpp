@@ -25,7 +25,7 @@ namespace MissionConstants {
     const double kDeg2Rad = kPi/180;
 
     // Navigation constants
-    const double kNavThetaDotSmooth = 1;
+    const double kNavThetaDotSmooth = 0.5;
     const double kFswLoopTime = 1;
 
     // Controller constants, TODO: USER EDIT PRE-FLIGHT

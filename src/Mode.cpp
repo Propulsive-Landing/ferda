@@ -3,6 +3,7 @@
 #include "Mode.hpp"
 #include "Navigation.hpp"
 #include "Telemetry.hpp"
+#include <iostream>
 
 //CONSTANTS TO BE FIGURED OUT LATER
 int abort_threshold = 1;
@@ -83,10 +84,14 @@ Mode::Phase Mode::UpdateSafeMode(Navigation& navigation, Controller& controller)
 bool Mode::Update(Navigation& navigation, Controller& controller) {
     static auto last_time = std::chrono::high_resolution_clock::now();
     auto time_now = std::chrono::high_resolution_clock::now();
-    double change_time = (time_now.time_since_epoch() - last_time.time_since_epoch()).count();
+    double change_time = std::chrono::duration_cast<std::chrono::nanoseconds>(time_now - last_time).count() / 1000000000.0;
     last_time = time_now;
     /* Finish calculating time change*/
 
+    std::cout << std::to_string(change_time) << "\n";
+
+    navigation.loopTime = change_time;
+    controller.loopTime = change_time;
 
     /* Handle behavior based on current phase. Update phase*/
     switch(this->eCurrentMode)

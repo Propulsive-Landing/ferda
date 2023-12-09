@@ -20,6 +20,7 @@ class Navigation
         std::deque<std::vector<double>> d_theta_queue_reckon;
 
     public:
+        double loopTime = 0.001;
         Navigation(IMU& imu, Barometer& barometer, TVC& tvc);
         Eigen::Matrix<double, 12, 1> GetNavigation(); // Defintion of state matrix: TODO (determine dimensions and document form)
         void UpdateNavigation(); // Defintion updates: TODO (determine dimensions and document form)

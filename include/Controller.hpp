@@ -25,8 +25,8 @@ private:
     Eigen::Vector2d tvc_angles;
     int current_iteration_index = 0;
 
-
 public:
+    double loopTime = 0.001;
     Controller(TVC& tvc);   
     void UpdateLaunch(Navigation& navigation, double current_time);
     void UpdateTestTVC(double testTime);

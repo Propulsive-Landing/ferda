@@ -10,7 +10,7 @@
 
 // constants to be figured out later 
 namespace {
-    double control_integral_period = 1;
+    double control_integral_period = 0.25;
     double fsw_loop_time = 1;
     double kPi = 3.1415926535897932384626433;
     double kDeg2Rad = kPi/180;
@@ -46,7 +46,7 @@ void Controller::UpdateLaunch(Navigation& navigation, double current_time) {
         CalculateK(current_time);
     }
     // Create a variable to determine the max amount of Euler Entries;
-    int maxEulerEntries = control_integral_period/fsw_loop_time;
+    int maxEulerEntries = control_integral_period/loopTime;
 
     // Create a matrix to store the returned stateEstimate from getNavigation() and store the yaw value into a varible
     Eigen::Matrix<double,12,1> stateEstimate = navigation.GetNavigation();
@@ -81,8 +81,8 @@ void Controller::UpdateLaunch(Navigation& navigation, double current_time) {
     }
 
     // Populate the second and third element with the integrals of roll and pitch
-    x_control[2] = euler_sum[0] * fsw_loop_time;
-    x_control[3] = euler_sum[1] * fsw_loop_time;
+    x_control[2] = euler_sum[0] * loopTime;
+    x_control[3] = euler_sum[1] * loopTime;
 
     // Calculate what angle we need to tell the tvc to move
     CalculateInput();
