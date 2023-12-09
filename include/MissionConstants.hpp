@@ -1,6 +1,15 @@
 #pragma once
 
 #include <string>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <iostream>
+
+#ifndef __MISSION_CONSTANTS__
+
+#define __MISSION_CONSTANTS__
+
 
 namespace MissionConstants {
     // YAML::Node LoadConstants(std::string filepath) {
@@ -44,9 +53,8 @@ namespace MissionConstants {
 
     // Abort constants
 
-    // Hardware Constants
-    std::string gyroPath = "/sys/bus/iio/devices/iio:device2";
-    std::string accelPath = "/sys/bus/iio/devices/iio:device0";
-    std::string baroPath = "/sys/bus/iio/devices/iio:device1";
+
 
 } // MissionConstants
+
+#endif

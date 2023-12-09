@@ -7,14 +7,20 @@
 
 #include "MissionConstants.hpp"
 
+namespace {
+    std::string gyroPath = "/sys/bus/iio/devices/iio:device2";
+    std::string accelPath = "/sys/bus/iio/devices/iio:device0";
+}
+
+
 IMU::IMU()
 {
-    std::fstream ifstream(MissionConstants::accelPath + "/in_accel_x_raw");
+    std::fstream ifstream(accelPath + "/in_accel_x_raw");
     if (!ifstream.is_open())
         throw std::runtime_error("accelerometer is not present");
     ifstream.close();
 
-    ifstream = std::fstream(MissionConstants::gyroPath + "/in_anglvel_x_raw");
+    ifstream = std::fstream(gyroPath + "/in_anglvel_x_raw");
     if (!ifstream.is_open())
         throw std::runtime_error("gyroscope is not present");
     ifstream.close();
@@ -22,21 +28,21 @@ IMU::IMU()
 
 std::tuple<double, double, double> IMU::GetBodyAcceleration()
 {
-    std::fstream ifstream(MissionConstants::accelPath + "/in_accel_x_raw");
+    std::fstream ifstream(accelPath + "/in_accel_x_raw");
     if (!ifstream.is_open())
         throw std::runtime_error("accelerometer is not present");
     int nAccelX;
     ifstream >> nAccelX;
     ifstream.close();
 
-    ifstream = std::fstream(MissionConstants::accelPath + "/in_accel_y_raw");
+    ifstream = std::fstream(accelPath + "/in_accel_y_raw");
     if (!ifstream.is_open())
         throw std::runtime_error("accelerometer is not present");
     int nAccelY;
     ifstream >> nAccelY;
     ifstream.close();
 
-    ifstream = std::fstream(MissionConstants::accelPath + "/in_accel_z_raw");
+    ifstream = std::fstream(accelPath + "/in_accel_z_raw");
     if (!ifstream.is_open())
         throw std::runtime_error("accelerometer is not present");
     int nAccelZ;
@@ -48,21 +54,21 @@ std::tuple<double, double, double> IMU::GetBodyAcceleration()
 
 std::tuple<double, double, double> IMU::GetBodyAngularRate()
 {
-    std::fstream ifstream(MissionConstants::gyroPath + "/in_anglvel_x_raw");
+    std::fstream ifstream(gyroPath + "/in_anglvel_x_raw");
     if (!ifstream.is_open())
         throw std::runtime_error("accelerometer is not present");
     int nAnglVelX;
     ifstream >> nAnglVelX;
     ifstream.close();
 
-    ifstream = std::fstream(MissionConstants::gyroPath + "/in_anglvel_y_raw");
+    ifstream = std::fstream(gyroPath + "/in_anglvel_y_raw");
     if (!ifstream.is_open())
         throw std::runtime_error("accelerometer is not present");
     int nAnglVelY;
     ifstream >> nAnglVelY;
     ifstream.close();
 
-    ifstream = std::fstream(MissionConstants::gyroPath + "/in_anglvel_z_raw");
+    ifstream = std::fstream(gyroPath + "/in_anglvel_z_raw");
     if (!ifstream.is_open())
         throw std::runtime_error("accelerometer is not present");
     int nAnglVelZ;

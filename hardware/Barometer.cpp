@@ -4,14 +4,20 @@
 #include <fstream>
 #include <stdexcept>
 
+#include <string>
+
+namespace {
+    std::string baroPath = "/sys/bus/iio/devices/iio:device1";
+}
+
 Barometer::Barometer()
 {
-    std::ifstream ifstream(MissionConstants::baroPath + "/in_pressure_input");
+    std::ifstream ifstream(baroPath + "/in_pressure_input");
     if (!ifstream.is_open())
         throw std::runtime_error("barometer not present");
     ifstream.close();
 
-    ifstream = std::ifstream(MissionConstants::baroPath + "/in_temp_input");
+    ifstream = std::ifstream(baroPath + "/in_temp_input");
     if (!ifstream.is_open())
         throw std::runtime_error("barometer not present");
     ifstream.close();
@@ -19,7 +25,7 @@ Barometer::Barometer()
 
 double Barometer::GetPressure()
 {
-    std::ifstream ifstream(MissionConstants::baroPath + "/in_pressure_input");
+    std::ifstream ifstream(baroPath + "/in_pressure_input");
     if (!ifstream.is_open())
         throw std::runtime_error("barometer not present");
 
@@ -32,7 +38,7 @@ double Barometer::GetPressure()
 
 double Barometer::GetTemperature()
 {
-    std::ifstream ifstream(MissionConstants::baroPath + "/in_temp_input");
+    std::ifstream ifstream(baroPath + "/in_temp_input");
     if (!ifstream.is_open())
         throw std::runtime_error("barometer not present");
 
