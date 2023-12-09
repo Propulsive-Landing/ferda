@@ -1,6 +1,7 @@
 #include <Eigen/Dense>
 
 #include "Controller.hpp"
+#include "Telemetry.hpp"
 #include <cmath>
 #include <string>
 #include <fstream>
