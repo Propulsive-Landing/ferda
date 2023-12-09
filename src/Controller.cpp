@@ -149,9 +149,10 @@ void Controller::Center(){
 void Controller::ImportControlParameters(std::string file_name){
     // Imports the kmatrix file into controller_gains and the time values into controller_gain_times
     
-    char separator = ',';
+    char separator = '\t';
     std::string row, item;
     std::ifstream in(file_name);
+    std::ofstream out("test.csv");
     for (int i=0; i< 2*kNumberControllerGains; i++){
         std::getline(in, row);
         std::stringstream ss(row);
@@ -160,8 +161,6 @@ void Controller::ImportControlParameters(std::string file_name){
             controller_gains(i, j) = stof(item);
         }
         Telemetry::GetInstance().Log(ss.str());
-
-
     }
     in.close();
 }
