@@ -2,6 +2,7 @@
 #include <cmath>
 #include "Mode.hpp"
 #include "Navigation.hpp"
+#include "Telemetry.hpp"
 
 //CONSTANTS TO BE FIGURED OUT LATER
 int abort_threshold = 1;
@@ -19,10 +20,11 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
     double seconds = milliseconds_since_start / 1000.0;
     static bool centered = false;
 
-
     if(seconds >= 1){
+        Telemetry::GetInstance().Log("Switching mode from calibration to idle");
         navigation.Start();
         return Mode::Idle;
+
     }
     
     return Mode::Calibration;
@@ -88,18 +90,23 @@ bool Mode::Update(Navigation& navigation, Controller& controller) {
     switch(this->eCurrentMode)
     {
         case Calibration:
+            // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
             this->eCurrentMode = UpdateCalibration(navigation, controller);
             break;
         case Idle:
+            // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
             this->eCurrentMode = UpdateIdle(navigation, controller);
             break;
         case TestTVC:
+            // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
             this->eCurrentMode = UpdateTestTVC(controller);
             break;
         case Launch:
+            // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.1);
             this->eCurrentMode = UpdateLaunch(navigation, controller, change_time);
             break;
         case Freefall:
+            // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
             this->eCurrentMode = UpdateFreefall(navigation);
             break;
         case Safe:
@@ -121,6 +128,7 @@ Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller) {
     double seconds = milliseconds_since_start / 1000.0;
 
     if(seconds > 1){
+        Telemetry::GetInstance().Log("Switching mode from idle to launch");
         static auto start_time = std::chrono::high_resolution_clock::now();
         return Mode::Launch;
     }

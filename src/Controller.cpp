@@ -101,7 +101,7 @@ void Controller::UpdateSafe(){
 
 void Controller::CalculateK(double current_time){
     // Determine if a certain amount of time has passed, and if so, then increase the current_iteration_index and get the next K value
-    
+
     double switch_time = (controller_gain_times[current_iteration_index+1] - controller_gain_times[current_iteration_index]) / 2.0;
     if(current_time - tvc_start_time > switch_time)
     {

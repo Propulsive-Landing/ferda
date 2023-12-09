@@ -5,6 +5,8 @@
 #include "Navigation.hpp"
 #include "Controller.hpp"
 
+#include "Telemetry.hpp"
+
 #include "Mode.hpp"
 
 #include <iostream>
@@ -30,6 +32,8 @@ int main()
 
     Navigation navigation(imu, barometer, tvc);
     Controller controller(tvc);
+
+    Telemetry::GetInstance().Log("Starting program...");
 
     Mode mode(Mode::TestTVC);
 
