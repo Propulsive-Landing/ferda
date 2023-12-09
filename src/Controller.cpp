@@ -1,6 +1,5 @@
 #include <Eigen/Dense>
 
-
 #include "Controller.hpp"
 #include <cmath>
 #include <string>
@@ -9,20 +8,21 @@
 #include <iostream>
 
 // constants to be figured out later 
-double control_integral_period = 1;
-double fsw_loop_time = 1;
-double kPi = 3.1415926535897932384626433;
-double kDeg2Rad = kPi/180;
-double kRad2Deg = 180/kPi;
-double kMaximumTvcAngle = 7.5*kDeg2Rad;
-double kDeg2PulseWidth = ((double) 1000.0)/((double) 90.0);
-double kTvcXCenterPulseWidth = 1529;
-double kTvcYCenterPulseWidth = 915;
-int kNumberControllerGains = 10;
+namespace {
+    double control_integral_period = 1;
+    double fsw_loop_time = 1;
+    double kPi = 3.1415926535897932384626433;
+    double kDeg2Rad = kPi/180;
+    double kRad2Deg = 180/kPi;
+    double kMaximumTvcAngle = 7.5*kDeg2Rad;
+    double kDeg2PulseWidth = ((double) 1000.0)/((double) 90.0);
+    double kTvcXCenterPulseWidth = 1529;
+    double kTvcYCenterPulseWidth = 915;
+    int kNumberControllerGains = 10;
+}
 
 
-
-Controller::Controller(TVC& tvc, Igniter& igniter) : tvc(tvc), igniter(igniter), x_control(Eigen::Matrix<double, 8, 1>::Zero()){}
+Controller::Controller(TVC& tvc) : tvc(tvc), x_control(Eigen::Matrix<double, 8, 1>::Zero()){}
 
 void Controller::Start(double current_time){
     // Initialize variables 
@@ -33,7 +33,13 @@ void Controller::Start(double current_time){
 void Controller::UpdateIdle(Navigation& navigation) {
     Eigen::Matrix<double, 12, 1> x = navigation.GetNavigation();
     // TODO. Calculate desired control inputs for ground
-    // TODO. Actuate all control surfaces accordingly
+}
+
+void Controller::UpdateTestTVC(double testTime) {
+    double angle = sin(testTime)*90 + 90;
+
+    tvc.SetXServo(angle);
+    tvc.SetYServo(angle);
 }
 
 void Controller::UpdateLaunch(Navigation& navigation, double current_time) {
@@ -129,10 +135,7 @@ Eigen::Vector2d Controller::TvcMath(Eigen::Vector2d input){
 
     output(0) = -.000095801*powf(input(0), 4) - .0027781*powf(input(0), 3) + .0012874*powf(input(0), 2) - 3.1271*input(0) -16.129;
     output(1) = - .0002314576*powf(input(1), 4) - .002425139*powf(input(1), 3) - .01204116*powf(input(1), 2) - 2.959760*input(1) + 57.18794;
-    //convert to pulse width
 
-   // output(0) = std::round(output(0)*kDeg2PulseWidth + kTvcXCenterPulseWidth);
-    //output(1) = std::round(output(1)*kDeg2PulseWidth + kTvcYCenterPulseWidth);
     return output;
 }
 
@@ -165,24 +168,3 @@ void Controller::Import(std::string file_name){
     in.close();
 }
 
-
-
-// Handle whichever abort gets called
-void Controller::HandleAborts(int abort) {
-    switch(abort) {
-        case 1:
-            // code
-            break;
-        case 2:
-            // code
-            break;
-        case 3:
-            // code
-            break;
-        case 4:
-            // code
-            break;
-        default:
-            break;
-    }
-}

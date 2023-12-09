@@ -2,7 +2,6 @@
 
 #include "Barometer.hpp"
 #include "IMU.hpp"
-#include "Igniter.hpp"
 #include "TVC.hpp"
 #include "Navigation.hpp"
 #include "Controller.hpp"
@@ -14,7 +13,7 @@ class Mode
             {
                 Calibration,
                 Idle,
-                StartLaunch,
+                TestTVC,
                 Launch,
                 Freefall,
                 StartLand,
