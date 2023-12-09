@@ -20,7 +20,7 @@ private:
     Eigen::Matrix<double, 10*2, 8> controller_gains; 
     double next_tvc_time;
     double tvc_start_time;
-    std::vector<float> controller_gain_times;
+    std::vector<float> controller_gain_times = {0, 0.025, 0.0575, 0.265, 0.59, 0.8575, 1.0450, 1.1475, 1.3425, 1.9175};
     Eigen::Vector2d input;
     Eigen::Vector2d tvc_angles;
     int current_iteration_index = 0;

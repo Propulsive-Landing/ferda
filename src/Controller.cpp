@@ -151,15 +151,16 @@ void Controller::ImportControlParameters(std::string file_name){
     char separator = ',';
     std::string row, item;
     std::ifstream in(file_name);
-    for (int i=0; i<kNumberControllerGains; i++){
+    for (int i=0; i< 2*kNumberControllerGains; i++){
         std::getline(in, row);
         std::stringstream ss(row);
-        std::getline(ss, item, separator);
-        controller_gain_times.push_back(stof(item));
-        for (int j=0; j<16; j++){
+        for (int j=0; j<8; j++){
             std::getline(ss, item, separator);
-            controller_gains(i*2+j/8, j%8) = stof(item);
+            controller_gains(i, j) = stof(item);
         }
+        Telemetry::GetInstance().Log(ss.str());
+
+
     }
     in.close();
 }

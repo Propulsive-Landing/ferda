@@ -43,7 +43,7 @@ std::tuple<double, double, double> IMU::GetBodyAcceleration()
     ifstream >> nAccelZ;
     ifstream.close();
 
-    return std::make_tuple(nAccelX * 0.001794, nAccelY * 0.001794, nAccelZ * 0.001794);
+    return std::make_tuple(nAccelX * 0.001794, nAccelY * -0.001794, nAccelZ * -0.001794);
 }
 
 std::tuple<double, double, double> IMU::GetBodyAngularRate()
@@ -69,5 +69,5 @@ std::tuple<double, double, double> IMU::GetBodyAngularRate()
     ifstream >> nAnglVelZ;
     ifstream.close();
 
-    return std::make_tuple(nAnglVelX * 0.000266, nAnglVelY * 0.000266, nAnglVelZ * 0.000266);
+    return std::make_tuple(nAnglVelX * 0.000266, -nAnglVelY * 0.000266, -nAnglVelZ * 0.000266);
 }

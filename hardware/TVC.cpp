@@ -18,5 +18,5 @@ void TVC::SetYServo(double dAngle)
     dAngle = (dAngle > 180) ? 180 : dAngle;
 
     double dPulseWidth = 1000 + (dAngle * 1000 / 180.0);
-    gpioServo(5, round(dPulseWidth));
+    gpioServo(13, round(dPulseWidth));
 }
