@@ -6,7 +6,7 @@
 
 void TVC::SetXServo(double dAngle)
 {
-    dAngle += 90 + kTvcXCenterAngle;
+    dAngle += 90 + MissionConstants::kTvcXCenterAngle;
     dAngle = (dAngle < 0) ? 0 : dAngle;
     dAngle = (dAngle > 180) ? 180 : dAngle;
 
@@ -16,7 +16,7 @@ void TVC::SetXServo(double dAngle)
 
 void TVC::SetYServo(double dAngle)
 {
-    dAngle += 90 + kTvcYCenterAngle;
+    dAngle += 90 + MissionConstants::kTvcYCenterAngle;
     dAngle = (dAngle < 0) ? 0 : dAngle;
     dAngle = (dAngle > 180) ? 180 : dAngle;
 

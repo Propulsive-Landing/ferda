@@ -88,8 +88,6 @@ bool Mode::Update(Navigation& navigation, Controller& controller) {
     last_time = time_now;
     /* Finish calculating time change*/
 
-    std::cout << std::to_string(change_time) << "\n";
-
     navigation.loopTime = change_time;
     controller.loopTime = change_time;
 
