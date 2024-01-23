@@ -2,7 +2,6 @@
 
 #include "Barometer.hpp"
 #include "IMU.hpp"
-#include "Igniter.hpp"
 #include "TVC.hpp"
 #include "Navigation.hpp"
 #include "Controller.hpp"
@@ -12,13 +11,13 @@ class Mode
     public:
         enum Phase
             {
+                Calibration,
                 Idle,
-                StartLaunch,
+                TestTVC,
                 Launch,
                 Freefall,
-                StartLand,
-                Land,
-                Terminate 
+                Terminate,
+                Safe 
             };
         
         Mode(Mode::Phase eInitialMode);
@@ -26,13 +25,13 @@ class Mode
     private:
         Mode::Phase eCurrentMode;
 
-
+        Mode::Phase UpdateCalibration(Navigation& navigation, Controller& controller);
         Mode::Phase UpdateIdle(Navigation& navigation, Controller& controller);
         Mode::Phase UpdateStartLaunch(Navigation& navigation, Controller& controller, double change_time);
-        Mode::Phase UpdateLaunch(Navigation& navigation, Controller& controller, double change_time);
+        Mode::Phase UpdateLaunch(Navigation& navigation, Controller& controller, double current_time);
         Mode::Phase UpdateFreefall(Navigation& navigation);
-        Mode::Phase UpdateStartLand();
+        Mode::Phase UpdateSafeMode(Navigation& navigation, Controller& controller);
         Mode::Phase UpdateLand();
-        
+        Mode::Phase UpdateTestTVC(Controller& controller);
 
 };

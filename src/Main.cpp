@@ -1,16 +1,20 @@
 #include "Barometer.hpp"
 #include "IMU.hpp"
-#include "Igniter.hpp"
 #include "TVC.hpp"
 
 #include "Navigation.hpp"
 #include "Controller.hpp"
+
 #include "Telemetry.hpp"
 
 #include "Mode.hpp"
+#include "MissionConstants.hpp"
 
 #include <iostream>
 #include <stdexcept>
+#include <fstream>
+#include <sstream>
+#include <string>
 
 #ifdef NDEBUG
     #include <pigpio.h>
@@ -18,42 +22,44 @@
 
 int main()
 {
-#ifdef NDEBUG
-    if (gpioInitialise() < 0)
-        throw std::runtime_error("failed to initialize gpio");
+    #ifdef NDEBUG
+        if (gpioInitialise() < 0)
+            throw std::runtime_error("failed to initialize gpio");
 
-    gpioSetMode(4, PI_OUTPUT);
-    gpioSetMode(17, PI_OUTPUT);
-
-    gpioWrite(4, 0);
-    gpioWrite(17, 0);
-
-    gpioSetMode(18, PI_OUTPUT);
-    gpioSetMode(5, PI_OUTPUT);
-#endif
+        gpioSetMode(18, PI_OUTPUT);
+        gpioSetMode(13, PI_OUTPUT);
+    #endif
 
     IMU imu;
     Barometer barometer;
     TVC tvc;
-    Igniter igniter;
 
-    std::cout << "Pressure: " << barometer.GetPressure() << " kPa\n";
-    std::cout << "Temperature: " << barometer.GetTemperature() << " C\n";
-    std::cout << "Acceleration: <" << std::get<0>(imu.GetBodyAcceleration()) << ", " << std::get<1>(imu.GetBodyAcceleration()) << ", " << std::get<2>(imu.GetBodyAcceleration()) << "> m/s^2\n";
-    std::cout << "Angular Velocity <" << std::get<0>(imu.GetBodyAngularRate()) << ", " << std::get<1>(imu.GetBodyAngularRate()) << ", " << std::get<2>(imu.GetBodyAngularRate()) << "> radians/s\n";
+    Navigation navigation(imu, barometer, tvc);
+    Controller controller(tvc);
 
-    Navigation navigation(imu, barometer, tvc, igniter);
-    Controller controller(tvc, igniter);
+    Telemetry::GetInstance().Log("Starting program...");
 
-    Mode mode(Mode::Idle);
+    // TODO we need to set controller iteration gains or there is a segmentation fault.
+
+    Mode mode(Mode::Calibration);
 
 
-    Telemetry::GetInstance().SendString("Starting!");
+    //while(mode.Update(navigation, controller)) {}
 
-    while( mode.Update(navigation, controller) ) {}
+    //#ifdef NDEBUG
+    //    gpioTerminate();
+   // #endif
+    std::cout<< navigation.GetNavigation() << "\n";
+   static int iteration = 1;
+   while(iteration){
+        navigation.UpdateNavigation();
+        iteration--;
+        std::cout<< navigation.GetNavigation() << "\n";
+    }
+   
 
-#ifdef NDEBUG
-    gpioTerminate();
-#endif
+
+  
+
     return 0;
 }
