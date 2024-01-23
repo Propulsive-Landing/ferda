@@ -16,7 +16,6 @@ class Navigation
         TVC& tvc;
 
         Eigen::Matrix<double, 12, 1> stateMat;
-        int count;
         std::deque<std::vector<double>> d_theta_queue_reckon;
 
     public:

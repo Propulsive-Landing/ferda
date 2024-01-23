@@ -44,11 +44,22 @@ int main()
     Mode mode(Mode::Calibration);
 
 
-    while(mode.Update(navigation, controller)) {}
+    //while(mode.Update(navigation, controller)) {}
 
-    #ifdef NDEBUG
-        gpioTerminate();
-    #endif
+    //#ifdef NDEBUG
+    //    gpioTerminate();
+   // #endif
+    std::cout<< navigation.GetNavigation() << "\n";
+   static int iteration = 1;
+   while(iteration){
+        navigation.UpdateNavigation();
+        iteration--;
+        std::cout<< navigation.GetNavigation() << "\n";
+    }
+   
+
+
+  
 
     return 0;
 }

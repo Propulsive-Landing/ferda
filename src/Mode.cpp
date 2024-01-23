@@ -22,7 +22,7 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
     static bool centered = false;
 
     if(seconds >= 1){
-        Telemetry::GetInstance().Log("Switching mode from calibration to idle");
+       // Telemetry::GetInstance().Log("Switching mode from calibration to idle");
         navigation.Start();
         controller.ImportControlParameters("../12-9-k-matrix.csv");
         return Mode::Idle;
@@ -81,6 +81,41 @@ Mode::Phase Mode::UpdateSafeMode(Navigation& navigation, Controller& controller)
     return Mode::Safe;
 }
 
+Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller) {
+    navigation.UpdateNavigation();
+
+    static auto start_time = std::chrono::high_resolution_clock::now();
+    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+    double seconds = milliseconds_since_start / 1000.0;
+
+    if(seconds > 1){
+        Telemetry::GetInstance().Log("Switching mode from idle to launch");
+        static auto start_time = std::chrono::high_resolution_clock::now();
+        return Mode::Launch;
+    }
+
+
+    return Mode::Idle;
+}
+
+Mode::Phase Mode::UpdateTestTVC(Controller& controller) {
+    static auto start_time = std::chrono::high_resolution_clock::now();
+    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+    double seconds = milliseconds_since_start / 1000.0;
+    
+    controller.UpdateTestTVC(seconds);
+
+    if(seconds > 5.0){
+        start_time = std::chrono::high_resolution_clock::now();
+        controller.Center();
+        return Mode::Calibration;
+    }
+
+    return Mode::TestTVC;
+}
+
+
+
 bool Mode::Update(Navigation& navigation, Controller& controller) {
     static auto last_time = std::chrono::high_resolution_clock::now();
     auto time_now = std::chrono::high_resolution_clock::now();
@@ -126,41 +161,3 @@ bool Mode::Update(Navigation& navigation, Controller& controller) {
     return true; 
 
 }
-
-
-Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller) {
-    navigation.UpdateNavigation();
-
-    static auto start_time = std::chrono::high_resolution_clock::now();
-    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-    double seconds = milliseconds_since_start / 1000.0;
-
-    if(seconds > 1){
-        Telemetry::GetInstance().Log("Switching mode from idle to launch");
-        static auto start_time = std::chrono::high_resolution_clock::now();
-        return Mode::Launch;
-    }
-
-
-    return Mode::Idle;
-}
-
-Mode::Phase Mode::UpdateTestTVC(Controller& controller) {
-    static auto start_time = std::chrono::high_resolution_clock::now();
-    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-    double seconds = milliseconds_since_start / 1000.0;
-    
-    controller.UpdateTestTVC(seconds);
-
-    if(seconds > 5.0){
-        start_time = std::chrono::high_resolution_clock::now();
-        controller.Center();
-        return Mode::Calibration;
-    }
-
-    return Mode::TestTVC;
-}
-
-
-
-

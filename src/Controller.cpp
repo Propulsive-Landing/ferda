@@ -41,7 +41,52 @@ void Controller::UpdateTestTVC(double testTime) {
 
 void Controller::UpdateLaunch(Navigation& navigation, double current_time) {
     // Calculate desired control inputs for launch and actuate all control surfaces accordingly
-    Center();
+     // Calculate desired control inputs for launch and actuate all control surfaces accordingly
+    
+    if(current_iteration_index < kNumberControllerGains - 1){
+        CalculateK(current_time);
+    }
+    // Create a variable to determine the max amount of Euler Entries;
+    int maxEulerEntries = control_integral_period/loopTime;
+
+    // Create a matrix to store the returned stateEstimate from getNavigation() and store the yaw value into a varible
+    Eigen::Matrix<double,12,1> stateEstimate = navigation.GetNavigation();
+    double yaw = stateEstimate(8);
+
+    // Calculate the rotation matrix to translate the body frame to the ground frame
+    Eigen::Matrix2d rotation;
+    rotation << cos(-yaw), -sin(yaw), sin(-yaw), cos(-yaw);
+
+    // Populate x_control so that the first 2 entries are the stateEstimates' x and y velocities, its 4-5 entries are stateEstimates' roll and pitch values
+    // and it's last 2 entries are stateEstimates' roll and pitch angular velocities.
+    x_control.segment(0,2) = rotation * stateEstimate.segment(3,2);
+    x_control.segment(4,2) = stateEstimate.segment(6,2);
+    x_control.segment(6,2) = stateEstimate.segment(9,2);
+
+    // Extract roll and pitch from stateEstimate, and put it into euler_queue
+    std::vector<double> currentAngle {stateEstimate(6), stateEstimate(7)};
+    euler_queue.push_back(currentAngle);
+
+    // Determine if euler_queue apprahced its limit, and if so, delelete its first entry
+    if (euler_queue.size() > maxEulerEntries)
+    {
+        euler_queue.erase(euler_queue.begin());
+    }
+     // Create a vector that will hold the sums of all of the roll and pitch entries in euler_queue
+    std::vector<double> euler_sum {0.0, 0.0};
+    for(int i = 0; i < euler_queue.size(); i++)
+    {
+        euler_sum[0] += euler_queue[i][0];
+        euler_sum[1] += euler_queue[i][1];
+    }
+
+    // Populate the second and third element with the integrals of roll and pitch
+    x_control[2] = euler_sum[0] * loopTime;
+    x_control[3] = euler_sum[1] * loopTime;
+
+    // Calculate what angle we need to tell the tvc to move
+    CalculateInput();
+
 }
 
 
