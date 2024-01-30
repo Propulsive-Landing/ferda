@@ -5,6 +5,7 @@
 #include "Telemetry.hpp"
 #include <iostream>
 
+
 //CONSTANTS TO BE FIGURED OUT LATER
 int abort_threshold = 1;
 int calibration_time = 1;
@@ -32,6 +33,36 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
     return Mode::Calibration;
 }
 
+Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller) {
+    navigation.UpdateNavigation();
+
+    static auto start_time = std::chrono::high_resolution_clock::now();
+    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+    double seconds = milliseconds_since_start / 1000.0;
+
+    if(seconds > 1){
+        Telemetry::GetInstance().Log("Switching mode from idle to launch");
+        static auto start_time = std::chrono::high_resolution_clock::now();
+        return Mode::Launch;
+    }
+
+
+    return Mode::Idle;
+}
+
+Mode::Phase Mode::UpdateStartLaunch(Navigation& navigation, Controller& controller, double change_time){
+     static auto start_time = std::chrono::high_resolution_clock::now();
+     int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+     double seconds = milliseconds_since_start / 1000.0;
+     return Mode::Launch;
+/*
+     if (seconds >= 10){
+        launch
+     }
+}
+*/
+}
+
 Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, double change_time) {
    
    // Create a static variable to initalize the Start time so cotroller can call start the first time this method is called
@@ -52,6 +83,8 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, d
     double acceleration_vector = (sqrt(pow(std::get<0>(acceleration),2) + pow(std::get<1>(acceleration), 2) + pow(std::get<2>(acceleration), 2)));
     if(abs(acceleration_vector) < 1){ 
         Telemetry::GetInstance().Log("Switching mode from launch to freefall");
+       // if(seconds > navigation.loopTime + motor_thrust_duration)
+       //     ejct parachute
         return Mode::Freefall;
     }
     else{
@@ -61,7 +94,10 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, d
 
 Mode::Phase Mode::UpdateFreefall(Navigation& navigation) {
     // some checks
+  //  if 0 > xhat(6) && time > fsw_calibration_time + motor_thrust_duration
+
     navigation.UpdateNavigation();
+
 
     static auto start_time = std::chrono::high_resolution_clock::now();
     int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
@@ -81,22 +117,6 @@ Mode::Phase Mode::UpdateSafeMode(Navigation& navigation, Controller& controller)
     return Mode::Safe;
 }
 
-Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller) {
-    navigation.UpdateNavigation();
-
-    static auto start_time = std::chrono::high_resolution_clock::now();
-    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-    double seconds = milliseconds_since_start / 1000.0;
-
-    if(seconds > 1){
-        Telemetry::GetInstance().Log("Switching mode from idle to launch");
-        static auto start_time = std::chrono::high_resolution_clock::now();
-        return Mode::Launch;
-    }
-
-
-    return Mode::Idle;
-}
 
 Mode::Phase Mode::UpdateTestTVC(Controller& controller) {
     static auto start_time = std::chrono::high_resolution_clock::now();
@@ -113,7 +133,6 @@ Mode::Phase Mode::UpdateTestTVC(Controller& controller) {
 
     return Mode::TestTVC;
 }
-
 
 
 bool Mode::Update(Navigation& navigation, Controller& controller) {
@@ -143,6 +162,10 @@ bool Mode::Update(Navigation& navigation, Controller& controller) {
         case TestTVC:
             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
             this->eCurrentMode = UpdateTestTVC(controller);
+            break;
+        case StartLaunch:
+            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
+            this->eCurrentMode = UpdateStartLaunch(navigation, controller, change_time);
             break;
         case Launch:
             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);

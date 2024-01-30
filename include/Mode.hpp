@@ -14,6 +14,7 @@ class Mode
                 Calibration,
                 Idle,
                 TestTVC,
+                StartLaunch,
                 Launch,
                 Freefall,
                 Terminate,

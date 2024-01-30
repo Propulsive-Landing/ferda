@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.5)
-
 project(Ferda C CXX)
 
 set(CMAKE_C_STANDARD 11)
@@ -13,15 +12,20 @@ endif()
 
 FILE(GLOB CppSources src/*.cpp)
 
-find_package (Eigen3 REQUIRED NO_MODULE)
+find_package(Eigen3 REQUIRED NO_MODULE)
 
+# Add the directory containing Google Test source code
+add_subdirectory(./googletest)
 
 add_executable(Ferda ${CppSources} ${EXTRA_CODE})
 
 target_include_directories(Ferda PRIVATE include)
 
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
-    target_link_libraries (Ferda Eigen3::Eigen)
+    target_link_libraries(Ferda Eigen3::Eigen)
 else()
-    target_link_libraries (Ferda Eigen3::Eigen pigpio)
+    target_link_libraries(Ferda Eigen3::Eigen pigpio)
 endif()
+
+# Link with Google Test and Google Test Main
+target_link_libraries(Ferda gtest gtest_main)
