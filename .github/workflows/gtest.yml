@@ -21,7 +21,7 @@ jobs:
         sudo apt-get install -y libgtest-dev
 
     - name: Build
-      run: cmake . && make
+      run: cmake --config Debug . && make
 
     - name: Run tests
       run: ctest
