@@ -17,7 +17,7 @@ jobs:
     - name: Set up C++ build environment
       run: |
         sudo apt-get update
-        sudo apt-get install -y g++ cmake
+        sudo apt-get install -y g++ cmake libeigen3-dev
         sudo apt-get install -y libgtest-dev
 
     - name: Build
