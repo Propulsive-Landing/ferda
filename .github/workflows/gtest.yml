@@ -19,10 +19,9 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y g++ cmake libeigen3-dev
         sudo apt-get install -y libgtest-dev
-        sudo apt-get install pigpio
 
     - name: Build
-      run: cmake . && make
+      run: cmake -DCMAKE_BUILD_TYPE=Debug . && make
 
     - name: Run tests
       run: ctest
