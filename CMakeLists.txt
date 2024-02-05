@@ -14,10 +14,7 @@ FILE(GLOB CppSources src/*.cpp)
 
 find_package(Eigen3 REQUIRED NO_MODULE)
 
-# Add the directory containing Google Test source code
-# add_subdirectory(./googletest)
-# find_package(GTest CONFIG REQUIRED)
-
+# Fetch GoogleTest content
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -34,9 +31,9 @@ target_include_directories(Ferda PRIVATE include)
 
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
     target_link_libraries(Ferda Eigen3::Eigen gtest_main)
+    # Link with Google Test and Google Test Main
+    target_link_libraries(Ferda gtest gtest_main)
 else()
     target_link_libraries(Ferda Eigen3::Eigen pigpio)
 endif()
 
-# Link with Google Test and Google Test Main
-target_link_libraries(Ferda gtest gtest_main)
