@@ -46,11 +46,8 @@ void Navigation::UpdateNavigation(){
     double psi = stateMat(8);
 
     // Create a vector that will hold d_theta and set all of the elements to 0 and get the angular rate
-    std::vector<double> d_theta_now = {0,0,0};
-    d_theta_now[0] = std::get<0>(angularRate) + std::get<1>(angularRate)*sin(phi)*tan(theta)+ std::get<2>(angularRate)*cos(phi)*tan(theta);
-    d_theta_now[1] =  std::get<1>(angularRate)*cos(phi) - std::get<2>(angularRate)*sin(phi);
-    d_theta_now[2] =  std::get<1>(angularRate)*sin(phi)* (1/(cos(theta))) + std::get<2>(angularRate)*cos(phi)* (1/(cos(theta)));
-    //std::cout<< d_theta_now[0]  << "\n";
+    std::vector<double> d_theta_now = D_Theta_Now_Math(phi, theta, psi, angularRate);
+   
     // Append the vector, d_theta_now, to d_theta_queue_reckon
     d_theta_queue_reckon.push_back(d_theta_now);
     
@@ -84,11 +81,6 @@ void Navigation::UpdateNavigation(){
    
 }
 
-void Navigation::Start(){
-    // Sets the state vector to all zeros //
-
-    stateMat = Eigen::Matrix<double, 12, 1>::Zero();
-}
 
 std::tuple<double,double,double> Navigation::ComputeAngularRollingAverage(){
     // Computes a rolling average of the angular velocities //
@@ -133,7 +125,17 @@ Eigen::Matrix3d Navigation::CreateRotationalMatrix(double phi, double theta, dou
     rotationalMatrix(2,2) = cos(phi)*cos(theta);
 
     return rotationalMatrix;
+}
 
+std::vector<double> Navigation::D_Theta_Now_Math(double phi, double theta, double psi, std::tuple<double,double,double> angularRate){
+    // Computes math to get velocity in roll, pitch, and yaw directions
+
+    std::vector<double> d_theta_now = {0,0,0};
+    d_theta_now[0] = std::get<0>(angularRate) + std::get<1>(angularRate)*sin(phi)*tan(theta)+ std::get<2>(angularRate)*cos(phi)*tan(theta);
+    d_theta_now[1] =  std::get<1>(angularRate)*cos(phi) - std::get<2>(angularRate)*sin(phi);
+    d_theta_now[2] =  std::get<1>(angularRate)*sin(phi)* (1/(cos(theta))) + std::get<2>(angularRate)*cos(phi)* (1/(cos(theta)));
+    
+    return d_theta_now;
 }
 
 std::tuple<double, double, double> Navigation::GetBodyAcceleration()

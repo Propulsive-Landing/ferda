@@ -49,6 +49,7 @@ std::tuple<double, double, double> IMU::GetBodyAcceleration()
     ifstream >> nAccelZ;
     ifstream.close();
 
+   
     return std::make_tuple(nAccelX * 0.001794, nAccelY * -0.001794, nAccelZ * -0.001794);
 }
 

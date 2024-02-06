@@ -24,7 +24,6 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
 
     if(seconds >= 1){
        // Telemetry::GetInstance().Log("Switching mode from calibration to idle");
-        navigation.Start();
         controller.ImportControlParameters("../12-9-k-matrix.csv");
         return Mode::Idle;
 
