@@ -40,9 +40,32 @@ void Controller::UpdateTestTVC(double testTime) {
 }
 
 void Controller::UpdateLaunch(Navigation& navigation, double current_time) {
+    //utilize the TVC to launch rocket with pad avoidance 5 degrees away from start
+    stabilizeAtOffset(navigation, current_time, 5*kDeg2Rad);
+
+}
+
+
+//communicate with TVC
+void Controller::UpdateLand(Navigation &navigation, double current_time){
+    //Use the TVC to stabilize the rocket for landing
+
+    stabilizeAtOffset(navigation, current_time, 0);
+}
+
+//shut down rocket functions
+void Controller::UpdateSafe(){
+    // TODO. Center TVC, turn off reaction wheel, etc.
+    Center();
+
+}
+
+void Controller::stabilizeAtOffset(Navigation &navigation, double current_time, double offset){
     // Calculate desired control inputs for launch and actuate all control surfaces accordingly
      // Calculate desired control inputs for launch and actuate all control surfaces accordingly
     
+    double timeAtOffset = 0.5;
+
     if(current_iteration_index < kNumberControllerGains - 1){
         CalculateK(current_time);
     }
@@ -62,6 +85,11 @@ void Controller::UpdateLaunch(Navigation& navigation, double current_time) {
     x_control.segment(0,2) = rotation * stateEstimate.segment(3,2);
     x_control.segment(4,2) = stateEstimate.segment(6,2);
     x_control.segment(6,2) = stateEstimate.segment(9,2);
+    
+    //add offset to the rocket for a short amount of time after launch to avoid the pad when landing
+    if(current_time <= timeAtOffset){
+        x_control(4) += offset;
+    }
 
     // Extract roll and pitch from stateEstimate, and put it into euler_queue
     std::vector<double> currentAngle {stateEstimate(6), stateEstimate(7)};
@@ -86,19 +114,6 @@ void Controller::UpdateLaunch(Navigation& navigation, double current_time) {
 
     // Calculate what angle we need to tell the tvc to move
     CalculateInput();
-
-}
-
-
-//communicate with TVC
-void Controller::UpdateLand(){
-    // TODO. Calculate desired control inputs for land
-    // TODO. Actuate all control surfaces accordingly
-}
-
-//shut down rocket functions
-void Controller::UpdateSafe(){
-    // TODO. Center TVC, turn off reaction wheel, etc.
 }
 
 void Controller::CalculateK(double current_time){
