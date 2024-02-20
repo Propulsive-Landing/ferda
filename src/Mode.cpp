@@ -78,7 +78,7 @@ Mode::Phase Mode::UpdateSafeMode(Navigation& navigation, Controller& controller)
     //continue collection data
     navigation.UpdateNavigation();
 
-    return Mode::Safe;
+    return Mode::Terminate;
 }
 
 Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller) {

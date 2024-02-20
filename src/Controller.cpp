@@ -56,7 +56,6 @@ void Controller::UpdateLand(Navigation &navigation, double current_time){
 //shut down rocket functions
 void Controller::UpdateSafe(){
     // TODO. Center TVC, turn off reaction wheel, etc.
-    Center();
 
 }
 
