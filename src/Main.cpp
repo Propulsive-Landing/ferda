@@ -49,13 +49,8 @@ int main()
     //#ifdef NDEBUG
     //    gpioTerminate();
    // #endif
-    std::cout<< navigation.GetNavigation() << "\n";
-   static int iteration = 1;
-   while(iteration){
-        navigation.UpdateNavigation();
-        iteration--;
-        std::cout<< navigation.GetNavigation() << "\n";
-    }
+
+    
    
 
 

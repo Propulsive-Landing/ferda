@@ -11,6 +11,7 @@
 Navigation::Navigation(IMU& imu, Barometer& barometer, TVC& tvc) : imu(imu), barometer(barometer), tvc(tvc) 
 {
     stateMat = Eigen::Matrix<double, 12, 1>::Zero();
+    pressureInit = barometer.GetPressure();
 }
 
 Eigen::Matrix<double, 12, 1> Navigation::GetNavigation()
@@ -20,7 +21,9 @@ Eigen::Matrix<double, 12, 1> Navigation::GetNavigation()
 
 double Navigation::GetHeight() {
     double pressure = barometer.GetPressure();
-    return pressure;//Need the right equation for height
+    double temp = barometer.GetTemperature(); // CHECK UNITS
+    return (log(pressure/pressureInit) * 8.3143 * temp) / (0.02896 * -9.81);
+    // Pressure is in kpa
 }
     
 void Navigation::UpdateNavigation(){
@@ -30,7 +33,6 @@ void Navigation::UpdateNavigation(){
     int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
     double seconds = milliseconds_since_start / 1000.0;
    
-
     // Create 2 tuples to hold the the linear acceleration and angular rate data from the imu 
     std::tuple<double,double,double> linearAcceleration = imu.GetBodyAcceleration();
     std::tuple<double,double,double> angularRate = imu.GetBodyAngularRate();
@@ -63,7 +65,7 @@ void Navigation::UpdateNavigation(){
 
     // Convert the three euler angles to a rotation matrix that can move a vector from the body fixed frame into the ground fixed frame
     Eigen::Matrix<double, 3, 3> R = CreateRotationalMatrix(phi, theta, psi);
-   // std::cout<< R<<"\n";;
+
 
     // Update the linear positions
     //newState.segment(0,3) = stateMat.segment(3,3) * loopTime + stateMat.segment(0,3);
@@ -138,3 +140,4 @@ std::tuple<double, double, double> Navigation::GetBodyAcceleration()
 {
     return imu.GetBodyAcceleration();
 }
+

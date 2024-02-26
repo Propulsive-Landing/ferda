@@ -2,6 +2,7 @@
 
 #include "Controller.hpp"
 #include "Telemetry.hpp"
+#include "MissionConstants.hpp"
 #include <cmath>
 #include <string>
 #include <fstream>
@@ -43,7 +44,7 @@ void Controller::UpdateLaunch(Navigation& navigation, double current_time) {
     // Calculate desired control inputs for launch and actuate all control surfaces accordingly
      // Calculate desired control inputs for launch and actuate all control surfaces accordingly
     
-    if(current_iteration_index < kNumberControllerGains - 1){
+    if(current_iteration_index < MissionConstants::kNumberControllerGains - 1){
         CalculateK(current_time);
     }
     // Create a variable to determine the max amount of Euler Entries;
@@ -150,18 +151,25 @@ void Controller::Center(){
 void Controller::ImportControlParameters(std::string file_name){
     // Imports the kmatrix file into controller_gains and the time values into controller_gain_times
     
-    char separator = '\t';
+    char separator = ',';
     std::string row, item;
     std::ifstream in(file_name);
-    std::ofstream out("test.csv");
-    for (int i=0; i< 2*kNumberControllerGains; i++){
+    std::getline(in, row);
+    std::stringstream ss(row);
+    for (int i = 0; i < 10; i++){
+         std::getline(ss, item, separator);
+         controller_gain_times.push_back(stod(item));
+    }
+
+    for (int i=0; i < 2* MissionConstants::kNumberControllerGains; i++){
         std::getline(in, row);
         std::stringstream ss(row);
         for (int j=0; j<8; j++){
             std::getline(ss, item, separator);
-            controller_gains(i, j) = stof(item);
+            controller_gains(i, j) = stod(item);
         }
     }
+    
+
     in.close();
 }
-
