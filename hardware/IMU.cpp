@@ -53,7 +53,8 @@ std::tuple<double, double, double> IMU::GetBodyAcceleration()
 }
 
 std::tuple<double, double, double> IMU::GetBodyAngularRate()
-{
+{.  
+    
     std::fstream ifstream(gyroPath + "/in_anglvel_x_raw");
     if (!ifstream.is_open())
         throw std::runtime_error("accelerometer is not present");
@@ -76,4 +77,5 @@ std::tuple<double, double, double> IMU::GetBodyAngularRate()
     ifstream.close();
 
     return std::make_tuple(nAnglVelX * 0.000266, -nAnglVelY * 0.000266, -nAnglVelZ * 0.000266);
+    
 }

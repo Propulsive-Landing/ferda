@@ -141,7 +141,7 @@ Mode::Phase Mode::UpdateFreefall(Navigation& navigation, Igniter& igniter) {
 
     }
 
-    // WRITE CODE TO GO TO LAND
+
     return Mode::Freefall;
 }
 
@@ -151,11 +151,12 @@ Mode::Phase Mode::UpdateLand(Navigation& navigation, Controller& controller, dou
     double seconds = milliseconds_since_start / 1000.0;
 
     navigation.UpdateNavigation();
+    controller.UpdateLaunch(navigation, seconds);
 
     std::tuple<double,double,double> acceleration = navigation.GetBodyAcceleration();
     double acceleration_vector = (sqrt(pow(std::get<0>(acceleration),2) + pow(std::get<1>(acceleration), 2) + pow(std::get<2>(acceleration), 2)));
     if ( 9.7 < acceleration_vector && acceleration_vector < 9.9 && 0.0 < navigation.GetHeight() && navigation.GetHeight() < 1.0)
-        return Mode::Safe;
+        return Mode::Terminate;
 
     return Mode::Land;
 }
