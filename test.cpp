@@ -40,8 +40,8 @@ int main()
 
 
     // closing socket 
-    // close(clientSocket); 
-    while(true){}
+    close(clientSocket); 
+    
   
     return 0; 
 }
