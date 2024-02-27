@@ -11,6 +11,7 @@ void Controller::UpdateLaunch(Navigation& navigation) {
     // TODO. Actuate all control surfaces accordingly
 }
 
+
 //communicate with TVC
 void Controller::UpdateLand(){
     // TODO. Calculate desired control inputs for land

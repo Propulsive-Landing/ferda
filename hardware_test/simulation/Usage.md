@@ -6,5 +6,4 @@
 
 To build from artifacts, two folders are generated. One is the source which must be specified in "pathToSource" while the other are the matlab dependencies. The matlab dependencies folder is generally larger, and has a lot of sub-directories. 
 
-cmake -S pathToSource -B pathToProposedLocationOfDerivedFiles 
--DMATLAB_ROOT=pathToUnzippedmlrFiles
+cmake -S pathToSource -B pathToProposedLocationOfDerivedFiles -DMATLAB_ROOT=pathToUnzippedmlrFiles
