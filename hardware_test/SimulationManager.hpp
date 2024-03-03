@@ -1,0 +1,38 @@
+#pragma once
+
+#include <cstdint>
+#include <Eigen/Dense>
+
+class SimulationManager
+{
+private:
+    SimulationManager();
+    ~SimulationManager();
+
+    int clientSocket;
+    bool validConnection; // True if connected successfully
+
+    const float POLL_TIME = 0.1
+
+
+    // P, Q, R, x_accel, y_accel, z_accel, pressure
+    Eigen::Matrix<double, 7, 1> SimulationOutputs;
+    
+    // tvc_x, tvc_y, ignite1, ignite2
+    Eigen::Matrix<double, 4, 1> SimInputs;
+
+
+public:
+    
+
+    Eigen::Matrix<double, 7, 1> GetOutputs();
+    void SetInputs(Eigen::Matrix<double, 4, 1> inputs);
+
+    static SimulationManager& GetInstance()
+    {
+        static SimulationManager telem;
+
+        return telem;
+    } 
+
+};
