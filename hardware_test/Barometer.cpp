@@ -1,10 +1,17 @@
 #include "Barometer.hpp"
+
+#include "SimulationManager.hpp"
+
 double Barometer::GetPressure()
 {
-    return 0;
+    Eigen::Matrix<double, 8, 1> Outputs = SimulationManager::GetInstance().GetOutputs();
+
+    return Outputs(6, 0);
 }
 
 double Barometer::GetTemperature()
 {
-    return 0;
+    Eigen::Matrix<double, 8, 1> Outputs = SimulationManager::GetInstance().GetOutputs();
+
+    return Outputs(7, 0);
 }

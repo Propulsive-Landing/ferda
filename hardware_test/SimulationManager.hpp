@@ -16,7 +16,7 @@ private:
 
 
     // P, Q, R, x_accel, y_accel, z_accel, pressure
-    Eigen::Matrix<double, 7, 1> SimulationOutputs;
+    Eigen::Matrix<double, 8, 1> SimulationOutputs;
     
     // tvc_x, tvc_y, ignite1, ignite2
     Eigen::Matrix<double, 4, 1> SimInputs;
@@ -28,8 +28,9 @@ private:
 public:
     
 
-    Eigen::Matrix<double, 7, 1> GetOutputs();
+    Eigen::Matrix<double, 8, 1> GetOutputs();
     void SetInputs(Eigen::Matrix<double, 4, 1> inputs);
+    Eigen::Matrix<double, 4, 1> GetCurrentInputs();
 
     static SimulationManager& GetInstance()
     {

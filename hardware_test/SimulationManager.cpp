@@ -9,8 +9,10 @@
 
 #include "SimulationManager.hpp"
 
-Eigen::Matrix<double, 7, 1> ParseOutput(std::string s){
-    Eigen::Matrix<double, 7, 1> output;
+Eigen::Matrix<double, 8, 1> ParseOutput(std::string s){
+    Eigen::Matrix<double, 8, 1> output;
+
+    // std::cout << "GOT:\n" << s << std::endl;
 
     std::string delimiter = ",";
 
@@ -30,9 +32,11 @@ Eigen::Matrix<double, 7, 1> ParseOutput(std::string s){
     return output;
 }
 
+Eigen::Matrix<double, 4, 1> SimulationManager::GetCurrentInputs(){
+    return SimInputs;
+}
 
-
-Eigen::Matrix<double, 7, 1> SimulationManager::GetOutputs()
+Eigen::Matrix<double, 8, 1> SimulationManager::GetOutputs()
 {
     static bool firstRun = true;
     static auto start_time = std::chrono::high_resolution_clock::now();
@@ -70,7 +74,7 @@ Eigen::Matrix<double, 7, 1> SimulationManager::GetOutputs()
             return SimulationOutputs;
         }
 
-        Eigen::Matrix<double, 7, 1> parsed = ParseOutput(buf);
+        Eigen::Matrix<double, 8, 1> parsed = ParseOutput(buf);
         
         SimulationOutputs = parsed;
 
@@ -115,10 +119,10 @@ SimulationManager::SimulationManager()
 
     if(result == -1){
         validConnection = false;
-        std::cout << "FAILED TO CONNECT TO SIMULATION SERVER";
+        std::cout << "FAILED TO CONNECT TO SIMULATION SERVER\n";
     }
     else{
         validConnection = true;
-        std::cout << "Successfully connected to simulation server";
+        std::cout << "Successfully connected to simulation server\n";
     }
 }
