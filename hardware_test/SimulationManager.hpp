@@ -12,7 +12,7 @@ private:
     int clientSocket;
     bool validConnection; // True if connected successfully
 
-    const float POLL_TIME = 0.1
+    const float POLL_TIME = 0.1;
 
 
     // P, Q, R, x_accel, y_accel, z_accel, pressure
@@ -21,6 +21,9 @@ private:
     // tvc_x, tvc_y, ignite1, ignite2
     Eigen::Matrix<double, 4, 1> SimInputs;
 
+
+    const char *hostname = "8.tcp.ngrok.io";
+    uint16_t port = 15977;
 
 public:
     

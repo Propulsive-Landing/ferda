@@ -5,17 +5,42 @@
 #include <netdb.h>
 #include <iostream>
 #include <chrono>
+#include <vector>
 
 #include "SimulationManager.hpp"
 
+Eigen::Matrix<double, 7, 1> ParseOutput(std::string s){
+    Eigen::Matrix<double, 7, 1> output;
 
-Eigen::Matrix<double, 7, 1> GetOutputs()
+    std::string delimiter = ",";
+
+    unsigned int index = 0;
+    size_t pos = 0;
+    std::string token;
+    while ((pos = s.find(delimiter)) != std::string::npos) {
+        token = s.substr(0, pos);
+
+        output(index, 0) = stod(token);
+        // std::cout << token << std::endl;
+
+        s.erase(0, pos + delimiter.length());
+        index += 1;
+    }
+
+    return output;
+}
+
+
+
+Eigen::Matrix<double, 7, 1> SimulationManager::GetOutputs()
 {
+    static bool firstRun = true;
     static auto start_time = std::chrono::high_resolution_clock::now();
     int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
     double seconds = milliseconds_since_start / 1000.0;
 
-    if( seconds > POLL_TIME && validConnection){
+    if( firstRun || ( seconds > POLL_TIME && validConnection)){
+        firstRun = false;
         start_time = std::chrono::high_resolution_clock::now();
         // Update stored data
 
@@ -26,22 +51,46 @@ Eigen::Matrix<double, 7, 1> GetOutputs()
         ss << SimInputs(2, 0) << ",";
         ss << SimInputs(3, 0);
 
-        const char* message = ss.str().c_str()
+        std::string s = ss.str();
+
+        const char* message = s.c_str();
         
-        send(clientSocket, message, strlen(message), 0); 
+        int result = send(clientSocket, message, strlen(message), 0); 
+
+        if(result == -1){
+            validConnection = false;
+            return SimulationOutputs;
+        }
+
+        char buf[512];
+        result = recv(clientSocket, buf, 512, 0);
+
+        if(result == -1){
+            validConnection = false;
+            return SimulationOutputs;
+        }
+
+        Eigen::Matrix<double, 7, 1> parsed = ParseOutput(buf);
+        
+        SimulationOutputs = parsed;
 
     }
 
-    return SimulationOuptuts;
+    return SimulationOutputs;
 }
 
 
 
-void SetInputs(Eigen::Matrix<double, 4, 1> inputs)
+void SimulationManager::SetInputs(Eigen::Matrix<double, 4, 1> inputs)
 {
     SimInputs = inputs;
 }
 
+
+SimulationManager::~SimulationManager()
+{
+    close(clientSocket);
+}
 
 SimulationManager::SimulationManager()
 {
@@ -49,13 +98,13 @@ SimulationManager::SimulationManager()
     clientSocket = socket(AF_INET, SOCK_STREAM, 0); 
   
     // Find the ip
-    struct hostent *he=gethostbyname("6.tcp.ngrok.io");
+    struct hostent *he=gethostbyname(hostname);
     char *ip=inet_ntoa(*(struct in_addr*)he->h_addr_list[0]);
 
     // specifying address 
     sockaddr_in serverAddress; 
     serverAddress.sin_family = AF_INET; 
-    serverAddress.sin_port = htons(14475); 
+    serverAddress.sin_port = htons(port); 
     serverAddress.sin_addr.s_addr = inet_addr(ip);
 
     
@@ -65,11 +114,11 @@ SimulationManager::SimulationManager()
             sizeof(serverAddress));  
 
     if(result == -1){
-        validConnection = false
+        validConnection = false;
         std::cout << "FAILED TO CONNECT TO SIMULATION SERVER";
     }
     else{
-        validConnection = true
+        validConnection = true;
         std::cout << "Successfully connected to simulation server";
     }
 }

@@ -5,14 +5,12 @@
 
 #include <chrono>
 #include <thread>
+#include <iostream>
+#include <tuple>
 
 #include "Navigation.hpp"
 #include "Controller.hpp"
 #include "Telemetry.hpp"
-
-extern "C" {
-    #include "simulation.h"
-}
 
 #include "Mode.hpp"
 
@@ -26,8 +24,6 @@ int main()
     Navigation navigation(imu, barometer, tvc, igniter); 
     Controller controller(tvc, igniter);
 
-    simulation_initialize();
-    simulation_step();
 
     using namespace std::this_thread; // sleep_for, sleep_until
     using namespace std::chrono; // nanoseconds, system_clock, seconds
@@ -38,7 +34,13 @@ int main()
 
     Telemetry::GetInstance().SendString("Starting!");
 
-    while( mode.Update(navigation, controller) ) {}
+    std::tuple<double, double, double> rates = imu.GetBodyAngularRate();
+    double p = std::get<0>(rates);
+    std::cout << std::to_string(p) << std::endl;
+
+    // while( mode.Update(navigation, controller) ) {}
+
+    while(true) {} 
 
     return 0;
 }
