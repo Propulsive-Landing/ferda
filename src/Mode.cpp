@@ -1,185 +1,178 @@
-#include <chrono>
-#include <cmath>
-#include "Mode.hpp"
-#include "Navigation.hpp"
-#include "Telemetry.hpp"
-#include <iostream>
+// #include <chrono>
+// #include <cmath>
+// #include "Mode.hpp"
+// #include "Navigation.hpp"
+// #include "Telemetry.hpp"
+// #include <iostream>
 
 
-//CONSTANTS TO BE FIGURED OUT LATER
-int abort_threshold = 1;
-int calibration_time = 1;
-int thrust_duration = 1;
-int descent_time = 1;
-int total_time = 1;
-double ignition_height = 1;
+// //CONSTANTS TO BE FIGURED OUT LATER
+// int abort_threshold = 1;
+// int calibration_time = 1;
+// int thrust_duration = 1;
+// int descent_time = 1;
+// int total_time = 1;
+// double ignition_height = 1;
+// double fsw = 0.005;
 
-Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
+// Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
-Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controller) {
-    static auto start_time = std::chrono::high_resolution_clock::now();
-    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-    double seconds = milliseconds_since_start / 1000.0;
-    static bool centered = false;
+// Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controller) {
+//     static auto start_time = std::chrono::high_resolution_clock::now();
+//     int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+//     double seconds = milliseconds_since_start / 1000.0;
+//     static bool centered = false;
 
-    if(seconds >= 1){
-       // Telemetry::GetInstance().Log("Switching mode from calibration to idle");
-        controller.ImportControlParameters("../12-9-k-matrix.csv");
-        return Mode::Idle;
+//     if(seconds >= 1){
+//        // Telemetry::GetInstance().Log("Switching mode from calibration to idle");
+//         navigation.importTestAccAndTestGyro();
+//         controller.ImportControlParameters("../12-9-k-matrix.csv");
+//         return Mode::Idle;
 
-    }
+//     }
     
-    return Mode::Calibration;
-}
+//     return Mode::Calibration;
+// }
 
-Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller) {
-    navigation.UpdateNavigation();
+// Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller) {
 
-    static auto start_time = std::chrono::high_resolution_clock::now();
-    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-    double seconds = milliseconds_since_start / 1000.0;
+//     static auto start_time = std::chrono::high_resolution_clock::now();
+//     int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+//     double seconds = milliseconds_since_start / 1000.0;
 
-    if(seconds > 1){
-        Telemetry::GetInstance().Log("Switching mode from idle to launch");
-        static auto start_time = std::chrono::high_resolution_clock::now();
-        return Mode::Launch;
-    }
+//     if(seconds > 1){
+//         Telemetry::GetInstance().Log("Switching mode from idle to launch");
+//         static auto start_time = std::chrono::high_resolution_clock::now();
+
+//         return Mode::Launch;
+//     }
 
 
-    return Mode::Idle;
-}
+//     return Mode::Idle;
+// }
 
-Mode::Phase Mode::UpdateStartLaunch(Navigation& navigation, Controller& controller, double change_time){
-     static auto start_time = std::chrono::high_resolution_clock::now();
-     int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-     double seconds = milliseconds_since_start / 1000.0;
-     return Mode::Launch;
-/*
-     if (seconds >= 10){
-        launch
-     }
-}
-*/
-}
+// Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, double curr_time, int i) {
+//     static Eigen::Matrix<double, 601, 13> testStates;
+//      Eigen::Matrix<double, 12, 1> testState;
 
-Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, double change_time) {
+//      double time = curr_time;
+
+//    // Create a static variable to initalize the Start time so cotroller can call start the first time this method is called   
+
+//     if (i == 601)
+//     {
+//         char separator = ',';
+//         std::string row, row2, item, item2;
+//         std::ofstream outputFile("testNav.csv");
+
+//         outputFile << "Time,";
+//         outputFile << "x,";
+//         outputFile << "y,";
+//         outputFile << "z,";
+//         outputFile << "vx,";
+//         outputFile << "vy,";
+//         outputFile << "vz,";
+//         outputFile << "phi,";
+//         outputFile << "theta,";
+//         outputFile << "psi,";
+//         outputFile << "p,";
+//         outputFile << "q,";
+//         outputFile << "r";
+//         outputFile << "\n";
+
+
+//         // Start at index 1 to allow row for names
+//         for (int i=0; i< 601; i++)
+//         {
+//             for(int j = 0; j <= 12; j++)
+//             {
+//                 if (j == 12)
+//                 {
+//                     outputFile << testStates(i,j);
+//                 }
+//                 else
+//                 {
+//                     outputFile << testStates(i,j) << ",";
+//                 }
+//             }
+//             outputFile << "\n";
+//         }
    
-   // Create a static variable to initalize the Start time so cotroller can call start the first time this method is called
-    static auto start_time = std::chrono::high_resolution_clock::now();
-    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-    double seconds = milliseconds_since_start / 1000.0;
+//     outputFile.close();
+//     return Mode::Terminate;
+//     }
 
-    static int iteration = 1;
-    if(iteration > 0){
-        controller.Start(seconds);
-        iteration--;
-    }
-    navigation.UpdateNavigation();
-    // Added chang_time so updateLaunch includes iteratng through K
-    controller.UpdateLaunch(navigation, seconds);
+//     static int iteration = 1;
+//     if(iteration > 0){
+//         controller.Start(curr_time);
+//         iteration--;
+//     }
+//     navigation.UpdateNavigation(i);
+//    //controller.UpdateLaunch(navigation, curr_time);
+
+//     testState = navigation.GetNavigation();
+//     // std::cout<<testState<<"\n";
+//      testStates(i,0) = curr_time;
+//      for(int j = 1; j <= 12; j++)
+//      {
+//         testStates(i,j) = testState(j-1);
+//      } 
+
+//     return Mode::Launch;
+
+//     // Added chang_time so updateLaunch includes iteratng through K
     
-    std::tuple<double,double,double> acceleration = navigation.GetBodyAcceleration();
-    double acceleration_vector = (sqrt(pow(std::get<0>(acceleration),2) + pow(std::get<1>(acceleration), 2) + pow(std::get<2>(acceleration), 2)));
-    if(abs(acceleration_vector) < 1){ 
-        Telemetry::GetInstance().Log("Switching mode from launch to freefall");
-       // if(seconds > navigation.loopTime + motor_thrust_duration)
-       //     ejct parachute
-        return Mode::Freefall;
-    }
-    else{
-        return Mode::Launch;
-    }
-}
 
-Mode::Phase Mode::UpdateFreefall(Navigation& navigation) {
-    // some checks
-  //  if 0 > xhat(6) && time > fsw_calibration_time + motor_thrust_duration
-
-    navigation.UpdateNavigation();
+// }
 
 
-    static auto start_time = std::chrono::high_resolution_clock::now();
-    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-    double seconds = milliseconds_since_start / 1000.0;
 
-    if(seconds >= 10){//10 seconds after launch transition to safe mode and keep collecting data
-        return Mode::Safe;
-    }
-
-    return Mode::Freefall;
-}
-
-Mode::Phase Mode::UpdateSafeMode(Navigation& navigation, Controller& controller){
-    //continue collection data
-    navigation.UpdateNavigation();
-
-    return Mode::Safe;
-}
-
-
-Mode::Phase Mode::UpdateTestTVC(Controller& controller) {
-    static auto start_time = std::chrono::high_resolution_clock::now();
-    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-    double seconds = milliseconds_since_start / 1000.0;
+// bool Mode::Update(Navigation& navigation, Controller& controller) {
+//     // Used for testing dead reckoning
+//     static int i = 0;
+//     // Used to record time for testing and for controller
+//     static double currTime = 0;
+//     //static auto startingTime = std::chrono::high_resolution_clock::now();
     
-    controller.UpdateTestTVC(seconds);
+//     static auto last_time = std::chrono::high_resolution_clock::now();
+//     auto time_now = std::chrono::high_resolution_clock::now();
+//     double change_time = std::chrono::duration_cast<std::chrono::milliseconds>(time_now - last_time).count() / 1000.0;
+//     last_time = time_now;
+//     while(change_time < 0.005)
+//     {
+//              change_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - last_time).count() / 1000.0;
 
-    if(seconds > 5.0){
-        start_time = std::chrono::high_resolution_clock::now();
-        controller.Center();
-        return Mode::Calibration;
-    }
+//     }
+//     currTime += change_time;
+//     /* Finish calculating time change*/
 
-    return Mode::TestTVC;
-}
+//     //std::cout<<change_time<<"\n";
+//     navigation.loopTime = change_time;
+//     controller.loopTime = change_time;
 
-
-bool Mode::Update(Navigation& navigation, Controller& controller) {
-    static auto last_time = std::chrono::high_resolution_clock::now();
-    auto time_now = std::chrono::high_resolution_clock::now();
-    double change_time = std::chrono::duration_cast<std::chrono::nanoseconds>(time_now - last_time).count() / 1000000000.0;
-    last_time = time_now;
-    /* Finish calculating time change*/
-
-    navigation.loopTime = change_time;
-    controller.loopTime = change_time;
-
-    std::cout << std::to_string(eCurrentMode) << "\n";
+//    // std::cout << std::to_string(eCurrentMode) << "\n";
 
 
-    /* Handle behavior based on current phase. Update phase*/
-    switch(this->eCurrentMode)
-    {
-        case Calibration:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
-            this->eCurrentMode = UpdateCalibration(navigation, controller);
-            break;
-        case Idle:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
-            this->eCurrentMode = UpdateIdle(navigation, controller);
-            break;
-        case TestTVC:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
-            this->eCurrentMode = UpdateTestTVC(controller);
-            break;
-        case StartLaunch:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
-            this->eCurrentMode = UpdateStartLaunch(navigation, controller, change_time);
-            break;
-        case Launch:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
-            this->eCurrentMode = UpdateLaunch(navigation, controller, change_time);
-            break;
-        case Freefall:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
-            this->eCurrentMode = UpdateFreefall(navigation);
-            break;
-        case Safe:
-            this->eCurrentMode = UpdateSafeMode(navigation, controller);
-        case Terminate:
-            return false;
-    }
+//     /* Handle behavior based on current phase. Update phase*/
+//     switch(this->eCurrentMode)
+//     {
+//         case Calibration:
+//             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
+//             this->eCurrentMode = UpdateCalibration(navigation, controller);
+//             break;
+//         case Idle:
+//             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
+//             this->eCurrentMode = UpdateIdle(navigation, controller);
+//             break;
+//         case Launch:
+//             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
+//             this->eCurrentMode = UpdateLaunch(navigation, controller,currTime, i);
+//             i++;
+//             break;
+//         case Terminate:
+//             return false;
+//     }
 
-    return true; 
+//     return true; 
 
-}
+// }

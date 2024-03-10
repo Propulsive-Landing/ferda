@@ -4,7 +4,9 @@
 #include <vector>
 #include <iostream>
 #include <chrono>
+#include <iomanip>
 
+    //std::cout << std::fixed << std::setprecision(4);
 
 
 #include "Navigation.hpp"
@@ -12,8 +14,25 @@
 
 Navigation::Navigation(IMU& imu, Barometer& barometer, TVC& tvc) : imu(imu), barometer(barometer), tvc(tvc) 
 {
+   std::cout << std::setprecision(4) << std::fixed;
     stateMat = Eigen::Matrix<double, 12, 1>::Zero();
+//    stateMat << 0.0029,
+//    -0.5204,
+//    77.3056,
+//     0.0027,
+//    -0.3528,
+//    26.7202,
+//    -0.0001,
+//    -0.0004,
+//     0.0021,
+//     0.0001,
+//    -0.0010,
+//     0.0004;
+    
+
+
 }
+
 
 Eigen::Matrix<double, 12, 1> Navigation::GetNavigation()
 {
@@ -25,44 +44,34 @@ double Navigation::GetHeight() {
     return pressure;//Need the right equation for height
 }
     
-void Navigation::UpdateNavigation(){
+void Navigation::UpdateNavigation(int i){
     // Updates stateMat //
-
-    static auto start_time = std::chrono::high_resolution_clock::now();
-    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-    double seconds = milliseconds_since_start / 1000.0;
    
 
     // Create 2 tuples to hold the the linear acceleration and angular rate data from the imu 
-    std::tuple<double,double,double> linearAcceleration = imu.GetBodyAcceleration();
-    std::tuple<double,double,double> angularRate = imu.GetBodyAngularRate();
-   
+   // std::tuple<double,double,double> linearAcceleration = imu.GetBodyAcceleration();
+    //std::tuple<double,double,double> angularRate = imu.GetBodyAngularRate();
+     std::tuple<double,double,double> linearAcceleration = GetTestAcceleration(i);
+     std::tuple<double,double,double> angularRate = GetTestGyroscope(i);
+
     // Convert the linear acceleration tuple to a Vector so we can muliply the Eigen matrix R by another Eigen type which in this case is a vector
     Eigen::Vector3d linearAccelerationVector(std::get<0>(linearAcceleration), std::get<1>(linearAcceleration), std::get<2>(linearAcceleration));
-    //std::cout<< linearAccelerationVector "\n";;
     // Get phi, theta, and psi
     double phi = stateMat(6);
+    //std::cout<<phi<<"\n";
     double theta = stateMat(7);
-    double psi = stateMat(8);
+       // std::cout<<theta<<"\n";
 
-    // Create a vector that will hold d_theta and set all of the elements to 0 and get the angular rate
-    std::vector<double> d_theta_now = D_Theta_Now_Math(phi, theta, psi, angularRate);
-   
-    // Append the vector, d_theta_now, to d_theta_queue_reckon
-    d_theta_queue_reckon.push_back(d_theta_now);
-    
-    
-    // Call ComputeAngularRollingAverage to sum up all of the data so far for p,q,r which represent the angular velocity in x, y, and z direction
-    std::tuple<double,double,double> rollingAngularAverage = ComputeAngularRollingAverage();
-   // std::cout<< std::get<0>(rollingAngularAverage) << ", " << std::get<1>(rollingAngularAverage) << ", " << std::get<2>(rollingAngularAverage)<<"\n";
-    //Assign the sum to their respective states, that being p,q, and r
-    stateMat(9) = std::get<0>(rollingAngularAverage);
-    stateMat(10) = std::get<1>(rollingAngularAverage);
-    stateMat(11) = std::get<2>(rollingAngularAverage);
+    double psi = stateMat(8);
+       // std::cout<<psi<<"\n";
+
 
     // Convert the three euler angles to a rotation matrix that can move a vector from the body fixed frame into the ground fixed frame
     Eigen::Matrix<double, 3, 3> R = CreateRotationalMatrix(phi, theta, psi);
-   // std::cout<< R<<"\n";;
+    
+    if (i == 601){
+    std::cout<< R<<"\n";
+    }
 
     // Update the linear positions
     //newState.segment(0,3) = stateMat.segment(3,3) * loopTime + stateMat.segment(0,3);
@@ -78,7 +87,31 @@ void Navigation::UpdateNavigation(){
     // Update the angles
    // newState.segment(6,3) = stateMat.segment(9,3) * loopTime + stateMat.segment(6,3);
     stateMat.segment(6,3) += stateMat.segment(9,3) * loopTime;
+
    
+    // Create a vector that will hold d_theta and set all of the elements to 0 and get the angular rate
+    std::vector<double> d_theta_now = D_Theta_Now_Math(phi, theta, psi, angularRate);
+   
+    // Append the vector, d_theta_now, to d_theta_queue_reckon
+    d_theta_queue_reckon.push_back(d_theta_now);
+    
+    
+    
+    // Call ComputeAngularRollingAverage to sum up all of the data so far for p,q,r which represent the angular velocity in x, y, and z direction
+    std::tuple<double,double,double> rollingAngularAverage = ComputeAngularRollingAverage();
+    
+     if(i == 601) {   
+     
+        std::cout<<"Smooth p = " << d_theta_queue_reckon[d_theta_queue_reckon.size() - 1][0] << "\n";
+        std::cout<<"Smooth q = " << d_theta_queue_reckon[d_theta_queue_reckon.size() - 1][1] << "\n";
+        std::cout<<"Smooth r = " << d_theta_queue_reckon[d_theta_queue_reckon.size() - 1][2] << "\n";
+     }
+     
+   // std::cout<< std::get<0>(rollingAngularAverage) << ", " << std::get<1>(rollingAngularAverage) << ", " << std::get<2>(rollingAngularAverage)<<"\n";
+    //Assign the sum to their respective states, that being p,q, and r
+    stateMat(9) = std::get<0>(rollingAngularAverage);
+    stateMat(10) = std::get<1>(rollingAngularAverage);
+    stateMat(11) = std::get<2>(rollingAngularAverage);
 }
 
 
@@ -113,6 +146,7 @@ Eigen::Matrix3d Navigation::CreateRotationalMatrix(double phi, double theta, dou
     // Update the roational matrix that is used to transform the body frame to the ground frame //
 
     Eigen::Matrix3d rotationalMatrix;
+   // std::cout<<double(cos(0.0))<<"\n";
 
     rotationalMatrix(0,0) = cos(theta)*cos(psi);
     rotationalMatrix(0,1) = sin(phi)*sin(theta)*cos(psi)-cos(phi)*sin(psi);
@@ -131,14 +165,110 @@ std::vector<double> Navigation::D_Theta_Now_Math(double phi, double theta, doubl
     // Computes math to get velocity in roll, pitch, and yaw directions
 
     std::vector<double> d_theta_now = {0,0,0};
+    //std::cout<< phi << "\n";
+    //std::cout<< std::cos(phi) << "\n";
+    //std::cout<< std::cos(phi) << "\n";
+    //std::cout<<std::sin(phi)<<"\n";
+    //std::cout<<std::sin(0.0001)<<"\n";
+  //  bool t = phi == 0.0001;
+   // std::cout<<t<<"\n";
+
     d_theta_now[0] = std::get<0>(angularRate) + std::get<1>(angularRate)*sin(phi)*tan(theta)+ std::get<2>(angularRate)*cos(phi)*tan(theta);
     d_theta_now[1] =  std::get<1>(angularRate)*cos(phi) - std::get<2>(angularRate)*sin(phi);
     d_theta_now[2] =  std::get<1>(angularRate)*sin(phi)* (1/(cos(theta))) + std::get<2>(angularRate)*cos(phi)* (1/(cos(theta)));
+   
+   // std::cout<<"d_theta_now[0]" << d_theta_now[0] << "\n";
+   // std::cout<<"d_theta_now[1]" << d_theta_now[1] << "\n";
+    //std::cout<<"d_theta_now[2]" << d_theta_now[2] << "\n";
     
+
     return d_theta_now;
 }
 
-std::tuple<double, double, double> Navigation::GetBodyAcceleration()
+std::tuple<double, double, double> Navigation::GetTestAcceleration(int i)
 {
-    return imu.GetBodyAcceleration();
+      std::tuple<double,double,double> linearAcceleration = {linearAccels(i,0), linearAccels(i,1), linearAccels(i,2)};
+      return linearAcceleration;
 }
+
+std::tuple<double, double, double> Navigation::GetTestGyroscope(int i)
+{
+     std::tuple<double,double,double> angularAcceleration = {gyroAccels(i,0), gyroAccels(i,1), gyroAccels(i,2)};
+      return angularAcceleration;
+}
+
+void Navigation::importTestAccAndTestGyro()
+{
+    char separator = ',';
+    std::string row, row2, item, item2;
+    std::ifstream in("../accelerometer.csv");
+    std::ifstream in2("../gyroscope.csv");
+    for (int i=0; i< 602; i++){
+        std::getline(in, row);
+        std::getline(in2, row2);
+        std::stringstream ss(row);
+        std::stringstream ss2(row2);
+        for (int j=0; j<3; j++){
+            std::vector<double> getRow;
+            std::getline(ss, item, separator);
+            std::getline(ss2, item2, separator);
+            std::stringstream ss(row);
+            //std::cout<<row<<"\n";
+            std::stringstream ss2(row2);
+            linearAccels(i,j) = stod(item);
+            gyroAccels(i,j) = stod(item2);
+        }
+    }
+    
+}
+
+/*
+    0.0029
+   -0.5204
+   77.3056
+    0.0027
+   -0.3528
+   26.7202
+   -0.0001
+   -0.0004
+    0.0021
+    0.0001
+   -0.0010
+    0.0004    
+ R: 
+    1.0000   -0.0021   -0.0004
+    0.00211.00000.0001
+    0.0004   -0.00011.0000
+d_theta_now: 
+    0.0001
+   -0.0051
+    0.0010
+Output:    
+    0.0029
+   -0.5222
+   77.4392
+    0.0028
+   -0.3533
+   26.6690
+   -0.0001
+   -0.0004
+    0.0021
+    0.0002
+   -0.0014
+    0.0003
+
+    0.00181714,
+    -0.546316,
+    76.8751,
+    0.00212192,
+    -0.361886,
+    26.67,
+    -4.64491e-05,
+    -0.000443881,
+    0.00213429,
+    0.000116037,
+    -0.000969894,
+    0.000370655
+
+*/
+

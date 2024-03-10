@@ -25,7 +25,7 @@ namespace MissionConstants {
     const double kDeg2Rad = kPi/180;
 
     // Navigation constants
-    const double kNavThetaDotSmooth = 0.5;
+    const double kNavThetaDotSmooth = 0.05;
     const double kFswLoopTime = 1;
 
     // Controller constants, TODO: USER EDIT PRE-FLIGHT
@@ -36,7 +36,7 @@ namespace MissionConstants {
     const double kTvcYCenterAngle = -55;
     const int kTvcXPin = 19;
     const int kTvcYPin = 18;
-    const std::string kKMatrixFile = "k_matrix.csv";
+    const std::string kKMatrixFile = "12-9-k_matrix.csv";
     const int kNumberControllerGains = 10;
     
     // Ignition constants, TODO: USER EDIT PRE-FlIGHT

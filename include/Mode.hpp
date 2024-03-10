@@ -13,12 +13,8 @@ class Mode
             {
                 Calibration,
                 Idle,
-                TestTVC,
-                StartLaunch,
                 Launch,
-                Freefall,
-                Terminate,
-                Safe 
+                Terminate 
             };
         
         Mode(Mode::Phase eInitialMode);
@@ -29,7 +25,7 @@ class Mode
         Mode::Phase UpdateCalibration(Navigation& navigation, Controller& controller);
         Mode::Phase UpdateIdle(Navigation& navigation, Controller& controller);
         Mode::Phase UpdateStartLaunch(Navigation& navigation, Controller& controller, double change_time);
-        Mode::Phase UpdateLaunch(Navigation& navigation, Controller& controller, double current_time);
+        Mode::Phase UpdateLaunch(Navigation& navigation, Controller& controller, double current_time, int i);
         Mode::Phase UpdateFreefall(Navigation& navigation);
         Mode::Phase UpdateSafeMode(Navigation& navigation, Controller& controller);
         Mode::Phase UpdateLand();
