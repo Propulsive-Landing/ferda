@@ -44,98 +44,98 @@ int main()
 
 
 
-    //Controller controller(tvc);
-     Eigen::Matrix<double, 12, 1> testState;
+    Controller controller(tvc);
+//      Eigen::Matrix<double, 12, 1> testState;
      
-     Eigen::Matrix<double, 602, 13> testStates;
+//      Eigen::Matrix<double, 602, 13> testStates;
 
-      Navigation navigation(imu, barometer, tvc);
-         testState = navigation.GetNavigation();
-            //   std::cout<<testState(6)<<"\n";
-            //   std::cout<<testState(7)<<"\n";
-            //   std::cout<<testState(8)<<"\n";
+       Navigation navigation(imu, barometer, tvc);
+//          testState = navigation.GetNavigation();
+//             //   std::cout<<testState(6)<<"\n";
+//             //   std::cout<<testState(7)<<"\n";
+//             //   std::cout<<testState(8)<<"\n";
 
-            //  std::cout<<"\n";
+//             //  std::cout<<"\n";
 
-            //   std::cout<<testState(9)<<"\n";
-            //   std::cout<<testState(10)<<"\n";
-            //   std::cout<<testState(11)<<"\n";
-            //  std::cout<<"\n";
+//             //   std::cout<<testState(9)<<"\n";
+//             //   std::cout<<testState(10)<<"\n";
+//             //   std::cout<<testState(11)<<"\n";
+//             //  std::cout<<"\n";
 
 
-    navigation.importTestAccAndTestGyro();
-     double lastTime = 0;
-    double time = 0; 
-    double dt = 0;
-    static auto start_time = std::chrono::high_resolution_clock::now();
-     double milliseconds_since_start = 0;
-     double next_time = 0;
+//     navigation.importTestAccAndTestGyro();
+//      double lastTime = 0;
+//     double time = 0; 
+//     double dt = 0;
+//     static auto start_time = std::chrono::high_resolution_clock::now();
+//      double milliseconds_since_start = 0;
+//      double next_time = 0;
    
-    for(int i =0; i < 602; i++)
-   {
-     lastTime = milliseconds_since_start;
-     milliseconds_since_start = (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count()) / 1000.0;
-     dt = milliseconds_since_start - lastTime;
-     next_time = milliseconds_since_start + 0.005;
-     navigation.UpdateNavigation(i);
-     testState = navigation.GetNavigation();
-     if (i==601){
-     std::cout<<testState<<"\n";
-     }
+//     for(int i =0; i < 602; i++)
+//    {
+//      lastTime = milliseconds_since_start;
+//      milliseconds_since_start = (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count()) / 1000.0;
+//      dt = milliseconds_since_start - lastTime;
+//      next_time = milliseconds_since_start + 0.005;
+//      navigation.UpdateNavigation(i);
+//      testState = navigation.GetNavigation();
+//      if (i==601){
+//      std::cout<<testState<<"\n";
+//      }
 
-     while((std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count()) / 1000.0 < next_time)
-     {
-         continue;
-     }
-     //std::cout<<dt<<"\n";
-     testStates(i,0) = milliseconds_since_start;
+//      while((std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count()) / 1000.0 < next_time)
+//      {
+//          continue;
+//      }
+//      //std::cout<<dt<<"\n";
+//      testStates(i,0) = milliseconds_since_start;
 
-       for(int j = 1; j <= 12; j++)
-       {
-          testStates(i,j) = testState(j-1);
-       }
+//        for(int j = 1; j <= 12; j++)
+//        {
+//           testStates(i,j) = testState(j-1);
+//        }
 
-    }
+//     }
    
  
     
-    char separator = ',';
-    std::string row, row2, item, item2;
-    std::ofstream outputFile("testNav.csv");
+//     char separator = ',';
+//     std::string row, row2, item, item2;
+//     std::ofstream outputFile("testNav.csv");
 
-     outputFile << "Time,";
-     outputFile << "x,";
-     outputFile << "y,";
-     outputFile << "z,";
-     outputFile << "vx,";
-     outputFile << "vy,";
-     outputFile << "vz,";
-     outputFile << "phi,";
-     outputFile << "theta,";
-     outputFile << "psi,";
-     outputFile << "p,";
-     outputFile << "q,";
-     outputFile << "r";
-     outputFile << "\n";
+//      outputFile << "Time,";
+//      outputFile << "x,";
+//      outputFile << "y,";
+//      outputFile << "z,";
+//      outputFile << "vx,";
+//      outputFile << "vy,";
+//      outputFile << "vz,";
+//      outputFile << "phi,";
+//      outputFile << "theta,";
+//      outputFile << "psi,";
+//      outputFile << "p,";
+//      outputFile << "q,";
+//      outputFile << "r";
+//      outputFile << "\n";
 
 
-    // Start at index 1 to allow row for names
-    for (int i=0; i< 602; i++)
-    {
-        for(int j = 0; j <= 12; j++)
-        {
-            if (j == 12)
-            {
-                outputFile << testStates(i,j);
-            }
-            else
-            {
-                outputFile << testStates(i,j) << ",";
-            }
-        }
-        outputFile << "\n";
-    }
-    outputFile.close();
+//     // Start at index 1 to allow row for names
+//     for (int i=0; i< 602; i++)
+//     {
+//         for(int j = 0; j <= 12; j++)
+//         {
+//             if (j == 12)
+//             {
+//                 outputFile << testStates(i,j);
+//             }
+//             else
+//             {
+//                 outputFile << testStates(i,j) << ",";
+//             }
+//         }
+//         outputFile << "\n";
+//     }
+//     outputFile.close();
 
     
         
@@ -146,9 +146,9 @@ int main()
 
 
 
-   // Mode mode(Mode::Calibration);
+    Mode mode(Mode::Calibration);
     
-   // while(mode.Update(navigation, controller)) {}
+    while(mode.Update(navigation, controller)) {}
 
     //#ifdef NDEBUG
     //    gpioTerminate();

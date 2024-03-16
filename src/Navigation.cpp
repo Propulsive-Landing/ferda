@@ -6,8 +6,6 @@
 #include <chrono>
 #include <iomanip>
 
-    //std::cout << std::fixed << std::setprecision(4);
-
 
 #include "Navigation.hpp"
 #include "MissionConstants.hpp"
@@ -15,22 +13,16 @@
 Navigation::Navigation(IMU& imu, Barometer& barometer, TVC& tvc) : imu(imu), barometer(barometer), tvc(tvc) 
 {
    std::cout << std::setprecision(4) << std::fixed;
+   stateMat = Eigen::Matrix<double, 12, 1>::Zero();
+   stateMat(2) = 0.28;
+
+}
+
+void Navigation::reset()
+{
     stateMat = Eigen::Matrix<double, 12, 1>::Zero();
-//    stateMat << 0.0029,
-//    -0.5204,
-//    77.3056,
-//     0.0027,
-//    -0.3528,
-//    26.7202,
-//    -0.0001,
-//    -0.0004,
-//     0.0021,
-//     0.0001,
-//    -0.0010,
-//     0.0004;
-    
-
-
+    stateMat(2) = 0.28;
+    d_theta_queue_reckon.clear();
 }
 
 
@@ -70,7 +62,7 @@ void Navigation::UpdateNavigation(int i){
     Eigen::Matrix<double, 3, 3> R = CreateRotationalMatrix(phi, theta, psi);
     
     if (i == 601){
-    std::cout<< R<<"\n";
+    //std::cout<< R<<"\n";
     }
 
     // Update the linear positions
@@ -102,9 +94,9 @@ void Navigation::UpdateNavigation(int i){
     
      if(i == 601) {   
      
-        std::cout<<"Smooth p = " << d_theta_queue_reckon[d_theta_queue_reckon.size() - 1][0] << "\n";
-        std::cout<<"Smooth q = " << d_theta_queue_reckon[d_theta_queue_reckon.size() - 1][1] << "\n";
-        std::cout<<"Smooth r = " << d_theta_queue_reckon[d_theta_queue_reckon.size() - 1][2] << "\n";
+       // std::cout<<"Smooth p = " << d_theta_queue_reckon[d_theta_queue_reckon.size() - 1][0] << "\n";
+       // std::cout<<"Smooth q = " << d_theta_queue_reckon[d_theta_queue_reckon.size() - 1][1] << "\n";
+        //std::cout<<"Smooth r = " << d_theta_queue_reckon[d_theta_queue_reckon.size() - 1][2] << "\n";
      }
      
    // std::cout<< std::get<0>(rollingAngularAverage) << ", " << std::get<1>(rollingAngularAverage) << ", " << std::get<2>(rollingAngularAverage)<<"\n";
@@ -187,13 +179,13 @@ std::vector<double> Navigation::D_Theta_Now_Math(double phi, double theta, doubl
 
 std::tuple<double, double, double> Navigation::GetTestAcceleration(int i)
 {
-      std::tuple<double,double,double> linearAcceleration = {linearAccels(i,0), linearAccels(i,1), linearAccels(i,2)};
+      std::tuple<double,double,double> linearAcceleration = {linearAccels[i][0], linearAccels[i][1], linearAccels[i][2]};
       return linearAcceleration;
 }
 
 std::tuple<double, double, double> Navigation::GetTestGyroscope(int i)
 {
-     std::tuple<double,double,double> angularAcceleration = {gyroAccels(i,0), gyroAccels(i,1), gyroAccels(i,2)};
+     std::tuple<double,double,double> angularAcceleration = {gyroAccels[i][0], gyroAccels[i][1], gyroAccels[i][2]};
       return angularAcceleration;
 }
 
@@ -203,21 +195,25 @@ void Navigation::importTestAccAndTestGyro()
     std::string row, row2, item, item2;
     std::ifstream in("../accelerometer.csv");
     std::ifstream in2("../gyroscope.csv");
-    for (int i=0; i< 602; i++){
+    for (int i=0; i< 2308; i++){
         std::getline(in, row);
+       // std::cout<<row<<"\n";
         std::getline(in2, row2);
         std::stringstream ss(row);
         std::stringstream ss2(row2);
-        for (int j=0; j<3; j++){
-            std::vector<double> getRow;
+        std::vector<double> getRow;
+        std::vector<double> getRow2;
+
+        for (int j=0; j<3; j++){    
             std::getline(ss, item, separator);
             std::getline(ss2, item2, separator);
             std::stringstream ss(row);
-            //std::cout<<row<<"\n";
+            getRow.push_back(stod(item));
             std::stringstream ss2(row2);
-            linearAccels(i,j) = stod(item);
-            gyroAccels(i,j) = stod(item2);
+            getRow2.push_back(stod(item2));
         }
+        linearAccels.push_back(getRow);
+        gyroAccels.push_back(getRow2);
     }
     
 }

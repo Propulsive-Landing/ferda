@@ -21,6 +21,7 @@ class Navigation
     public:
         double loopTime = 0.005;
         Navigation(IMU& imu, Barometer& barometer, TVC& tvc);
+        void reset();
         Eigen::Matrix<double, 12, 1> GetNavigation(); // Defintion of state matrix: TODO (determine dimensions and document form)
         void UpdateNavigation(int i); // Defintion updates: TODO (determine dimensions and document form)
         std::tuple<double,double,double> ComputeAngularRollingAverage();
@@ -30,6 +31,8 @@ class Navigation
         std::tuple<double, double, double> GetTestAcceleration(int i);
         std::tuple<double, double, double> GetTestGyroscope(int i);
         void importTestAccAndTestGyro();
-         Eigen::Matrix<double, 602, 3> linearAccels; // For testing
-         Eigen::Matrix<double, 602, 3> gyroAccels;
+        // Eigen::Matrix<double, 602, 3> linearAccels; // For testing
+        // Eigen::Matrix<double, 602, 3> gyroAccels;
+        std::vector<std::vector<double>> linearAccels;
+        std::vector<std::vector<double>> gyroAccels;
 };

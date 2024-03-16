@@ -16,19 +16,22 @@ class Controller{
 private:
     TVC tvc;
     std::vector<std::vector<double>> euler_queue;
-    Eigen::Matrix<double, 8, 1> x_control;
 
     double next_tvc_time;
     double tvc_start_time;
     std::vector<float> controller_gain_times;
-    Eigen::Vector2d input;
     Eigen::Vector2d tvc_angles;
     int current_iteration_index = 0;
 
 public:
+    Eigen::Vector2d input;
+    Eigen::Matrix<double, 8, 1> x_control;
+
     Eigen::Matrix<double, 10*2, 8> controller_gains; // For testing
     double loopTime = 0.005;
     Controller(TVC& tvc);   
+    Eigen::Vector2d getInput();
+    Eigen::Matrix<double,8,1> getXControl();
     void UpdateLaunch(Navigation& navigation, double current_time);
     void UpdateTestTVC(double testTime);
     void UpdateLand();

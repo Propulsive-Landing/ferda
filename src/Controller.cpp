@@ -40,19 +40,23 @@ void Controller::UpdateLaunch(Navigation& navigation, double current_time) {
      // Calculate desired control inputs for launch and actuate all control surfaces accordingly
     
     // Create a variable to determine the max amount of Euler Entries;
-    int maxEulerEntries = control_integral_period/loopTime;
+    int maxEulerEntries = MissionConstants::kControlIntegralPeriod/loopTime;
 
     // Create a matrix to store the returned stateEstimate from getNavigation() and store the yaw value into a varible
     Eigen::Matrix<double,12,1> stateEstimate = navigation.GetNavigation();
-    double yaw = stateEstimate(8);
+    //double yaw = stateEstimate(8);
 
     // Calculate the rotation matrix to translate the body frame to the ground frame
-    Eigen::Matrix2d rotation;
-    rotation << cos(-yaw), -sin(yaw), sin(-yaw), cos(-yaw);
+    //Eigen::Matrix2d rotation;
+    //rotation << cos(-yaw), -sin(-yaw), sin(-yaw), cos(-yaw);
+   
 
     // Populate x_control so that the first 2 entries are the stateEstimates' x and y velocities, its 4-5 entries are stateEstimates' roll and pitch values
     // and it's last 2 entries are stateEstimates' roll and pitch angular velocities.
-    x_control.segment(0,2) = rotation * stateEstimate.segment(3,2);
+    
+    //x_control.segment(0,2) = rotation * stateEstimate.segment(3,2);
+    x_control(0) = 0;
+    x_control(1) = 0;
     x_control.segment(4,2) = stateEstimate.segment(6,2);
     x_control.segment(6,2) = stateEstimate.segment(9,2);
 
@@ -86,26 +90,34 @@ void Controller::UpdateLaunch(Navigation& navigation, double current_time) {
         CalculateInput();
         next_tvc_time += tvcPeriod;
 
-
     }
+}
+
+Eigen::Matrix<double, 8, 1> Controller::getXControl()
+{
+    return x_control;
 }
 
 void Controller::CalculateK(double current_time){
     // Determine if a certain amount of time has passed, and if so, then increase the current_iteration_index and get the next K value
-
     double switch_time = (controller_gain_times[current_iteration_index+1] - controller_gain_times[current_iteration_index]) / 2.0;
     if(current_time - tvc_start_time > switch_time)
     {
-        std::cout<<"EnteredCalulateK"<<"\n";
+       // std::cout<<"Switch time = " << switch_time<<"\n";
+        //std::cout<<"Current_time - tvc_start_time = " << current_time - tvc_start_time <<"\n";
         current_iteration_index++;
     }
 }
 
 void Controller::CalculateInput(){
     // This calculates u = -Kx
-    std::cout<<"EnteredCalulcateInput"<<"\n";
+    //std::cout<<controller_gains.block(current_iteration_index*2, 0, 2, 8)<<"\n";
+    //std::cout<<"\n";
+
     input = controller_gains.block(current_iteration_index*2, 0, 2, 8)*x_control;
-    std::cout<<input<<"\n";
+    //std::cout<<input<<"\n";
+    //std::cout<<"\n";
+
     if(input.norm() > kMaximumTvcAngle){
         input = input*kMaximumTvcAngle/input.norm();
     }
@@ -115,6 +127,10 @@ void Controller::CalculateInput(){
     tvc.SetYServo(tvc_angles(1));
 }
 
+Eigen::Vector2d Controller::getInput()
+{
+    return input;
+}
 
 Eigen::Vector2d Controller::TvcMath(Eigen::Vector2d input){
     // Figures out what angle we need to move the servos
