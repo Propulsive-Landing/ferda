@@ -193,8 +193,8 @@ void Navigation::importTestAccAndTestGyro()
 {
     char separator = ',';
     std::string row, row2, item, item2;
-    std::ifstream in("../accelerometer.csv");
-    std::ifstream in2("../gyroscope.csv");
+    std::ifstream in("../DEMOaccelerometer.csv");
+    std::ifstream in2("..DEMO/gyroscope.csv");
     for (int i=0; i< 2308; i++){
         std::getline(in, row);
        // std::cout<<row<<"\n";

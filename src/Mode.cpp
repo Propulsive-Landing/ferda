@@ -46,7 +46,7 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
     return Mode::Calibration;
 }
 
-Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, double current_time, int i, bool check) {
+Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller,Igniter& igniter, double current_time, int i, bool check) {
 
      Eigen::Matrix<double, 12, 1> testState;
      Eigen::Matrix<double, 8, 1> testControllerState;
@@ -94,6 +94,8 @@ Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, dou
         }
         testInputs.push_back(testInputsVector);
             
+        igniter.Ignite(Igniter::IgnitionSpecifier::LAUNCH);
+
         return Mode::Launch;
     }
 
@@ -129,10 +131,8 @@ Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, dou
     return Mode::Idle;
 }
 
-Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, Igniter& igniter, double curr_time, int i) {
+Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, double curr_time, int i) {
  
-
-    igniter.Ignite(Igniter::IgnitionSpecifier::LAUNCH);
 
     static int iteration = 1;
     if(iteration > 0){
@@ -140,16 +140,12 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
         iteration--;
     }
 
-
-
      Eigen::Matrix<double, 12, 1> testState;
      Eigen::Matrix<double, 8, 1> testControllerState;
      Eigen::Vector2d testInput;
      std::vector<double> testStateVector;
      std::vector<double> testControllerStateVector;
      std::vector<double> testInputsVector;
-
-
 
      double time = curr_time;
 
@@ -160,7 +156,6 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
         std::ofstream outputFile("testNav.csv");
         std::ofstream outputFile2("testControllerState.csv");
         std::ofstream outputFile3("testTVC.csv");
-
 
         
         outputFile << "Time,";
@@ -193,7 +188,6 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
         outputFile3 << "Input1,";
         outputFile3 << "Input2";
         outputFile3 << "\n";
-
 
 
         for (int i=0; i< 2308; i++)
@@ -278,11 +272,11 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
     }
     testInputs.push_back(testInputsVector);
 
-    return Mode::Launch;
-
-    std::tuple<double,double,double> acceleration = navigation.GetTestAcceleration(i);
-    double acceleration_vector = (sqrt(pow(std::get<0>(acceleration),2) + pow(std::get<1>(acceleration), 2) + pow(std::get<2>(acceleration), 2)));
-    if(int(abs(acceleration_vector)) < 1){ 
+   // std::tuple<double,double,double> acceleration = navigation.GetTestAcceleration(i);
+    //std::cout<<std::get<0>(acceleration)<<"\n";
+    //double acceleration_vector = (sqrt(pow(std::get<0>(acceleration),2) + pow(std::get<1>(acceleration), 2) + pow(std::get<2>(acceleration), 2)));
+   // std::cout<<int(abs(acceleration_vector))<<"\n";
+    if(testState(5) < 0 && testState(2) > 0.28){ 
         Telemetry::GetInstance().Log("Switching mode from launch to freefall");
         return Mode::Terminate;
     }
@@ -293,7 +287,7 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
     // Added chang_time so updateLaunch includes iteratng through K
 }
 
-// Mode::Phase Mode::UpdateFreefall(Navigation& navigation, Igniter& igniter) {
+ Mode::Phase Mode::UpdateFreefall(Navigation& navigation, Igniter& igniter) {
      
 //     navigation.UpdateNavigation();
 //     Eigen::Matrix<double, 12, 1> currentState = navigation.GetNavigation();
@@ -317,15 +311,15 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
 
 //     if (time_till_second_ignite > MissionConstants::kFswLoopTime + motor_thrust_duration + offset + result){
 //         igniter.Ignite(Igniter::IgnitionSpecifier::LAND);
-//         return Mode::Land;
+         return Mode::Land;
 
 //     }
 
 
 //     return Mode::Freefall;
-// }
+ }
 
-// Mode::Phase Mode::UpdateLand(Navigation& navigation, Controller& controller, double change_time){
+ Mode::Phase Mode::UpdateLand(Navigation& navigation, Controller& controller, double change_time){
 //     static auto start_time = std::chrono::high_resolution_clock::now();
 //     int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
 //     double seconds = milliseconds_since_start / 1000.0;
@@ -333,13 +327,13 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
 //     navigation.UpdateNavigation(i);
 //     controller.UpdateLaunch(navigation, seconds);
 
-//     std::tuple<double,double,double> acceleration = navigation.GetTestAcceleration(i);
-//     double acceleration_vector = (sqrt(pow(std::get<0>(acceleration),2) + pow(std::get<1>(acceleration), 2) + pow(std::get<2>(acceleration), 2)));
+ //    std::tuple<double,double,double> acceleration = navigation.GetTestAcceleration(i);
+ //    double acceleration_vector = (sqrt(pow(std::get<0>(acceleration),2) + pow(std::get<1>(acceleration), 2) + pow(std::get<2>(acceleration), 2)));
 //     if ( 9.7 < acceleration_vector && acceleration_vector < 9.9 && 0.0 < navigation.GetHeight() && navigation.GetHeight() < 1.0)
-//         return Mode::Terminate;
+//        return Mode::Terminate;
 
 //     return Mode::Land;
-// }
+ }
 
 
 bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& igniter) {
@@ -393,17 +387,17 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
             break;
         case Idle:
             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
-            this->eCurrentMode = UpdateIdle(navigation, controller, currTime, i, reset);
+            this->eCurrentMode = UpdateIdle(navigation, controller,igniter, currTime, i, reset);
             i++;
             break;
         case Launch:
             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
-            this->eCurrentMode = UpdateLaunch(navigation, controller,currTime, i);
+            this->eCurrentMode = UpdateLaunch(navigation, controller, currTime, i);
             i++;
             break;
         case Freefall:
             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
-            this->eCurrentMode = UpdateFreefall(navigation, igniter;
+            this->eCurrentMode = UpdateFreefall(navigation, igniter);
             break;
         case Land:
             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);

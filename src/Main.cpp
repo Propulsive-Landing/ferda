@@ -7,6 +7,7 @@
 #include "Controller.hpp"
 
 #include "Telemetry.hpp"
+#include "Igniter.hpp"
 
 #include "Mode.hpp"
 #include "MissionConstants.hpp"
@@ -41,6 +42,7 @@ int main()
     IMU imu;
     Barometer barometer;
     TVC tvc;
+    Igniter igniter;
 
 
 
@@ -148,7 +150,7 @@ int main()
 
     Mode mode(Mode::Calibration);
     
-    while(mode.Update(navigation, controller)) {}
+    while(mode.Update(navigation, controller, igniter)) {}
 
     //#ifdef NDEBUG
     //    gpioTerminate();
