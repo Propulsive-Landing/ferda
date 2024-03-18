@@ -138,7 +138,6 @@ Mode::Phase Mode::UpdateFreefall(Navigation& navigation, Igniter& igniter) {
     if (time_till_second_ignite > MissionConstants::kFswLoopTime + motor_thrust_duration + offset + result){
         igniter.Ignite(Igniter::IgnitionSpecifier::LAND);
         return Mode::Land;
-
     }
 
 
@@ -146,12 +145,9 @@ Mode::Phase Mode::UpdateFreefall(Navigation& navigation, Igniter& igniter) {
 }
 
 Mode::Phase Mode::UpdateLand(Navigation& navigation, Controller& controller, double change_time){
-    static auto start_time = std::chrono::high_resolution_clock::now();
-    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-    double seconds = milliseconds_since_start / 1000.0;
-
+   
     navigation.UpdateNavigation();
-    controller.UpdateLaunch(navigation, seconds);
+    controller.UpdateLaunch(navigation, change_time);
 
     std::tuple<double,double,double> acceleration = navigation.GetBodyAcceleration();
     double acceleration_vector = (sqrt(pow(std::get<0>(acceleration),2) + pow(std::get<1>(acceleration), 2) + pow(std::get<2>(acceleration), 2)));
@@ -170,14 +166,17 @@ Mode::Phase Mode::UpdateSafeMode(Navigation& navigation, Controller& controller)
 
 
 bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& igniter) {
+    static double currTime = 0;    
     static auto last_time = std::chrono::high_resolution_clock::now();
     auto time_now = std::chrono::high_resolution_clock::now();
-    double change_time = std::chrono::duration_cast<std::chrono::nanoseconds>(time_now - last_time).count() / 1000000000.0;
+    double change_time = std::chrono::duration_cast<std::chrono::milliseconds>(time_now - last_time).count() / 1000.0;
     last_time = time_now;
-    /* Finish calculating time change*/
+    while(change_time < 0.005)
+    {
+             change_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - last_time).count() / 1000.0;
 
-    navigation.loopTime = change_time;
-    controller.loopTime = change_time;
+    }
+    currTime += change_time;
 
     std::cout << std::to_string(eCurrentMode) << "\n";
 
@@ -195,7 +194,7 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
             break;
         case Launch:
             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
-            this->eCurrentMode = UpdateLaunch(navigation, controller, igniter, change_time);
+            this->eCurrentMode = UpdateLaunch(navigation, controller, igniter, currTime);
             break;
         case Freefall:
             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);

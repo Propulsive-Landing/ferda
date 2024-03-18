@@ -4,14 +4,27 @@
 #include <vector>
 #include <iostream>
 #include <chrono>
+#include <iomanip>
+
 
 #include "Navigation.hpp"
 #include "MissionConstants.hpp"
 
 Navigation::Navigation(IMU& imu, Barometer& barometer, TVC& tvc) : imu(imu), barometer(barometer), tvc(tvc) 
 {
+    std::cout << std::setprecision(4) << std::fixed;
     stateMat = Eigen::Matrix<double, 12, 1>::Zero();
+    // Set z position to rocket com
+    stateMat(2) = 0.28;
+
     pressureInit = barometer.GetPressure();
+}
+
+void Navigation::reset()
+{
+    stateMat = Eigen::Matrix<double, 12, 1>::Zero();
+    stateMat(2) = 0.28;
+    d_theta_queue_reckon.clear();
 }
 
 Eigen::Matrix<double, 12, 1> Navigation::GetNavigation()
@@ -21,7 +34,8 @@ Eigen::Matrix<double, 12, 1> Navigation::GetNavigation()
 
 double Navigation::GetHeight() {
     double pressure = barometer.GetPressure();
-    double temp = barometer.GetTemperature(); // CHECK UNITS
+    double temp = barometer.GetTemperature(); 
+    temp += 273.15; // Convert to K;
     return (log(pressure/pressureInit) * 8.3143 * temp) / (0.02896 * -9.81);
     // Pressure is in kpa
 }
@@ -45,6 +59,21 @@ void Navigation::UpdateNavigation(){
     double theta = stateMat(7);
     double psi = stateMat(8);
 
+    // Convert the three euler angles to a rotation matrix that can move a vector from the body fixed frame into the ground fixed frame
+    Eigen::Matrix<double, 3, 3> R = CreateRotationalMatrix(phi, theta, psi);
+
+    // Update the linear positions
+    stateMat.segment(0,3) += stateMat.segment(3,3) * loopTime;
+    
+    // Update the linear velocities
+    stateMat.segment(3,3) += R * linearAccelerationVector * loopTime;
+
+   // newState(5) = newState(5) - 9.81*loopTime;
+    stateMat(5) -=  9.81* loopTime;
+
+    // Update the angles
+    stateMat.segment(6,3) += stateMat.segment(9,3) * loopTime;
+
     // Create a vector that will hold d_theta and set all of the elements to 0 and get the angular rate
     std::vector<double> d_theta_now = {0,0,0};
     d_theta_now[0] = std::get<0>(angularRate) + std::get<1>(angularRate)*sin(phi)*tan(theta)+ std::get<2>(angularRate)*cos(phi)*tan(theta);
@@ -63,24 +92,6 @@ void Navigation::UpdateNavigation(){
     stateMat(10) = std::get<1>(rollingAngularAverage);
     stateMat(11) = std::get<2>(rollingAngularAverage);
 
-    // Convert the three euler angles to a rotation matrix that can move a vector from the body fixed frame into the ground fixed frame
-    Eigen::Matrix<double, 3, 3> R = CreateRotationalMatrix(phi, theta, psi);
-
-
-    // Update the linear positions
-    //newState.segment(0,3) = stateMat.segment(3,3) * loopTime + stateMat.segment(0,3);
-    stateMat.segment(0,3) += stateMat.segment(3,3) * loopTime;
-    
-    // Update the linear velocities
-    //newState.segment(3,3) = R * linearAccelerationVector * loopTime + stateMat.segment(3,3);
-    stateMat.segment(3,3) += R * linearAccelerationVector * loopTime;
-
-   // newState(5) = newState(5) - 9.81*loopTime;
-    stateMat(5) -=  9.81* loopTime;
-
-    // Update the angles
-   // newState.segment(6,3) = stateMat.segment(9,3) * loopTime + stateMat.segment(6,3);
-    stateMat.segment(6,3) += stateMat.segment(9,3) * loopTime;
    
 }
 

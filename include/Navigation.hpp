@@ -22,6 +22,7 @@ class Navigation
     public:
         double loopTime = 0.005;
         Navigation(IMU& imu, Barometer& barometer, TVC& tvc);
+        void reset();
         Eigen::Matrix<double, 12, 1> GetNavigation(); // Defintion of state matrix: TODO (determine dimensions and document form)
         void UpdateNavigation(); // Defintion updates: TODO (determine dimensions and document form)
         void Start();

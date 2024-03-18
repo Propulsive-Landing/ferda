@@ -32,6 +32,4 @@ class Mode
         Mode::Phase UpdateFreefall(Navigation& navigation, Igniter& igniter);
         Mode::Phase UpdateLand(Navigation& navigation, Controller& controller, double current_time);
         Mode::Phase UpdateSafeMode(Navigation& navigation, Controller& controller);
-      
-
 };

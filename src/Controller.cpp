@@ -9,27 +9,14 @@
 #include <sstream>
 #include <iostream>
 
-// constants to be figured out later 
-namespace {
-    double control_integral_period = 0.25;
-    double fsw_loop_time = 1;
-    double kPi = 3.1415926535897932384626433;
-    double kDeg2Rad = kPi/180;
-    double kRad2Deg = 180/kPi;
-    double kMaximumTvcAngle = 7.5*kDeg2Rad;
-    double kDeg2PulseWidth = ((double) 1000.0)/((double) 90.0);
-    double kTvcXCenterPulseWidth = 1529;
-    double kTvcYCenterPulseWidth = 915;
-    int kNumberControllerGains = 10;
-}
-
-
 Controller::Controller(TVC& tvc) : tvc(tvc), x_control(Eigen::Matrix<double, 8, 1>::Zero()){}
 
 void Controller::Start(double current_time){
     // Initialize variables 
 
     tvc_start_time = current_time;
+    next_tvc_time = current_time;
+
 }
 
 
@@ -42,25 +29,24 @@ void Controller::UpdateTestTVC(double testTime) {
 
 void Controller::UpdateLaunch(Navigation& navigation, double current_time) {
     // Calculate desired control inputs for launch and actuate all control surfaces accordingly
-     // Calculate desired control inputs for launch and actuate all control surfaces accordingly
     
-    if(current_iteration_index < MissionConstants::kNumberControllerGains - 1){
-        CalculateK(current_time);
-    }
     // Create a variable to determine the max amount of Euler Entries;
-    int maxEulerEntries = control_integral_period/loopTime;
+    int maxEulerEntries = MissionConstants::kControlIntegralPeriod/loopTime;
 
     // Create a matrix to store the returned stateEstimate from getNavigation() and store the yaw value into a varible
     Eigen::Matrix<double,12,1> stateEstimate = navigation.GetNavigation();
-    double yaw = stateEstimate(8);
+   // double yaw = stateEstimate(8);
 
     // Calculate the rotation matrix to translate the body frame to the ground frame
-    Eigen::Matrix2d rotation;
-    rotation << cos(-yaw), -sin(yaw), sin(-yaw), cos(-yaw);
+   // Eigen::Matrix2d rotation;
+   // rotation << cos(-yaw), -sin(-yaw), sin(-yaw), cos(-yaw);
 
     // Populate x_control so that the first 2 entries are the stateEstimates' x and y velocities, its 4-5 entries are stateEstimates' roll and pitch values
     // and it's last 2 entries are stateEstimates' roll and pitch angular velocities.
-    x_control.segment(0,2) = rotation * stateEstimate.segment(3,2);
+   
+   // x_control.segment(0,2) = rotation * stateEstimate.segment(3,2);
+    x_control(0) = 0;
+    x_control(1) = 0;
     x_control.segment(4,2) = stateEstimate.segment(6,2);
     x_control.segment(6,2) = stateEstimate.segment(9,2);
 
@@ -85,8 +71,15 @@ void Controller::UpdateLaunch(Navigation& navigation, double current_time) {
     x_control[2] = euler_sum[0] * loopTime;
     x_control[3] = euler_sum[1] * loopTime;
 
+
+    if(current_iteration_index < MissionConstants::kNumberControllerGains - 1){
+        CalculateK(current_time);
+    }
     // Calculate what angle we need to tell the tvc to move
-    CalculateInput();
+    if (current_time > next_tvc_time){
+        // Calculate what angle we need to tell the tvc to move
+        CalculateInput();
+        next_tvc_time += MissionConstants::TVCPeriod;
 
 }
 
@@ -116,8 +109,8 @@ void Controller::CalculateInput(){
     // This calculates u = -Kx
 
     input = controller_gains.block(current_iteration_index*2, 0, 2, 8)*x_control;
-    if(input.norm() > kMaximumTvcAngle){
-        input = input*kMaximumTvcAngle/input.norm();
+    if(input.norm() > MissionConstants::kMaximumTvcAngle){
+        input = input*MissionConstants::kMaximumTvcAngle/input.norm();
     }
     // Figures out what angle we need to move the servos and then set them
     tvc_angles = TvcMath(input);
@@ -130,7 +123,7 @@ Eigen::Vector2d Controller::TvcMath(Eigen::Vector2d input){
     // Figures out what angle we need to move the servos
     Eigen::Vector2d output;
 
-    input = input * kRad2Deg;
+    input = input * MissionConstants::kRad2Deg;
 
     output(0) = -.000095801*powf(input(0), 4) - .0027781*powf(input(0), 3) + .0012874*powf(input(0), 2) - 3.1271*input(0) -16.129;
     output(1) = - .0002314576*powf(input(1), 4) - .002425139*powf(input(1), 3) - .01204116*powf(input(1), 2) - 2.959760*input(1) + 57.18794;

@@ -4,7 +4,7 @@
 
 #include "Navigation.hpp"
 #include "Controller.hpp"
-
+#include "Igniter.hpp"
 #include "Telemetry.hpp"
 
 #include "Mode.hpp"
@@ -34,6 +34,7 @@ int main()
     IMU imu;
     Barometer barometer;
     TVC tvc;
+    Igniter igniter;
 
     Navigation navigation(imu, barometer, tvc);
     Controller controller(tvc);
@@ -42,19 +43,11 @@ int main()
 
     // TODO we need to set controller iteration gains or there is a segmentation fault.
 
-    //Mode mode(Mode::Calibration);
+    Mode mode(Mode::Calibration);
 
 
 
-    // Create a tuple using the tuple constructor
-    std::tuple<double,double,double> angularRate = imu.GetBodyAngularRate();
-    std::cout << std::get<0>(angularRate) << std::endl; // Output: 1
-    std::cout << std::get<1>(angularRate) << std::endl; // Output: 2.5
-    std::cout << std::get<2>(angularRate) << std::endl; // Output: Hello
-
-
-
-    //while(mode.Update(navigation, controller)) {}
+    while(mode.Update(navigation, controller, igniter)) {}
 
     //#ifdef NDEBUG
     //    gpioTerminate();
