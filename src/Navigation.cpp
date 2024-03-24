@@ -15,6 +15,8 @@ Navigation::Navigation(IMU& imu, Barometer& barometer, TVC& tvc) : imu(imu), bar
    std::cout << std::setprecision(4) << std::fixed;
    stateMat = Eigen::Matrix<double, 12, 1>::Zero();
    stateMat(2) = 0.28;
+   pressureInit = barometer.GetPressure();
+
 
 }
 
@@ -31,9 +33,10 @@ Eigen::Matrix<double, 12, 1> Navigation::GetNavigation()
     return stateMat;
 }
 
-double Navigation::GetHeight() {
-    double pressure = barometer.GetPressure();
-    return pressure;//Need the right equation for height
+double Navigation::GetHeight(int i) {
+    double pressure = GetTestBarom(i);
+    double temp = 288;
+    return (log(pressure/pressureInit) * 8.3145 * temp) / (0.02897 * -9.81);
 }
     
 void Navigation::UpdateNavigation(int i){
@@ -61,7 +64,7 @@ void Navigation::UpdateNavigation(int i){
     // Convert the three euler angles to a rotation matrix that can move a vector from the body fixed frame into the ground fixed frame
     Eigen::Matrix<double, 3, 3> R = CreateRotationalMatrix(phi, theta, psi);
     
-    if (i == 601){
+    if (i == 602){
     //std::cout<< R<<"\n";
     }
 
@@ -92,7 +95,7 @@ void Navigation::UpdateNavigation(int i){
     // Call ComputeAngularRollingAverage to sum up all of the data so far for p,q,r which represent the angular velocity in x, y, and z direction
     std::tuple<double,double,double> rollingAngularAverage = ComputeAngularRollingAverage();
     
-     if(i == 601) {   
+     if(i == 602) {   
      
        // std::cout<<"Smooth p = " << d_theta_queue_reckon[d_theta_queue_reckon.size() - 1][0] << "\n";
        // std::cout<<"Smooth q = " << d_theta_queue_reckon[d_theta_queue_reckon.size() - 1][1] << "\n";
@@ -189,21 +192,30 @@ std::tuple<double, double, double> Navigation::GetTestGyroscope(int i)
       return angularAcceleration;
 }
 
+double Navigation::GetTestBarom(int i)
+{
+    return baromValues[i][0];
+}
+
 void Navigation::importTestAccAndTestGyro()
 {
     char separator = ',';
     std::string row, row2, item, item2;
-    std::ifstream in("../DEMOaccelerometer.csv");
-    std::ifstream in2("..DEMO/gyroscope.csv");
+    std::ifstream in("../accelerometer.csv");
+    std::ifstream in2("../gyroscope.csv");
+
     for (int i=0; i< 2308; i++){
         std::getline(in, row);
        // std::cout<<row<<"\n";
         std::getline(in2, row2);
+
         std::stringstream ss(row);
         std::stringstream ss2(row2);
+
         std::vector<double> getRow;
         std::vector<double> getRow2;
 
+        
         for (int j=0; j<3; j++){    
             std::getline(ss, item, separator);
             std::getline(ss2, item2, separator);
@@ -215,8 +227,31 @@ void Navigation::importTestAccAndTestGyro()
         linearAccels.push_back(getRow);
         gyroAccels.push_back(getRow2);
     }
-    
 }
+void Navigation::importTestBarom()
+{
+        std::string row3 ,item3;
+        std::ifstream in3("../accelerometer.csv");
+
+        for (int i=0; i< 2308; i++)
+        {
+            std::getline(in3, row3);
+            std::stringstream ss3(row3);
+            std::vector<double> getRow3;
+
+            std::getline(ss3, item3);
+            getRow3.push_back(stod(item3));
+            baromValues.push_back(getRow3);
+
+}
+
+
+
+
+
+}
+
+
 
 /*
     0.0029

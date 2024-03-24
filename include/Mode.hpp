@@ -29,7 +29,7 @@ class Mode
         Mode::Phase UpdateIdle(Navigation& navigation, Controller& controller, Igniter& igniter, double current_Time, int i, bool change);
         Mode::Phase UpdateStartLaunch(Navigation& navigation, Controller& controller, double change_time);
         Mode::Phase UpdateLaunch(Navigation& navigation, Controller& controller, double current_time, int i);
-        Mode::Phase UpdateFreefall(Navigation& navigation, Igniter& igniter);
+        Mode::Phase UpdateFreefall(Navigation& navigation, Igniter& igniter, double currTime, int i);
         Mode::Phase UpdateSafeMode(Navigation& navigation, Controller& controller);
         Mode::Phase UpdateLand(Navigation& navigation, Controller& controller,double current_time);
         Mode::Phase UpdateTestTVC(Controller& controller);

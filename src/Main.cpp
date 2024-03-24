@@ -150,7 +150,12 @@ int main()
 
     Mode mode(Mode::Calibration);
     
-    while(mode.Update(navigation, controller, igniter)) {}
+    //while(mode.Update(navigation, controller, igniter)) {}
+    navigation.importTestBarom();
+    for(int i = 0; i < 2308; i++)
+    {
+        std::cout<< navigation.GetHeight(i)<<"\n";
+    }
 
     //#ifdef NDEBUG
     //    gpioTerminate();

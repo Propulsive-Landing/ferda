@@ -13,3 +13,5 @@ double Barometer::GetTemperature()
 {
     return 0;
 }
+
+
