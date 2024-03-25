@@ -308,7 +308,7 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, d
     testPressureHeights.push_back(testPressureHeightsVector);
 
 
-     if (currentState(2) < height){
+     if (currentState(2) < height - 20){
         igniter.Ignite(Igniter::IgnitionSpecifier::LAND);
         return Mode::Land;
 
