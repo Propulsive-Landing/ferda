@@ -15,7 +15,8 @@ Navigation::Navigation(IMU& imu, Barometer& barometer, TVC& tvc) : imu(imu), bar
    std::cout << std::setprecision(4) << std::fixed;
    stateMat = Eigen::Matrix<double, 12, 1>::Zero();
    stateMat(2) = 0.28;
-   pressureInit = barometer.GetPressure();
+   pressureInit = 102911.127410746;
+
 
 
 }
@@ -36,7 +37,7 @@ Eigen::Matrix<double, 12, 1> Navigation::GetNavigation()
 double Navigation::GetHeight(int i) {
     double pressure = GetTestBarom(i);
     double temp = 288;
-    return (log(pressure/pressureInit) * 8.3145 * temp) / (0.02897 * -9.81);
+    return (log(pressure/pressureInit) * 8.314462618 * temp) / (0.02896968 * -9.80298);
 }
     
 void Navigation::UpdateNavigation(int i){
@@ -231,7 +232,7 @@ void Navigation::importTestAccAndTestGyro()
 void Navigation::importTestBarom()
 {
         std::string row3 ,item3;
-        std::ifstream in3("../accelerometer.csv");
+        std::ifstream in3("../barometer.csv");
 
         for (int i=0; i< 2308; i++)
         {

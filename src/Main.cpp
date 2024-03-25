@@ -150,12 +150,24 @@ int main()
 
     Mode mode(Mode::Calibration);
     
-    //while(mode.Update(navigation, controller, igniter)) {}
-    navigation.importTestBarom();
-    for(int i = 0; i < 2308; i++)
-    {
-        std::cout<< navigation.GetHeight(i)<<"\n";
-    }
+    while(mode.Update(navigation, controller, igniter)) {}
+    // navigation.importTestBarom();
+   
+    // char separator = ',';
+    //  std::ofstream outputFile("testBarom.csv");
+    // outputFile << "Height";
+    // outputFile << "\n";
+
+
+    // for(int i = 0; i < 2308; i++)
+    // {
+        
+    //     outputFile << navigation.GetHeight(i);
+    //     outputFile << "\n";
+    // }
+    //  outputFile.close();
+
+
 
     //#ifdef NDEBUG
     //    gpioTerminate();
