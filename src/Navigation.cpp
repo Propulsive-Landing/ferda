@@ -16,7 +16,6 @@ Navigation::Navigation(IMU& imu, Barometer& barometer, TVC& tvc) : imu(imu), bar
     stateMat = Eigen::Matrix<double, 12, 1>::Zero();
     // Set z position to rocket com
     stateMat(2) = 0.28;
-
     pressureInit = barometer.GetPressure();
 }
 
@@ -36,7 +35,7 @@ double Navigation::GetHeight() {
     double pressure = barometer.GetPressure();
     double temp = barometer.GetTemperature(); 
     temp += 273.15; // Convert to K;
-    return (log(pressure/pressureInit) * 8.3143 * temp) / (0.02896 * -9.81);
+    return (log(pressure/pressureInit) * 8.3145 * temp) / (0.02897 * -9.81);
     // Pressure is in kpa
 }
     
@@ -93,12 +92,6 @@ void Navigation::UpdateNavigation(){
     stateMat(11) = std::get<2>(rollingAngularAverage);
 
    
-}
-
-void Navigation::Start(){
-    // Sets the state vector to all zeros //
-
-    stateMat = Eigen::Matrix<double, 12, 1>::Zero();
 }
 
 std::tuple<double,double,double> Navigation::ComputeAngularRollingAverage(){

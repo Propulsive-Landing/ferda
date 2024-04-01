@@ -27,7 +27,23 @@ void Controller::UpdateTestTVC(double testTime) {
     tvc.SetYServo(angle);
 }
 
-void Controller::UpdateLaunch(Navigation& navigation, double current_time) {
+void Controller::UpdateLand(Navigation &navigation, double current_time){
+    //Use the TVC to stabilize the rocket for landing
+
+    stabilizeAtOffset(navigation, current_time, 0);
+}
+
+
+//communicate with TVC
+void Controller::UpdateLand(Navigation &navigation, double current_time){
+    //Use the TVC to stabilize the rocket for landing
+
+    stabilizeAtOffset(navigation, current_time, 0);
+}
+
+
+void Controller::stabilizeAtOffset(Navigation& navigation, double current_time, double offset) 
+{
     // Calculate desired control inputs for launch and actuate all control surfaces accordingly
     
     // Create a variable to determine the max amount of Euler Entries;
@@ -81,13 +97,6 @@ void Controller::UpdateLaunch(Navigation& navigation, double current_time) {
         CalculateInput();
         next_tvc_time += MissionConstants::TVCPeriod;
 
-}
-
-
-//communicate with TVC
-void Controller::UpdateLand(){
-    // TODO. Calculate desired control inputs for land
-    // TODO. Actuate all control surfaces accordingly
 }
 
 //shut down rocket functions
