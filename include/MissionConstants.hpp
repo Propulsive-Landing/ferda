@@ -27,6 +27,7 @@ namespace MissionConstants {
     // Navigation constants
     const double kNavThetaDotSmooth = 0.05;
     const double kFswLoopTime = .005;
+    const double kFSWCalibrationTime = 0.05;
 
     // Controller constants, TODO: USER EDIT PRE-FLIGHT
     const double kMaximumTvcAngle = 7.5*kDeg2Rad;

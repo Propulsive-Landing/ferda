@@ -51,16 +51,19 @@ void Controller::stabilizeAtOffset(Navigation& navigation, double current_time, 
 
     // Create a matrix to store the returned stateEstimate from getNavigation() and store the yaw value into a varible
     Eigen::Matrix<double,12,1> stateEstimate = navigation.GetNavigation();
-   // double yaw = stateEstimate(8);
-
-    // Calculate the rotation matrix to translate the body frame to the ground frame
-   // Eigen::Matrix2d rotation;
-   // rotation << cos(-yaw), -sin(-yaw), sin(-yaw), cos(-yaw);
-
-    // Populate x_control so that the first 2 entries are the stateEstimates' x and y velocities, its 4-5 entries are stateEstimates' roll and pitch values
-    // and it's last 2 entries are stateEstimates' roll and pitch angular velocities.
    
-   // x_control.segment(0,2) = rotation * stateEstimate.segment(3,2);
+   /* WE DON'T NEED THIS CODE FOR RIGHT NOW. X AND Y VELOCITY WILL BE 0
+    double yaw = stateEstimate(8);
+
+     Calculate the rotation matrix to translate the body frame to the ground frame
+    Eigen::Matrix2d rotation;
+    rotation << cos(-yaw), -sin(-yaw), sin(-yaw), cos(-yaw);
+
+     Populate x_control so that the first 2 entries are the stateEstimates' x and y velocities, its 4-5 entries are stateEstimates' roll and pitch values
+     and it's last 2 entries are stateEstimates' roll and pitch angular velocities.
+   
+    x_control.segment(0,2) = rotation * stateEstimate.segment(3,2);
+   */
     x_control(0) = 0;
     x_control(1) = 0;
     x_control.segment(4,2) = stateEstimate.segment(6,2);
@@ -97,6 +100,7 @@ void Controller::stabilizeAtOffset(Navigation& navigation, double current_time, 
         CalculateInput();
         next_tvc_time += MissionConstants::TVCPeriod;
 
+    }
 }
 
 //shut down rocket functions
