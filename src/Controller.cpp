@@ -27,7 +27,7 @@ void Controller::UpdateTestTVC(double testTime) {
     tvc.SetYServo(angle);
 }
 
-void Controller::UpdateLand(Navigation &navigation, double current_time){
+void Controller::UpdateLaunch(Navigation &navigation, double current_time){
     //Use the TVC to stabilize the rocket for landing
 
     stabilizeAtOffset(navigation, current_time, 0);
