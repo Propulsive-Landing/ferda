@@ -85,9 +85,48 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
     }
 }
 
+//perform linear interpolation on the variable a and b in regards to the clamp time
+//TODO CONFIRM WITH HARRISON THAT THE SECOND PARAMETER BEING PASSED INTO INTERP1 IS A Y VALUE TO MAKE THIS FUNCTION WORK
+double interp(double x, double y, double clampTime){
+    static double prevX = 0;
+    static double prevY = 0;
+    return x + clampTime *((y - prevY)/(x - prevX));
+}
+
 Mode::Phase Mode::UpdateFreefall(Navigation& navigation, Igniter& igniter, double currTime) {
     // some checks
-
+    double x_series[] = {
+        0,0,0,0,
+        0.15,0.006300551471,0.1260110294,0.102825,
+        0.186,0.01207104417,0.1986096858,0.162063,
+        0.206,0.01663373743,0.2636535017,0.215133,
+        0.242,0.02939797916,0.4616569475,0.376665,
+        0.252,0.03439449826,0.5413972279,0.44171,
+        0.277,0.05093705697,0.7885734069,0.6432975,
+        0.333,0.1148983692,1.550453183,1.2643095,
+        0.359,0.1611297397,2.018527126,1.6456255,
+        0.374,0.1936321582,2.317399531,1.8890005,
+        0.394,0.2442218503,2.749864768,2.2410105,
+        0.435,0.3772052622,3.761979745,3.064147,
+        0.476,0.5548083959,4.928061044,4.0113495,
+        0.521,0.8080865759,6.345583167,5.161122,
+        0.643,1.810898979,9.978157802,8.098882,
+        0.725,2.717923946,12.12349725,9.827114,
+        0.821,3.997163612,14.51014805,11.744378,
+        0.898,5.185924868,16.35860205,13.2254345,
+        1.025,7.452236322,19.31353972,15.586174,
+        1.142,9.86792536,21.97713336,17.7068575,
+        1.259,12.59413992,24.6216088,19.8056035,
+        1.396,16.17742543,27.68027601,22.2247495,
+        1.569,21.29661277,31.4970487,25.2309705,
+        1.757,27.60729873,35.64105694,28.4793285,
+        1.895,32.73561959,38.67871618,30.8502375,
+        2.027,38.03522692,41.64072913,33.1537695,
+        2.042,38.66216267,41.93358332,33.3810945,
+        2.052,39.08221681,42.06857844,33.4858495,
+        2.063,39.54553999,42.16376114,33.559698,
+        2.09,40.68551828,42.25024713,33.626793
+    };
     
     navigation.UpdateNavigation();
     //controller.UpdateLand(navigation, currTime);
@@ -97,6 +136,8 @@ Mode::Phase Mode::UpdateFreefall(Navigation& navigation, Igniter& igniter, doubl
     if(currTime > MissionConstants::kFswLoopTime + motor_thrust_duration + offset){
        double a = -9.81/2;
        double b = currentState(5) + (-9.81*(motor_thrust_duration+motor_thrust_percentage));
+
+        Eigen::Matrix<double, 12, 1> x_series; //TEMP
 
        double average_landing_throttle = 1;
 
