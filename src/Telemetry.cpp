@@ -33,6 +33,25 @@ void Telemetry::Log(std::string message) {
     Logs << message << "\n" << std::flush;
 }
 
+void Telemetry::RfSendFrame(Navigation& navigation, Controller& controller)
+{
+    // write data to rf file
+    auto now = std::chrono::system_clock::now();
+    auto in_time_t = std::chrono::system_clock::to_time_t(now);
+
+    // Print data to stdout
+    std::cout << std::to_string(navigation.GetNavigation().coeff(1, 0));
+
+     // Write time to file
+    RFSent << std::put_time(std::localtime(&in_time_t), "%c") << ",";
+    
+    // TODO. SEND RF DATA IN PROPPER FORMAT
+
+    //Write data to file
+    RFSent << std::to_string(navigation.GetNavigation().coeff(1, 0)) << "\n" << std::flush;;
+}
+
+
 void Telemetry::RunTelemetry(Navigation& navigation, Controller& controller, float HardwareSaveDelta) {
         /* Start calculate time change*/
         static auto last_time = std::chrono::high_resolution_clock::now();
