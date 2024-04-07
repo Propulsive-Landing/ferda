@@ -32,11 +32,14 @@ public:
     Controller(TVC& tvc);   
     void UpdateLaunch(Navigation& navigation, double current_time);
     void UpdateTestTVC(double testTime);
+
     void UpdateLand(Navigation &navigation, double current_time);
     void stabilizeAtOffset(Navigation& navigation, double current_time, double offset);
+
     void UpdateSafe();
     void CalculateK(double startTime);
     void CalculateInput();
+    void stabilizeAtOffset(Navigation& navigation, double current_time, double offset);
     Eigen::Vector2d TvcMath(Eigen::Vector2d input);
     void Start(double current_time);
     void Center();

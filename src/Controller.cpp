@@ -31,6 +31,8 @@ void Controller::UpdateLaunch(Navigation &navigation, double current_time){
     //Use the TVC to stabilize the rocket for landing
 
     stabilizeAtOffset(navigation, current_time, 0);
+//     stabilizeAtOffset(navigation, current_time, 5*kDeg2Rad); TODO ADDRESS WHY THIS IS 
+
 }
 
 
@@ -41,11 +43,11 @@ void Controller::UpdateLand(Navigation &navigation, double current_time){
     stabilizeAtOffset(navigation, current_time, 0);
 }
 
-
 void Controller::stabilizeAtOffset(Navigation& navigation, double current_time, double offset) 
 {
+
     // Calculate desired control inputs for launch and actuate all control surfaces accordingly
-    
+
     // Create a variable to determine the max amount of Euler Entries;
     int maxEulerEntries = MissionConstants::kControlIntegralPeriod/loopTime;
 
@@ -64,10 +66,16 @@ void Controller::stabilizeAtOffset(Navigation& navigation, double current_time, 
    
     x_control.segment(0,2) = rotation * stateEstimate.segment(3,2);
    */
+  
     x_control(0) = 0;
     x_control(1) = 0;
     x_control.segment(4,2) = stateEstimate.segment(6,2);
     x_control.segment(6,2) = stateEstimate.segment(9,2);
+    
+    //add offset to the rocket for a short amount of time after launch to avoid the pad when landing
+    if(current_time <= timeAtOffset){
+        x_control(4) += offset;
+    }
 
     // Extract roll and pitch from stateEstimate, and put it into euler_queue
     std::vector<double> currentAngle {stateEstimate(6), stateEstimate(7)};
