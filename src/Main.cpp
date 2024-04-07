@@ -4,7 +4,7 @@
 
 #include "Navigation.hpp"
 #include "Controller.hpp"
-
+#include "Igniter.hpp"
 #include "Telemetry.hpp"
 
 #include "Mode.hpp"
@@ -15,6 +15,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <tuple>
 
 #ifdef NDEBUG
     #include <pigpio.h>
@@ -33,6 +34,7 @@ int main()
     IMU imu;
     Barometer barometer;
     TVC tvc;
+    Igniter igniter;
 
     Navigation navigation(imu, barometer, tvc);
     Controller controller(tvc);
@@ -44,18 +46,14 @@ int main()
     Mode mode(Mode::Calibration);
 
 
-    //while(mode.Update(navigation, controller)) {}
+
+    while(mode.Update(navigation, controller, igniter)) {}
 
     //#ifdef NDEBUG
     //    gpioTerminate();
    // #endif
-    std::cout<< navigation.GetNavigation() << "\n";
-   static int iteration = 1;
-   while(iteration){
-        navigation.UpdateNavigation();
-        iteration--;
-        std::cout<< navigation.GetNavigation() << "\n";
-    }
+
+    
    
 
 
