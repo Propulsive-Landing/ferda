@@ -53,7 +53,7 @@ std::tuple<double, double, double> IMU::GetBodyAcceleration()
 }
 
 std::tuple<double, double, double> IMU::GetBodyAngularRate()
-{.  
+{  
     
     std::fstream ifstream(gyroPath + "/in_anglvel_x_raw");
     if (!ifstream.is_open())
