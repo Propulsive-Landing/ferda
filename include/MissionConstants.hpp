@@ -55,7 +55,8 @@ namespace MissionConstants {
 
     // Abort constants
 
-
+    // Time after launch until active stabalization begins.
+    const float timeAtOffset = 0.0;
 
 } // MissionConstants
 

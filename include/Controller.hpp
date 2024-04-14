@@ -39,7 +39,6 @@ public:
     void UpdateSafe();
     void CalculateK(double startTime);
     void CalculateInput();
-    void stabilizeAtOffset(Navigation& navigation, double current_time, double offset);
     Eigen::Vector2d TvcMath(Eigen::Vector2d input);
     void Start(double current_time);
     void Center();

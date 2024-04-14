@@ -73,7 +73,7 @@ void Controller::stabilizeAtOffset(Navigation& navigation, double current_time, 
     x_control.segment(6,2) = stateEstimate.segment(9,2);
     
     //add offset to the rocket for a short amount of time after launch to avoid the pad when landing
-    if(current_time <= timeAtOffset){
+    if(current_time <= MissionConstants::timeAtOffset){
         x_control(4) += offset;
     }
 

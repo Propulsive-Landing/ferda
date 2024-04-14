@@ -11,4 +11,3 @@ void Igniter::Ignite(Igniter::IgnitionSpecifier ignite)
 
     return;
 }
-}
