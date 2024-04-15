@@ -5,9 +5,23 @@
 void Igniter::Ignite(Igniter::IgnitionSpecifier ignite)
 {
     if (ignite == Igniter::IgnitionSpecifier::LAUNCH)
-        gpioWrite(4, 1);
+    {
+        gpioWrite(6, 0);
+    }
     else if (ignite == Igniter::IgnitionSpecifier::LAND)
-        gpioWrite(17, 1);
+    {
+        // gpioWrite(17, 1);
+    }
+}
 
-    return;
+void Igniter::DisableIgnite(Igniter::IgnitionSpecifier ignite)
+{
+    if (ignite == Igniter::IgnitionSpecifier::LAUNCH)
+    {
+        gpioWrite(6, 1);
+    }
+    else if (ignite == Igniter::IgnitionSpecifier::LAND)
+    {
+        // gpioWrite(17, 1);
+    }
 }

@@ -11,3 +11,15 @@ void Igniter::Ignite(Igniter::IgnitionSpecifier ignite)
     return;
 }
 
+
+void Igniter::DisableIgnite(Igniter::IgnitionSpecifier ignite)
+{
+    if (ignite == Igniter::IgnitionSpecifier::LAUNCH)
+    {
+        std::cout<<"Disable Launch Igniter"<<"\n";
+    }
+    else if (ignite == Igniter::IgnitionSpecifier::LAND)
+    {
+        // gpioWrite(17, 1);
+    }
+}
