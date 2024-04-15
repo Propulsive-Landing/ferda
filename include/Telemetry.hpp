@@ -17,7 +17,7 @@ class Telemetry {
         std::ofstream Logs;
         std::ofstream HardwareSaved;
 
-        void RunTelemetry(Navigation& navigation, Controller& controller, float HardwareSaveDelta);
+        void RunTelemetry(Navigation& navigation, Controller& controller, float HardwareSaveDelta, float RFSaveDelta);
         void Log(std::string message);
 
         static Telemetry& GetInstance()

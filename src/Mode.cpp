@@ -4,6 +4,7 @@
 #include "Navigation.hpp"
 #include "MissionConstants.hpp"
 #include "Telemetry.hpp"
+#include "RF.hpp"
 #include <iostream>
 
 //CONSTANTS TO BE FIGURED OUT LATER
@@ -42,6 +43,9 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
 Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, bool reset) {
     
     navigation.UpdateNavigation();
+
+
+    RF::Command command = RF::GetInstance().GetCommand();
 
     // If reset is true, then reset the state matrix in navigation and go to Launch
     if(reset){

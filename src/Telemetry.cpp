@@ -7,6 +7,7 @@
 #include <sys/poll.h> 
 
 #include "Mode.hpp"
+#include "RF.hpp"
 #include "Telemetry.hpp"
 
 void Telemetry::HardwareSaveFrame(Navigation& navigation, Controller& controller)
@@ -39,30 +40,39 @@ void Telemetry::RfSendFrame(Navigation& navigation, Controller& controller)
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
 
-    // Print data to stdout
-    std::cout << std::to_string(navigation.GetNavigation().coeff(1, 0));
-
-     // Write time to file
-    RFSent << std::put_time(std::localtime(&in_time_t), "%c") << ",";
+    RF::rfFrame frame;
+    frame.mode = 0;
+    frame.euler[0] = navigation.stateMat(0, 0);
+    frame.euler[1] = navigation.stateMat(1, 0);
+    frame.euler[2] = navigation.stateMat(2, 0);
+    frame.velocity[0] = navigation.stateMat(3, 0);
+    frame.velocity[1] = navigation.stateMat(4, 0);
+    frame.velocity[2] = navigation.stateMat(5, 0);
+    frame.dt = 0.0;
     
-    // TODO. SEND RF DATA IN PROPPER FORMAT
+    RF::GetInstance().SendFrame(frame);
 
-    //Write data to file
-    RFSent << std::to_string(navigation.GetNavigation().coeff(1, 0)) << "\n" << std::flush;;
 }
 
 
-void Telemetry::RunTelemetry(Navigation& navigation, Controller& controller, float HardwareSaveDelta) {
+void Telemetry::RunTelemetry(Navigation& navigation, Controller& controller, float HardwareSaveDelta, float RFSaveDelta) {
         /* Start calculate time change*/
-        static auto last_time = std::chrono::high_resolution_clock::now();
-        auto time_now = std::chrono::high_resolution_clock::now();
-        auto change_time = time_now - last_time;
+        static auto last_hardware_time = std::chrono::high_resolution_clock::now();
+        auto hardware_change_time = std::chrono::high_resolution_clock::now() - last_time;
+
+        static auto last_rf_time = std::chrono::high_resolution_clock::now();
+        auto rf_change_time = std::chrono::high_resolution_clock::now() - last_time;
         /* End calculate time change*/
 
-        
-        if(std::chrono::duration_cast<std::chrono::milliseconds>(change_time).count() / 1000.0 >= HardwareSaveDelta){
+
+        if(std::chrono::duration_cast<std::chrono::milliseconds>(hardware_change_time).count() / 1000.0 >= HardwareSaveDelta){
             HardwareSaveFrame(navigation, controller);
-            last_time = std::chrono::high_resolution_clock::now();
+            last_hardware_time = std::chrono::high_resolution_clock::now();
+        }
+        
+        if(std::chrono::duration_cast<std::chrono::milliseconds>(rf_change_time).count() / 1000.0 >= RFSaveDelta){
+            RFSendFrame(navigation, controller);
+            last_rf_time = std::chrono::high_resolution_clock::now();
         }
 }
 
