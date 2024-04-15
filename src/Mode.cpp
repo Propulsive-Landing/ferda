@@ -56,12 +56,19 @@ Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, boo
 
 Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, Igniter& igniter, double change_time) {
    
+    static auto start_time = std::chrono::high_resolution_clock::now();
+    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+
    // Launch rocket and start Controller on first iteration
     static int iteration = 1;
     if(iteration > 0){
         igniter.Ignite(Igniter::IgnitionSpecifier::LAUNCH);
         controller.Start(change_time);
         iteration--;
+    }
+
+    if(milliseconds_since_start > 50){
+        igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAUNCH);
     }
 
     navigation.UpdateNavigation();
@@ -74,6 +81,7 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
     if(testState(5) < 0 && testState(2) > 0.28){ 
         std::cout<<"We are switching to freefall"<<"\n";
         Telemetry::GetInstance().Log("Switching mode from launch to freefall");
+        igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAUNCH);
         return Mode::Freefall;
     }
     else{
@@ -178,7 +186,7 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
     navigation.loopTime = change_time;
     controller.loopTime = change_time;
 
-    std::cout << std::to_string(eCurrentMode) << "\n";
+    // std::cout << std::to_string(eCurrentMode) << "\n";
 
     // If currTime is greater than the designated Calibrated Time, then assign true to both reset and liftoff
    if(currTime> MissionConstants::kFSWCalibrationTime && liftoff == false){
