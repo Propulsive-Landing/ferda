@@ -203,23 +203,23 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
     switch(this->eCurrentMode)
     {
         case Calibration:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
+            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
             this->eCurrentMode = UpdateCalibration(navigation, controller);
             break;
         case Idle:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
+            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
             this->eCurrentMode = UpdateIdle(navigation, controller, reset);
             break;
         case Launch:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
+            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
             this->eCurrentMode = UpdateLaunch(navigation, controller, igniter, currTime);
             break;
         case Freefall:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
+            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
             this->eCurrentMode = UpdateFreefall(navigation, igniter, currTime);
             break;
         case Land:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
+            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
             this->eCurrentMode = UpdateLand(navigation, controller, currTime);
             break;
         case Safe:
