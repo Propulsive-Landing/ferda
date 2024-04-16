@@ -46,7 +46,7 @@ void RF::SendFrame(RF::rfFrame frame)
     SendString(result);
 }
 
-RF::Command GetCommand() // Will check for commands and return the received command. Non-blocking.
+RF::Command RF::GetCommand() // Will check for commands and return the received command. Non-blocking.
 {
     struct pollfd fds;
     int ret;

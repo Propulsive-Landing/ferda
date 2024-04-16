@@ -12,6 +12,7 @@ class Telemetry {
 
 
         void HardwareSaveFrame(Navigation& navigation, Controller& controller);
+        void RfSendFrame(Navigation& navigation, Controller& controller);
 
     public:
         std::ofstream Logs;

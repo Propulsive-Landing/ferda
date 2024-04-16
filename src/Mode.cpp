@@ -48,7 +48,7 @@ Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, boo
     RF::Command command = RF::GetInstance().GetCommand();
 
     // If reset is true, then reset the state matrix in navigation and go to Launch
-    if(reset){
+    if(reset || command == RF::Command::Ignite){
         Telemetry::GetInstance().Log("Switching mode from idle to launch");
         navigation.reset();
         return Mode::Launch;
@@ -66,6 +66,7 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
    // Launch rocket and start Controller on first iteration
     static int iteration = 1;
     if(iteration > 0){
+        Telemetry::GetInstance().Log("Igniting MOTOR");
         igniter.Ignite(Igniter::IgnitionSpecifier::LAUNCH);
         controller.Start(change_time);
         iteration--;

@@ -32,7 +32,19 @@ RF::~RF()
     fclose(SerialPort);
 }
 
+void RF::SendFrame(RF::rfFrame frame)
+{
+    
+    frame.magic_number = FRAME_MAGIC_NUMBER;
+    frame.footer = RF_FOOTER;
 
+    uint8_t * packet = (uint8_t *) &frame;
+
+    std::string result((char *) packet, sizeof(RF::rfFrame));
+
+    fwrite(result.c_str(), sizeof(char), result.size(), SerialPort);
+    fflush(SerialPort);
+}
 
 void RF::SendString(std::string text)
 {
