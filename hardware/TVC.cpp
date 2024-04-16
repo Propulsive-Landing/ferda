@@ -6,25 +6,6 @@
 #include <math.h>
 #include <MissionConstants.hpp>
 
-// void TVC::SetXServo(double dAngle)
-// {
-//     double inputAngle = dAngle;
-//     inputAngle = (inputAngle < 0) ? 0 : inputAngle;
-//     inputAngle = (inputAngle > 180) ? 180 : inputAngle;
-
-//     double dPulseWidth = 1000 + (inputAngle * 1000 / 180.0);
-//     gpioServo(23, round(dPulseWidth));
-// }
-
-// void TVC::SetYServo(double dAngle)
-// {
-//     double inputAngle = dAngle;
-//     inputAngle = (inputAngle < 0) ? 0 : inputAngle;
-//     inputAngle = (inputAngle > 180) ? 180 : inputAngle;
-
-//     double dPulseWidth = 1000 + (inputAngle * 1000 / 180.0);
-//     gpioServo(24, round(dPulseWidth));
-// }
 
 void TVC::SetXServo(double dAngle)
 {
