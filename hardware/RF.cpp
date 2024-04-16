@@ -4,6 +4,8 @@
 #include <iomanip>
 #include <sstream>
 #include <chrono>
+#include <iostream>
+#include <poll.h>
 
 #include "RF.hpp"
 
@@ -104,4 +106,33 @@ void RF::SendString(std::string text)
     // write time to file
     this->RFSent << std::put_time(std::localtime(&in_time_t), "%c") << ",";
     this->RFSent << text << "\n" << std::flush;
+}
+
+
+RF::Command RF::GetCommand() // Will check for commands and return the received command. Non-blocking.
+{
+    struct pollfd fds;
+    int ret;
+    fds.fd = fileno(SerialPort); /* this is Serial Port */
+    fds.events = POLLIN;
+    ret = poll(&fds, 1, 0);
+
+    if(ret != 1) // Return if no data
+        return RF::Command::None;
+
+    std::string input_line;
+    std::getline(std::cin, input_line);
+    std::cout << "GOT: " << input_line << "\n" << std::flush;
+
+    // if statement for which command to return
+    if(input_line == "ABORT")
+        return RF::Command::ABORT;
+    else if(input_line == "Startup")
+        return RF::Command::Startup;
+    else if(input_line == "Ignite")
+        return RF::Command::Ignite;
+    else if(input_line == "Release")
+        return RF::Command::Release;
+    else
+        return RF::Command::None;
 }
