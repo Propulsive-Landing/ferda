@@ -21,8 +21,8 @@ void Controller::Start(double current_time){
 
 
 void Controller::UpdateTestTVC(double testTime) {
-    double angleA = sin(testTime)*MissionConstants::kMaximumTvcAngle;
-    double angleB = cos(testTime)*MissionConstants::kMaximumTvcAngle;
+    double angleA = sin(testTime)*MissionConstants::kMaximumTvcAngleDeg;
+    double angleB = cos(testTime)*MissionConstants::kMaximumTvcAngleDeg;
 
     tvc.SetXServo(angleA);
     tvc.SetYServo(angleB);

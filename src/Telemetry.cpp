@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <stdio.h>
 #include <sys/poll.h> 
+#include <fstream>
 
 #include "Mode.hpp"
 #include "RF.hpp"
@@ -84,8 +85,15 @@ void Telemetry::RunTelemetry(Navigation& navigation, Controller& controller, flo
 
 Telemetry::Telemetry()
 {
-    Logs.open ("../logs/logs.txt");
-    HardwareSaved.open ("../logs/data.txt");;
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%d-%m-%Y %H-%M-%S");
+    auto str = oss.str();
+
+    Logs.open ("../logs/logs"+str+".txt");
+    HardwareSaved.open ("../logs/data"+str+".txt");;
 
     //TODO Write headers to data file where needed
 }
