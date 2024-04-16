@@ -21,11 +21,15 @@ void Controller::Start(double current_time){
 
 
 void Controller::UpdateTestTVC(double testTime) {
-    double angleA = sin(testTime)*MissionConstants::kMaximumTvcAngleDeg;
-    double angleB = cos(testTime)*MissionConstants::kMaximumTvcAngleDeg;
+    double angleA = sin(testTime)*MissionConstants::kMaximumTvcAngle; // Rad
+    double angleB = cos(testTime)*MissionConstants::kMaximumTvcAngle; // Rad
 
-    tvc.SetXServo(angleA);
-    tvc.SetYServo(angleB);
+    input(0) = angleA;
+    input(1) = angleB;
+    tvc_angles = TvcMath(input);
+
+    tvc.SetXServo(tvc_angles(0));
+    tvc.SetYServo(tvc_angles(1));
 }
 
 void Controller::UpdateLaunch(Navigation &navigation, double current_time){
