@@ -5,6 +5,7 @@
 #include "MissionConstants.hpp"
 #include "Telemetry.hpp"
 #include <iostream>
+#include <unistd.h>   
 
 //CONSTANTS TO BE FIGURED OUT LATER
 int abort_threshold = 1;
@@ -44,10 +45,21 @@ Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, boo
     navigation.UpdateNavigation();
 
     // If reset is true, then reset the state matrix in navigation and go to Launch
-    if(reset){
-        Telemetry::GetInstance().Log("Switching mode from idle to launch");
-        navigation.reset();
-        return Mode::Launch;
+    // if(reset){
+    //     Telemetry::GetInstance().Log("Switching mode from idle to launch");
+    //     navigation.reset();
+    //     return Mode::Launch;
+    // }
+    static auto start_time = std::chrono::high_resolution_clock::now();
+
+
+    while(true){
+        int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+        float seconds = milliseconds_since_start / 1000.0;
+
+        controller.WriteSine(2*seconds);
+
+        usleep(50000);
     }
 
 

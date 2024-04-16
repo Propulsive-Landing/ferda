@@ -43,6 +43,15 @@ void Controller::UpdateLand(Navigation &navigation, double current_time){
     stabilizeAtOffset(navigation, current_time, 0);
 }
 
+void Controller::WriteSine(float time) {
+    float value1 = 5.0*std::sin(time);
+    float value2 = 5.0*std::cos(time);
+
+    tvc.SetXServo(value1);
+    tvc.SetYServo(value2);
+}
+
+
 void Controller::stabilizeAtOffset(Navigation& navigation, double current_time, double offset) 
 {
 
