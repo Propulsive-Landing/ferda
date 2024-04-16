@@ -31,6 +31,8 @@ void Telemetry::Log(std::string message) {
 
     RF::GetInstance().SendString(message);
 
+    std::cout << message << "\n";
+
     Logs << std::put_time(std::localtime(&in_time_t), "%c") << ",";
 
     // Write data to file

@@ -30,14 +30,31 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
     double seconds = milliseconds_since_start / 1000.0;
 
     if(seconds >= 1){
-        Telemetry::GetInstance().Log("Switching mode from calibration to idle");
+        Telemetry::GetInstance().Log("Switching mode from calibration to test");
         controller.ImportControlParameters("../k_matrix.csv");
         controller.Center();
-        return Mode::Idle;
+        return Mode::TestTVC;
     }
     
     return Mode::Calibration;
 }
+
+Mode::Phase Mode::UpdateTestTVC(Navigation& navigation, Controller& controller) {
+    static auto start_time = std::chrono::high_resolution_clock::now();
+    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+    double seconds = milliseconds_since_start / 1000.0;
+
+
+    controller.UpdateTestTVC(seconds);
+
+    if(seconds >= 10){
+        Telemetry::GetInstance().Log("Switching mode from test to idle");
+        return Mode::Idle;
+    }
+    
+    return Mode::TestTVC;
+}
+
 
 
 Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, bool reset) {
@@ -206,6 +223,10 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
         case Calibration:
             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
             this->eCurrentMode = UpdateCalibration(navigation, controller);
+            break;
+        case TestTVC:
+            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
+            this->eCurrentMode = UpdateTestTVC(navigation, controller);
             break;
         case Idle:
             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
