@@ -49,6 +49,7 @@ Mode::Phase Mode::UpdateTestTVC(Navigation& navigation, Controller& controller) 
 
     if(seconds >= 10){
         Telemetry::GetInstance().Log("Switching mode from test to idle");
+        controller.Center();
         return Mode::Idle;
     }
     

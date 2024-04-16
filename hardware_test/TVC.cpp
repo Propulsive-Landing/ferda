@@ -11,7 +11,7 @@ void TVC::SetXServo(double dAngle)
     dAngle = (dAngle > 180) ? 180 : dAngle;
 
     double dPulseWidth = 1000 + (dAngle * 1000 / 180.0);
-    std::cout << "Wrote angle to X: " + std::to_string(dAngle) + " PW: " + std::to_string(dPulseWidth);
+    std::cout << "Wrote angle to X: " + std::to_string(dAngle) + " PW: " + std::to_string(dPulseWidth) + "\n";
 }
 
 
@@ -24,5 +24,5 @@ void TVC::SetYServo(double dAngle)
 
     double dPulseWidth = 1000 + (dAngle * 1000 / 180.0);
 
-    std::cout << "Wrote angle to Y: " + std::to_string(dAngle) + " PW: " + std::to_string(dPulseWidth);
+    std::cout << "Wrote angle to Y: " + std::to_string(dAngle) + " PW: " + std::to_string(dPulseWidth) + "\n";
 }
