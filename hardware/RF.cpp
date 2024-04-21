@@ -21,7 +21,8 @@ RF::RF()
     RFSent.open ("../logs/RFSent"+str+".txt");
 
     // OPEN SERIAL PORT FOR HARDWARE
-    SerialPort = fopen("/dev/ttyS0", "rw");
+    // SerialPort = fopen("/dev/ttyS0", "rw");
+    SerialPort = fopen("./virtual_rf.txt", "w+");
     if (SerialPort < 0)
         throw std::runtime_error("failed to open serial port");
 }

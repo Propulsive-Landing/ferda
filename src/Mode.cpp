@@ -60,13 +60,19 @@ Mode::Phase Mode::UpdateTestTVC(Navigation& navigation, Controller& controller) 
 
 Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, bool reset) {
     
+
+    static auto start_time = std::chrono::high_resolution_clock::now();
+    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+
+
+
     navigation.UpdateNavigation();
 
 
     RF::Command command = RF::GetInstance().GetCommand();
 
     // If reset is true, then reset the state matrix in navigation and go to Launch
-    if(reset || command == RF::Command::Ignite){
+    if(reset || command == RF::Command::Ignite || milliseconds_since_start > 5000){
         Telemetry::GetInstance().Log("Switching mode from idle to launch");
         navigation.reset();
         return Mode::Launch;
@@ -101,15 +107,17 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
     Eigen::Matrix<double, 12, 1> testState = navigation.GetNavigation();
 
     // If z acceleration is negative and the z height is not the starting height, then we should go to freefall
-    if(testState(5) < 0 && testState(2) > 0.28){ 
-        std::cout<<"We are switching to freefall"<<"\n";
-        Telemetry::GetInstance().Log("Switching mode from launch to freefall");
-        igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAUNCH);
-        return Mode::Freefall;
-    }
-    else{
+
+    // COMMENTED OUT FOR STABILITY TEST
+    // if(testState(5) < 0 && testState(2) > 0.28){ 
+    //     std::cout<<"We are switching to freefall"<<"\n";
+    //     Telemetry::GetInstance().Log("Switching mode from launch to freefall");
+    //     igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAUNCH);
+    //     return Mode::Freefall;
+    // }
+    // else{
         return Mode::Launch;
-    }
+    // }
 }
 
 Mode::Phase Mode::UpdateFreefall(Navigation& navigation, Igniter& igniter, double currTime) {
