@@ -19,6 +19,7 @@ void Telemetry::HardwareSaveFrame(Navigation& navigation, Controller& controller
 
     HardwareSaved << std::put_time(std::localtime(&in_time_t), "%c") << ",";
 
+    // Navigation state, U, k matrix current index
     // Write data to file
     HardwareSaved << std::to_string(navigation.GetNavigation().coeff(0, 0)) << "\n" << std::flush;
 }

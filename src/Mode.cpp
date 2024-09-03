@@ -44,6 +44,8 @@ Mode::Phase Mode::UpdateTestTVC(Navigation& navigation, Controller& controller) 
     static auto start_time = std::chrono::high_resolution_clock::now();
     int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
 
+    float seconds = milliseconds_since_start / 1000.0;
+
     controller.UpdateTestTVC(seconds);
 
     if(seconds >= 10){
