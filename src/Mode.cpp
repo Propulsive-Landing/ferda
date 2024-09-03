@@ -40,10 +40,9 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
 }
 
 Mode::Phase Mode::UpdateTestTVC(Navigation& navigation, Controller& controller) {
+
     static auto start_time = std::chrono::high_resolution_clock::now();
     int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-    double seconds = milliseconds_since_start / 1000.0;
-
 
     controller.UpdateTestTVC(seconds);
 
@@ -76,10 +75,11 @@ Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, boo
         Telemetry::GetInstance().Log("Switching mode from idle to launch");
         navigation.reset();
         return Mode::Launch;
+
     }
 
 
-    return Mode::Idle;
+    return Mode::Freefall;
 }
 
 Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, Igniter& igniter, double change_time) {
@@ -158,6 +158,7 @@ Mode::Phase Mode::UpdateFreefall(Navigation& navigation, Igniter& igniter, doubl
 
 
     return Mode::Freefall;
+
 }
 
 Mode::Phase Mode::UpdateLand(Navigation& navigation, Controller& controller, double currTime){
@@ -205,6 +206,7 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
     {
              change_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - last_time).count() / 1000.0;
 
+
     }
     
     if(change_time != 0.005)
@@ -212,6 +214,7 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
         change_time = 0.005;
     }
     currTime += change_time;
+
 
     // Update navigations and controller's loopTime to be changeTime which should be 0.005 each time
     navigation.loopTime = change_time;
@@ -251,6 +254,7 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
             break;
         case Land:
             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
+
             this->eCurrentMode = UpdateLand(navigation, controller, currTime);
             break;
         case Safe:

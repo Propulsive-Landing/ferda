@@ -28,7 +28,9 @@ class Mode
         Mode::Phase eCurrentMode;
 
         Mode::Phase UpdateCalibration(Navigation& navigation, Controller& controller);
+
         Mode::Phase UpdateTestTVC(Navigation& navigation, Controller& controller);
+
         Mode::Phase UpdateIdle(Navigation& navigation, Controller& controller, bool reset);
         Mode::Phase UpdateLaunch(Navigation& navigation, Controller& controller, Igniter& igniter, double current_time);
         Mode::Phase UpdateFreefall(Navigation& navigation, Igniter& igniter, double currTime);
