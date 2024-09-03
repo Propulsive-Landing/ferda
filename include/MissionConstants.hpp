@@ -31,6 +31,8 @@ namespace MissionConstants {
 
     // Controller constants, TODO: USER EDIT PRE-FLIGHT
     const double kMaximumTvcAngle = 7.5*kDeg2Rad;
+    const double kMaximumTvcAngleDeg = 7.5;
+
     const double kControlIntegralPeriod = 0.25;
     const double kDeg2PulseWidth = ((double) 1000.0)/((double) 90.0);
     const double kTvcXCenterAngle = -10;

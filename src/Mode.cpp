@@ -4,6 +4,7 @@
 #include "Navigation.hpp"
 #include "MissionConstants.hpp"
 #include "Telemetry.hpp"
+#include "RF.hpp"
 #include <iostream>
 
 //CONSTANTS TO BE FIGURED OUT LATER
@@ -29,29 +30,56 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
     double seconds = milliseconds_since_start / 1000.0;
 
     if(seconds >= 1){
-        Telemetry::GetInstance().Log("Switching mode from calibration to idle");
+        Telemetry::GetInstance().Log("Switching mode from calibration to test");
         controller.ImportControlParameters("../k_matrix.csv");
         controller.Center();
-        return Mode::Idle;
+        return Mode::TestTVC;
     }
     
     return Mode::Calibration;
 }
 
+Mode::Phase Mode::UpdateTestTVC(Navigation& navigation, Controller& controller) {
+
+    static auto start_time = std::chrono::high_resolution_clock::now();
+    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+
+    controller.UpdateTestTVC(seconds);
+
+    if(seconds >= 10){
+        Telemetry::GetInstance().Log("Switching mode from test to idle");
+        controller.Center();
+        return Mode::Idle;
+    }
+    
+    return Mode::TestTVC;
+}
+
+
 
 Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, bool reset) {
     
+
+    static auto start_time = std::chrono::high_resolution_clock::now();
+    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+
+
+
     navigation.UpdateNavigation();
 
+
+    RF::Command command = RF::GetInstance().GetCommand();
+
     // If reset is true, then reset the state matrix in navigation and go to Launch
-    if(reset){
+    if(reset || command == RF::Command::Ignite || milliseconds_since_start > 5000){
         Telemetry::GetInstance().Log("Switching mode from idle to launch");
         navigation.reset();
         return Mode::Launch;
+
     }
 
 
-    return Mode::Idle;
+    return Mode::Freefall;
 }
 
 Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, Igniter& igniter, double change_time) {
@@ -62,6 +90,7 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
    // Launch rocket and start Controller on first iteration
     static int iteration = 1;
     if(iteration > 0){
+        Telemetry::GetInstance().Log("Igniting MOTOR");
         igniter.Ignite(Igniter::IgnitionSpecifier::LAUNCH);
         controller.Start(change_time);
         iteration--;
@@ -78,15 +107,17 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
     Eigen::Matrix<double, 12, 1> testState = navigation.GetNavigation();
 
     // If z acceleration is negative and the z height is not the starting height, then we should go to freefall
-    if(testState(5) < 0 && testState(2) > 0.28){ 
-        std::cout<<"We are switching to freefall"<<"\n";
-        Telemetry::GetInstance().Log("Switching mode from launch to freefall");
-        igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAUNCH);
-        return Mode::Freefall;
-    }
-    else{
+
+    // COMMENTED OUT FOR STABILITY TEST
+    // if(testState(5) < 0 && testState(2) > 0.28){ 
+    //     std::cout<<"We are switching to freefall"<<"\n";
+    //     Telemetry::GetInstance().Log("Switching mode from launch to freefall");
+    //     igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAUNCH);
+    //     return Mode::Freefall;
+    // }
+    // else{
         return Mode::Launch;
-    }
+    // }
 }
 
 Mode::Phase Mode::UpdateFreefall(Navigation& navigation, Igniter& igniter, double currTime) {
@@ -127,6 +158,7 @@ Mode::Phase Mode::UpdateFreefall(Navigation& navigation, Igniter& igniter, doubl
 
 
     return Mode::Freefall;
+
 }
 
 Mode::Phase Mode::UpdateLand(Navigation& navigation, Controller& controller, double currTime){
@@ -174,6 +206,7 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
     {
              change_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - last_time).count() / 1000.0;
 
+
     }
     
     if(change_time != 0.005)
@@ -181,6 +214,7 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
         change_time = 0.005;
     }
     currTime += change_time;
+
 
     // Update navigations and controller's loopTime to be changeTime which should be 0.005 each time
     navigation.loopTime = change_time;
@@ -199,23 +233,28 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
     switch(this->eCurrentMode)
     {
         case Calibration:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
+            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
             this->eCurrentMode = UpdateCalibration(navigation, controller);
             break;
+        case TestTVC:
+            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
+            this->eCurrentMode = UpdateTestTVC(navigation, controller);
+            break;
         case Idle:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05);
+            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
             this->eCurrentMode = UpdateIdle(navigation, controller, reset);
             break;
         case Launch:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
+            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
             this->eCurrentMode = UpdateLaunch(navigation, controller, igniter, currTime);
             break;
         case Freefall:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
+            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
             this->eCurrentMode = UpdateFreefall(navigation, igniter, currTime);
             break;
         case Land:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01);
+            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
+
             this->eCurrentMode = UpdateLand(navigation, controller, currTime);
             break;
         case Safe:
