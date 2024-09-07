@@ -68,8 +68,6 @@ Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, boo
 
 
     navigation.UpdateNavigation();
-
-
     RF::Command command = RF::GetInstance().GetCommand();
 
     // If reset is true, then reset the state matrix in navigation and go to Launch
@@ -107,7 +105,6 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
     
 
     Eigen::Matrix<double, 12, 1> testState = navigation.GetNavigation();
-
     // If z acceleration is negative and the z height is not the starting height, then we should go to freefall
 
     // COMMENTED OUT FOR STABILITY TEST
@@ -127,6 +124,7 @@ Mode::Phase Mode::UpdateFreefall(Navigation& navigation, Igniter& igniter, doubl
     // Continue to update navigation
     navigation.UpdateNavigation();
     //controller.UpdateLand(navigation, currTime);
+
 
     // Get currentState
     Eigen::Matrix<double, 12, 1> currentState = navigation.GetNavigation();
@@ -168,7 +166,7 @@ Mode::Phase Mode::UpdateLand(Navigation& navigation, Controller& controller, dou
     // Continue to update navigation and controller
     navigation.UpdateNavigation();
     controller.UpdateLand(navigation, currTime);
-
+  
     // If the get height method returns a value between 0 and 1, then we have landed and can go to Safe.
     if (0.0 < navigation.GetHeight() && navigation.GetHeight() < 1.0)
      {
@@ -256,7 +254,6 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
             break;
         case Land:
             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
-
             this->eCurrentMode = UpdateLand(navigation, controller, currTime);
             break;
         case Safe:

@@ -10,6 +10,7 @@
 #include "Mode.hpp"
 #include "RF.hpp"
 #include "Telemetry.hpp"
+#include "MissionConstants.hpp"
 
 void Telemetry::HardwareSaveFrame(Navigation& navigation, Controller& controller)
 {
@@ -21,7 +22,23 @@ void Telemetry::HardwareSaveFrame(Navigation& navigation, Controller& controller
 
     // Navigation state, U, k matrix current index
     // Write data to file
-    HardwareSaved << std::to_string(navigation.GetNavigation().coeff(0, 0)) << "\n" << std::flush;
+    
+
+    for(int i = 0; i < 12; ++i){
+        HardwareSaved << "State[" << i << "]: " << std::to_string(navigation.GetNavigation()(i))<< ", \n";
+    }
+    
+    for(int i = 0; i < 2; ++i)
+    {
+        for(int j = 0; j < 8; ++j)
+        {
+            double value = controller.GetCurrentKMatrix()(i,j); 
+            HardwareSaved << "k[" << i << "][" << j << "]: " << std::to_string(value)<< ", ";
+        }
+        HardwareSaved<<"\n" << std::flush;
+    }
+
+    
 }
 
 
