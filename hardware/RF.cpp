@@ -122,17 +122,16 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
         return RF::Command::None;
 
     std::string input_line;
-    std::getline(std::cin, input_line);
-    std::cout << "GOT: " << input_line << "\n" << std::flush;
+    std::getline(SerialPort, input_line);
 
     // if statement for which command to return
-    if(input_line == "ABORT")
+    if(input_line == "COMMAND: ABORT")
         return RF::Command::ABORT;
-    else if(input_line == "Startup")
+    else if(input_line == "COMMAND: standby_to_countdown")
         return RF::Command::Startup;
-    else if(input_line == "Ignite")
+    else if(input_line == "COMMAND: Ignite")
         return RF::Command::Ignite;
-    else if(input_line == "Release")
+    else if(input_line == "COMMAND: Release")
         return RF::Command::Release;
     else
         return RF::Command::None;

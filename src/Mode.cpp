@@ -73,7 +73,7 @@ Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, boo
     RF::Command command = RF::GetInstance().GetCommand();
 
     // If reset is true, then reset the state matrix in navigation and go to Launch
-    if(reset || command == RF::Command::Ignite || milliseconds_since_start > 5000){
+    if(reset || command == RF::Command::Startup){
         Telemetry::GetInstance().Log("Switching mode from idle to launch");
         navigation.reset();
         return Mode::Launch;
@@ -81,7 +81,7 @@ Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, boo
     }
 
 
-    return Mode::Freefall;
+    return Mode::Idle;
 }
 
 Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, Igniter& igniter, double change_time) {
