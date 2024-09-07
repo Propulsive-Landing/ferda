@@ -43,6 +43,6 @@ public:
     void Start(double current_time);
     void Center();
     void ImportControlParameters(std::string file_name);
-    Eigen::Matrix<double, 2* MissionConstants::kNumberControllerGains, 8> GetCurrentKMatrix();
+    Eigen::Matrix<double, 2, 8>  GetCurrentKMatrix();
 
 };

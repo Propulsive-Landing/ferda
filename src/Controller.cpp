@@ -195,7 +195,7 @@ void Controller::ImportControlParameters(std::string file_name){
     in.close();
 }
 
-Eigen::Matrix<double, 2* MissionConstants::kNumberControllerGains, 8> Controller::GetCurrentKMatrix()
+Eigen::Matrix<double, 2, 8> Controller::GetCurrentKMatrix()
 {
-    return controller_gains.block(current_iteration_index*2, 0, 2, 8)*x_control;
+    return controller_gains.block(current_iteration_index*2, 0, 2, 8);
 }
