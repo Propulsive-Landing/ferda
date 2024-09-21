@@ -79,7 +79,7 @@ Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, boo
     }
 
 
-    return Mode::Freefall;
+    return Mode::Idle;
 }
 
 Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, Igniter& igniter, double change_time) {
