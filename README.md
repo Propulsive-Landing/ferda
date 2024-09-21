@@ -13,6 +13,18 @@ Create features in branches created from dev branch. When feature is complete, m
 5. Run the executable that gets created in the `build/` folder
 
 
+## Building the source code
+1. First clone the repository. `git clone https://github.com/Propulsive-Landing/ferda.git` (link may have changed)
+2. Enter into the new folder `cd ferda`
+3. Generate the build files using cmake
+ - For release use: `cmake -Bbuild -DCMAKE_BUILD_TYPE=Release .` (this uses the actual hardware sensors)
+ - For debug use: `cmake -Bbuild -DCMAKE_BUILD_TYPE=Debug .`
+4. Enter the newly generated `build` folder: `cd build`
+5. Build the source `make all`
+6. Complete! You should now have an executable inside the `build` folder which you can run with `sudo ./Ferda`
+
+
+
 ## Hardware Config
 
 ### Startup Script
