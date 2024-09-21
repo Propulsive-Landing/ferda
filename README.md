@@ -19,76 +19,100 @@ Create features in branches created from dev branch. When feature is complete, m
   1. Create a Shell Script
   First, create a shell script that will perform the device detection and symbolic link creation.
   
-  Script: `/home/pi/link_iio_devices.sh`
+  Script: `/home/pi/fsw_startup.sh`
 
   ```
   #!/bin/bash
-
+  
   # Define the home directory for symbolic links
-  HOME_DIR="/home/your_username"
+  HOME_DIR="/home/pi"
+  LOG_FILE="/home/pi/fsw_startup.log"
+  
+  # Log function to append messages to the log file
+  log() {
+      echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
+  }
+  
   
   # Define the symbolic links
-  IMU_LINK="${HOME_DIR}/imu_device"
+  ACCEL_LINK="${HOME_DIR}/accel_device"
   BAROMETER_LINK="${HOME_DIR}/barometer_device"
   GYROSCOPE_LINK="${HOME_DIR}/gyroscope_device"
   
   # Remove old links if they exist
-  rm -f "$IMU_LINK" "$BAROMETER_LINK" "$GYROSCOPE_LINK"
+  rm -f "$ACCEL_LINK" "$BAROMETER_LINK" "$GYROSCOPE_LINK"
+  
+  
+  log "Starting device linking script..."
+  
+  sleep 0.5
   
   # Iterate over the IIO device directories
   for device in /sys/bus/iio/devices/iio:device*; do
       if [[ -d "$device" ]]; then
           if [[ -f "$device/in_accel_scale_available" ]]; then
-              ln -s "$device" "$IMU_LINK"
+              ln -s "$device" "$ACCEL_LINK"
               echo "IMU device found: $device"
-          elif [[ -f "$device/in_temp_scale" ]]; then
+              log "IMU device found and linked: $device"
+          elif [[ -f "$device/in_pressure_scale" ]]; then
               ln -s "$device" "$BAROMETER_LINK"
               echo "Barometer device found: $device"
+              log "Barometer device found and linked: $device"
           elif [[ -f "$device/in_anglvel_scale" ]]; then
               ln -s "$device" "$GYROSCOPE_LINK"
               echo "Gyroscope device found: $device"
+              log "Gyro device found and linked: $device"
           fi
       fi
+  done
+  
+  sleep 2.0
+  
+  
+  # Uncomment if you want fsw to start automatically on next book
+  # /home/pi/ferda/build/Ferda
+
   ```
 
   2. Make the Script Executable
   Run the following command to make the script executable:
 
   ```
-  sudo chmod +x /usr/local/bin/link_iio_devices.sh
+  sudo chmod +x /usr/local/bin/fsw_startup.sh
   ```
 
   3. Create the Systemd Service File
   Next, create a systemd service file to run this script at startup.
 
-  Service File: /etc/systemd/system/link_iio_devices.service
+  Service File: /etc/systemd/system/fsw_startup.service
 
   ```
-  [Unit]
-  Description=Link IIO Devices
-  After=local-fs.target
-  
-  [Service]
-  Type=oneshot
-  ExecStart=/usr/local/bin/link_iio_devices.sh
-  RemainAfterExit=yes
-  
-  [Install]
-  WantedBy=multi-user.target
+[Unit]
+Description=Link IIO Devices
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/pi/fsw_startup.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+
   ```
 
   4. Enable the Systemd Service
   Enable the service so that it runs at startup:
 
   ```
-  sudo systemctl enable link_iio_devices.service
+  sudo systemctl enable fsw_startup.service
   ```
   
   5. Start the Service (Optional)
   You can start the service immediately (for testing purposes) using:
   
   ```
-  sudo systemctl start link_iio_devices.service
+  sudo systemctl start fsw_startup.service
   ```
 
   Home Directory: Replace `pi` in the script with the actual username or adjust the home directory path as needed.
