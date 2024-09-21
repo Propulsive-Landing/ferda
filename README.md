@@ -22,6 +22,7 @@ Create features in branches created from dev branch. When feature is complete, m
 4. Enter the newly generated `build` folder: `cd build`
 5. Build the source `make all`
 6. Complete! You should now have an executable inside the `build` folder which you can run with `sudo ./Ferda`
+7. Make sure to create a `logs` folder in the root of the project (without it, no logs will be saved!)
 
 
 
