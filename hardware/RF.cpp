@@ -117,11 +117,15 @@ void RF::SendString(std::string text)
 
 RF::Command RF::GetCommand() // Will check for commands and return the received command. Non-blocking.
 {
+
     struct pollfd fds;
     int ret;
     fds.fd = SerialFd; /* this is Serial Port */
     fds.events = POLLIN;
     ret = poll(&fds, 1, 0);
+
+    
+    std::cout << "Polling " << std::to_string(ret) << "\n";
 
     if(ret != 1) // Return if no data
         return RF::Command::None;
