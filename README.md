@@ -15,7 +15,7 @@ Create features in branches created from dev branch. When feature is complete, m
 
 ## Hardware Config
 
-  # Device Symbolic Linking
+  ### Device Symbolic Linking
   1. Create a Shell Script
   First, create a shell script that will perform the device detection and symbolic link creation.
   
