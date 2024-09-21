@@ -6,6 +6,10 @@
 #include <chrono>
 #include <iostream>
 #include <poll.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 
 #include "RF.hpp"
 
@@ -21,9 +25,9 @@ RF::RF()
     RFSent.open ("../logs/RFSent"+str+".txt");
 
     // OPEN SERIAL PORT FOR HARDWARE
-    SerialPort = fopen("/dev/ttyS0", "rw");
+    SerialFd = open("/dev/ttyS0", O_RDWR | O_NONBLOCK);
     // SerialPort = fopen("./virtual_rf.txt", "w+");
-    if (SerialPort < 0)
+    if (SerialFd < 0)
         throw std::runtime_error("failed to open serial port");
 }
 
@@ -32,7 +36,7 @@ RF::~RF()
     RFSent.close();
 
     // CLOSE SERIAL PORT
-    fclose(SerialPort);
+    close(SerialFd);
 }
 
 void RF::SendFrame(RF::rfFrame frame)
@@ -45,8 +49,7 @@ void RF::SendFrame(RF::rfFrame frame)
 
     std::string result((char *) packet, sizeof(RF::rfFrame));
 
-    fwrite(result.c_str(), sizeof(char), result.size(), SerialPort);
-    fflush(SerialPort);
+    write(SerialFd, result.c_str(), sizeof(char)*result.size());
 }
 
 void RF::SendString(std::string text)
@@ -101,8 +104,10 @@ void RF::SendString(std::string text)
 
     std::string result((char *) packet, packet_size);
 
-    fwrite(result.c_str(), sizeof(char), result.size(), SerialPort);
-    fflush(SerialPort);
+    // fwrite(result.c_str(), sizeof(char), result.size(), SerialPort);
+    // fflush(SerialPort);
+    
+    write(SerialFd, result.c_str(), sizeof(char)*result.size());
 
     // write time to file
     this->RFSent << std::put_time(std::localtime(&in_time_t), "%c") << ",";
@@ -114,16 +119,20 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
 {
     struct pollfd fds;
     int ret;
-    fds.fd = fileno(SerialPort); /* this is Serial Port */
+    fds.fd = SerialFd; /* this is Serial Port */
     fds.events = POLLIN;
     ret = poll(&fds, 1, 0);
 
     if(ret != 1) // Return if no data
         return RF::Command::None;
 
-    std::string input_line;
-    std::getline(std::cin, input_line);
-    std::cout << "GOT: " << input_line << "\n" << std::flush;
+    const int len = 512;
+    char buffer[len];
+    int len = read(SerialFd, buffer, len);
+
+    std::cout << "GOT: " << buffer << "\n" << std::flush;
+
+    std::string input_line(buffer);    
 
     // if statement for which command to return
     if(input_line == "ABORT")

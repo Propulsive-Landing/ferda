@@ -14,7 +14,7 @@ class RF {
         RF();
         ~RF();
 
-        FILE *SerialPort; // Not used in testing class
+        int SerialFd; // Not used in testing class
 
     public:
         
