@@ -83,6 +83,7 @@ Create features in branches created from dev branch. When feature is complete, m
   
   
   # Uncomment if you want fsw to start automatically on next book
+  # cd /home/pi/ferda/build
   # /home/pi/ferda/build/Ferda
 
   ```
