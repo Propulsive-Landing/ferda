@@ -126,9 +126,9 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
     if(ret != 1) // Return if no data
         return RF::Command::None;
 
-    const int len = 512;
-    char buffer[len];
-    int len = read(SerialFd, buffer, len);
+    const int MAXLEN = 512;
+    char buffer[MAXLEN];
+    int len = read(SerialFd, buffer, MAXLEN);
 
     std::cout << "GOT: " << buffer << "\n" << std::flush;
 
