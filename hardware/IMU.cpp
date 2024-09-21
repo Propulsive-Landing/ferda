@@ -8,8 +8,8 @@
 #include "MissionConstants.hpp"
 
 namespace {
-    std::string gyroPath = "/sys/bus/iio/devices/iio:device2";
-    std::string accelPath = "/sys/bus/iio/devices/iio:device0";
+    std::string gyroPath = "/home/pi/gyroscope_device";
+    std::string accelPath = "/home/pi/accel_device";
 }
 
 

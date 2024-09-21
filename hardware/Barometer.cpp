@@ -7,7 +7,7 @@
 #include <string>
 
 namespace {
-    std::string baroPath = "/sys/bus/iio/devices/iio:device1";
+    std::string baroPath = "/home/pi/barometer_device";
 }
 
 Barometer::Barometer()
