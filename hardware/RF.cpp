@@ -132,8 +132,8 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
     
     // std::cout << "Polling " << std::to_string(ret) << "\n";
 
-//    if(ret != 1) // Return if no data
-  //      return RF::Command::None;
+    // if(ret != 1) // Return if no data
+    //     return RF::Command::None;
 
     const int MAXLEN = 512;
     char buffer[MAXLEN];
