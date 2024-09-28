@@ -28,6 +28,14 @@ Create features in branches created from dev branch. When feature is complete, m
 
 ## Hardware Config
 
+### Serial port setup
+  1. Xbee is currently (9/28/2024) configured to act as a termainl which only outputs values when there is a newline character.
+  2. Use stty to configure. Use `stty -F /dev/ttyS0` to view the current configuration (`/dev/ttyS0` may change per device)
+  3. To disable or enable settings, use `stty -F /dev/ttyS0 -settingToDisable settingToEnable` the minus sign is what indicates that the setting should be disabled and the lack of a minus sign indicates that the setting should be enabled.
+  4. Configure the device such that the result of `stty -F /dev/ttyS0` is:
+       `speed 9600 buad; line = 0;
+        -echo` (baud may change from 9600 if you reconfigure) 
+
 ### Startup Script
   1. Create a Shell Script
   First, create a shell script that will perform the device detection and symbolic link creation.
