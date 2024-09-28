@@ -32,13 +32,13 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
 
     RF::Command command = RF::GetInstance().GetCommand();
     if(command == RF::Command::TestTVC){
-        Telemetry::GetInstance().Log("Switching mode from calibration to test");
+        Telemetry::GetInstance().Log("Switching mode from calibration to test tvc");
         controller.ImportControlParameters("../k_matrix.csv");
         controller.Center();
         return Mode::TestTVC;
     }
     else if(command == RF::Command::GoIdle){
-        Telemetry::GetInstance().Log("Switching mode from calibration to test");
+        Telemetry::GetInstance().Log("Switching mode from calibration to idle");
         controller.ImportControlParameters("../k_matrix.csv");
         controller.Center();
         return Mode::Idle;

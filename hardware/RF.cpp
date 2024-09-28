@@ -139,7 +139,6 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
     char buffer[MAXLEN];
     int len = read(SerialFd, buffer, MAXLEN);
 
-    std::cout << "GOT LENGTH: " << std::to_string(len) << "\n";
 
     if(len <= 0){
         return RF::Command::None;
