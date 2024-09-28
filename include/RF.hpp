@@ -34,6 +34,7 @@ class RF {
             uint16_t mode;
             float euler[3];
             float velocity[3];
+	    float input[2];
             float dt;
 
             uint32_t footer;
@@ -44,7 +45,7 @@ class RF {
         std::ofstream RFSent;
 
         void SendString(std::string message);
-        void SendFrame(RF::rfFrame frame); // TODO
+        void SendFrame(RF::rfFrame frame);
 
         static RF& GetInstance()
         {

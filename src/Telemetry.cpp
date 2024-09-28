@@ -69,6 +69,8 @@ void Telemetry::RfSendFrame(Navigation& navigation, Controller& controller)
     frame.euler[0] = navigation.GetNavigation()(0, 0);
     frame.euler[1] = navigation.GetNavigation()(1, 0);
     frame.euler[2] = navigation.GetNavigation()(2, 0);
+    frame.input[0] = controller.input(0);
+    frame.input[1] = controller.input(1);
     frame.velocity[0] = navigation.GetNavigation()(3, 0);
     frame.velocity[1] = navigation.GetNavigation()(4, 0);
     frame.velocity[2] = navigation.GetNavigation()(5, 0);
