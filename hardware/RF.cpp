@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
-
+#include <termios.h>
 
 #include "RF.hpp"
 
@@ -150,6 +150,8 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
     
     std::string input_line(buffer); 
 
+    
+    tcflush(SerialFd, TCIFLUSH);
 
     std::cout << "String:" << input_line << "\n" << std::flush;
 
