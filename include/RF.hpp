@@ -22,6 +22,8 @@ class RF {
             None,
             ABORT,
             Startup,
+	    TestTVC,
+	    GoIdle,
             Ignite,
             Release
         };

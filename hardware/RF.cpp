@@ -25,7 +25,7 @@ RF::RF()
     RFSent.open ("../logs/RFSent"+str+".txt");
 
     // OPEN SERIAL PORT FOR HARDWARE
-    SerialFd = open("/dev/ttyS0", O_RDWR | O_NONBLOCK);
+    SerialFd = open("/dev/ttyS0", O_RDWR);
     // SerialPort = fopen("./virtual_rf.txt", "w+");
 
     int flags = fcntl(SerialFd, F_GETFL, 0);
@@ -139,6 +139,8 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
     char buffer[MAXLEN];
     int len = read(SerialFd, buffer, MAXLEN);
 
+    std::cout << "GOT LENGTH: " << std::to_string(len) << "\n";
+
     if(len <= 0){
         return RF::Command::None;
     }
@@ -148,13 +150,17 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
     std::string input_line(buffer); 
 
     // if statement for which command to return
-    if(input_line == "ABORT")
+    if(input_line == "ABORT\n")
         return RF::Command::ABORT;
-    else if(input_line == "Startup")
+    else if(input_line == "Startup\n")
         return RF::Command::Startup;
-    else if(input_line == "Ignite")
+    else if(input_line == "TestTVC\n")
+        return RF::Command::TestTVC;
+    else if(input_line == "GoIdle\n")
+        return RF::Command::GoIdle;
+    else if(input_line == "Ignite\n")
         return RF::Command::Ignite;
-    else if(input_line == "Release")
+    else if(input_line == "Release\n")
         return RF::Command::Release;
     else
         return RF::Command::None;

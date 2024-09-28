@@ -179,7 +179,6 @@ void Controller::ImportControlParameters(std::string file_name){
     std::stringstream ss(row);
     for (int i = 0; i < 10; i++){
          std::getline(ss, item, separator);
-	 std::cout << "CONVERTING ITEM: " << item << "\n";
          controller_gain_times.push_back(stod(item));
     }
 
@@ -188,7 +187,6 @@ void Controller::ImportControlParameters(std::string file_name){
         std::stringstream ss(row);
         for (int j=0; j<8; j++){
             std::getline(ss, item, separator);
-	    std::cout << "CONVERTING ITEM: " << item << "\n";
             controller_gains(i, j) = stod(item);
         }
     }

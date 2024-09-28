@@ -29,11 +29,23 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
     int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
     double seconds = milliseconds_since_start / 1000.0;
 
-    if(seconds >= 1){
+
+    RF::Command command = RF::GetInstance().GetCommand();
+    if(command == RF::Command::TestTVC){
         Telemetry::GetInstance().Log("Switching mode from calibration to test");
         controller.ImportControlParameters("../k_matrix.csv");
         controller.Center();
         return Mode::TestTVC;
+    }
+    else if(command == RF::Command::GoIdle){
+        Telemetry::GetInstance().Log("Switching mode from calibration to test");
+        controller.ImportControlParameters("../k_matrix.csv");
+        controller.Center();
+        return Mode::Idle;
+    }
+    else if(command == RF::Command::ABORT){
+        Telemetry::GetInstance().Log("ABORT, EXITING");
+	exit(0);
     }
     
     return Mode::Calibration;
@@ -48,7 +60,12 @@ Mode::Phase Mode::UpdateTestTVC(Navigation& navigation, Controller& controller) 
 
     controller.UpdateTestTVC(seconds);
 
-    if(seconds >= 10){
+    RF::Command command = RF::GetInstance().GetCommand();
+    if(command == RF::Command::ABORT){
+        Telemetry::GetInstance().Log("ABORT, EXITING");
+	exit(0);
+    }
+    else if(seconds >= 10){
         Telemetry::GetInstance().Log("Switching mode from test to idle");
         controller.Center();
         return Mode::Idle;
@@ -71,7 +88,12 @@ Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, boo
     RF::Command command = RF::GetInstance().GetCommand();
 
     // launch when we get the command
-    if(command == RF::Command::Ignite){
+
+    if(command == RF::Command::ABORT){
+        Telemetry::GetInstance().Log("ABORT, EXITING");
+	exit(0);
+    }
+    else if(command == RF::Command::Ignite){
         Telemetry::GetInstance().Log("Switching mode from idle to launch");
         navigation.reset();
         return Mode::Launch;

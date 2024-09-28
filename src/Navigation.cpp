@@ -50,6 +50,7 @@ void Navigation::UpdateNavigation(){
     std::tuple<double,double,double> linearAcceleration = imu.GetBodyAcceleration();
     std::tuple<double,double,double> angularRate = imu.GetBodyAngularRate();
    
+    // std::cout << "Accel Z:" << std::to_string(std::get<2>(linearAcceleration)) << " gyroX: " << std::to_string(std::get<0>(angularRate)) << "\n";    
     // Convert the linear acceleration tuple to a Vector so we can muliply the Eigen matrix R by another Eigen type which in this case is a vector
     Eigen::Vector3d linearAccelerationVector(std::get<0>(linearAcceleration), std::get<1>(linearAcceleration), std::get<2>(linearAcceleration));
     //std::cout<< linearAccelerationVector "\n";;
