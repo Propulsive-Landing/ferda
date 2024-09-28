@@ -28,6 +28,10 @@ Create features in branches created from dev branch. When feature is complete, m
 
 ## Hardware Config
 
+### Serial port setup
+  1. Xbee is currently (9/28/2024) configured to act as a termainl which echos input and only outputs a result which can be read by the system when there is a newline.
+  2. Use stty to configure (im not sure how exactly)
+
 ### Startup Script
   1. Create a Shell Script
   First, create a shell script that will perform the device detection and symbolic link creation.
