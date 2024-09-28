@@ -1,4 +1,5 @@
 #include <string>
+#include <cstring>
 #include <fstream>
 #include <stdio.h>
 #include <iomanip>
@@ -137,6 +138,7 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
 
     const int MAXLEN = 512;
     char buffer[MAXLEN];
+    memset(buffer, 0, 512);
     int len = read(SerialFd, buffer, MAXLEN);
 
 
@@ -144,9 +146,18 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
         return RF::Command::None;
     }
     
-    std::cout << "GOT: " << buffer << "\n" << std::flush;
-
+    std::cout << "GOT: " << buffer;
+    
     std::string input_line(buffer); 
+
+
+    std::cout << "String:" << input_line << "\n" << std::flush;
+
+
+    for (size_t i = 0; i < 100; ++i) {
+        std::cout << static_cast<int>(buffer[i]) << " "; // Output the byte values as integers
+    }
+    std::cout << std::endl;
 
     // if statement for which command to return
     if(input_line == "ABORT\n")
