@@ -103,10 +103,10 @@ private:
             if (should_send) {
                 std::lock_guard<std::mutex> lock(data_mutex);
 
-                memcpy(buffer, &motor_1_ignition, sizeof(double));
-                memcpy(buffer + sizeof(double), &motor_2_ignition, sizeof(double));
-                memcpy(buffer + sizeof(double) * 2, &motor_angle_x, sizeof(double));
-                memcpy(buffer + sizeof(double) * 3, &motor_angle_y, sizeof(double));
+                memcpy(buffer, &motor_angle_x, sizeof(double));
+                memcpy(buffer + sizeof(double), &motor_angle_y, sizeof(double));
+                memcpy(buffer + sizeof(double) * 2, &motor_1_ignition, sizeof(double));
+                memcpy(buffer + sizeof(double) * 3, &motor_2_ignition, sizeof(double));
             }
             if (should_send) {
                 sendto(socket_fd, buffer, sizeof(buffer), 0, 
