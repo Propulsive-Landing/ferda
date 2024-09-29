@@ -5,8 +5,7 @@ project(Ferda C CXX)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 11)
 
-# Add options for the Simulation build type and parameters
-option(BUILD_SIMULATION "Build for simulation" OFF)
+# Add parameters for the Simulation build type
 set(SIM_LOCAL_PORT "8002" CACHE STRING "Local port for simulation")
 set(SIM_SERVER_PORT "8003" CACHE STRING "Server port for simulation")
 set(SIM_SERVER_IP "127.0.0.1" CACHE STRING "Server IP for simulation")
