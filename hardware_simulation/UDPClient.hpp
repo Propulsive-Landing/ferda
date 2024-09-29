@@ -1,5 +1,38 @@
 #pragma once
 
+/**
+ * @file UDPClient.hpp
+ * @brief Singleton UDP client for simulation communication
+ *
+ * This class handles bidirectional UDP communication for a simulation environment.
+ * It sends actuator commands and receives sensor data using separate threads.
+ *
+ * Usage:
+ *   UDPClient& client = UDPClient::GetInstance();
+ *   auto [x, y, z] = client.GetBodyAngularRate();
+ *   client.SetXServo(45.0);
+ *
+ * Public methods:
+ * - GetBodyAngularRate(): Returns tuple of angular rates (x, y, z)
+ * - GetBodyAcceleration(): Returns tuple of accelerations (x, y, z)
+ * - GetPressure(): Returns current pressure
+ * - GetTemperature(): Returns current temperature
+ * - SetXServo(angle): Sets X servo angle
+ * - SetYServo(angle): Sets Y servo angle
+ * - Ignite(is_launch): Triggers ignition (true for launch, false for landing)
+ *
+ * Implementation details:
+ * - Uses separate read and write threads for async communication
+ * - Ensures thread safety with mutex for shared data access
+ * - Binds to a local port for receiving, sends to predefined server address/port
+ *
+ * Potential modifications:
+ * - Update ReadThread() and WriteThread() to change data format
+ * - Add new member variables and methods for additional sensors/actuators
+ *
+ * Note: Update this documentation when modifying the UDPClient class.
+ */
+
 #include <iostream>
 #include <cstring>
 #include <thread>
@@ -39,7 +72,10 @@ private:
     double temperature{0};
     double pressure{0};
 
-    // Shared variables for actuator data
+    // Shared variables for actuator data sending
+
+    bool should_send = false;
+
     double motor_1_ignition{0};
     double motor_2_ignition{0};
     double motor_angle_x{0};
@@ -64,26 +100,18 @@ private:
         while (running) {
             std::this_thread::sleep_for(std::chrono::milliseconds(10)); // Adjust as needed
             
-            bool should_send = false;
-            {
+            if (should_send) {
                 std::lock_guard<std::mutex> lock(data_mutex);
-                should_send = (motor_1_ignition != 0 || motor_2_ignition != 0 || 
-                               motor_angle_x != 0 || motor_angle_y != 0);
-                
-                if (should_send) {
-                    memcpy(buffer, &motor_1_ignition, sizeof(double));
-                    memcpy(buffer + sizeof(double), &motor_2_ignition, sizeof(double));
-                    memcpy(buffer + sizeof(double) * 2, &motor_angle_x, sizeof(double));
-                    memcpy(buffer + sizeof(double) * 3, &motor_angle_y, sizeof(double));
-                    
-                    // Reset values after copying
-                    motor_1_ignition = motor_2_ignition = motor_angle_x = motor_angle_y = 0;
-                }
+
+                memcpy(buffer, &motor_1_ignition, sizeof(double));
+                memcpy(buffer + sizeof(double), &motor_2_ignition, sizeof(double));
+                memcpy(buffer + sizeof(double) * 2, &motor_angle_x, sizeof(double));
+                memcpy(buffer + sizeof(double) * 3, &motor_angle_y, sizeof(double));
             }
-            
             if (should_send) {
                 sendto(socket_fd, buffer, sizeof(buffer), 0, 
                        (struct sockaddr*)&server_addr, sizeof(server_addr));
+                should_send = false;
             }
         }
     }
@@ -170,11 +198,13 @@ public:
     void SetXServo(double angle) {
         std::lock_guard<std::mutex> lock(data_mutex);
         motor_angle_x = angle;
+        should_send = true;
     }
 
     void SetYServo(double angle) {
         std::lock_guard<std::mutex> lock(data_mutex);
         motor_angle_y = angle;
+        should_send = true;
     }
 
     void Ignite(bool is_launch) {
@@ -184,6 +214,7 @@ public:
         } else {
             motor_2_ignition = 1.0;
         }
+        should_send = true;
     }
 
     UDPClient(const UDPClient&) = delete;

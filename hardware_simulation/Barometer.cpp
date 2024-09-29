@@ -1,5 +1,7 @@
 #include "Barometer.hpp"
 #include "UDPClient.hpp"
+#include <iostream>
+#include <string>
 
 Barometer::Barometer() {}
 
