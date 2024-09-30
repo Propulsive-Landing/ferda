@@ -136,11 +136,12 @@ private:
         local_addr.sin_family = AF_INET;
         local_addr.sin_addr.s_addr = INADDR_ANY;
         local_addr.sin_port = htons(SIM_LOCAL_PORT);
-
-	std::cout << "Attempting local bind on port " << std::to_string(SIM_LOCAL_PORT) << std::endl;
+ 
+        std::cout << "Attempting local bind on port " << std::to_string(SIM_LOCAL_PORT) << std::endl;
 
         if (bind(socket_fd, (struct sockaddr*)&local_addr, sizeof(local_addr)) == -1) {
             std::cerr << "Bind failed on port " << std::to_string(SIM_LOCAL_PORT) << std::endl;
+
             return false;
         }
 
