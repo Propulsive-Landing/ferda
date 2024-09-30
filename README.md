@@ -177,7 +177,7 @@ To run your flight software in a Linux environment on Windows, you need to insta
    wsl --set-default-version 2
    ```
 
-4. Once your distribution is set up, update your package list:
+4. Once your distribution is set up, enter your WSL terminal and update your package list:
    ```bash
    sudo apt update
    ```
