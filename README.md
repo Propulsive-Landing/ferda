@@ -269,7 +269,7 @@ Switch back to WSL and run the flight software:
 sudo ./Ferda
 ```
 
-### SIL Testing Using Windows (NOT TESTED)
+### ~~SIL Testing Using Windows~~ (NOT TESTED)
 
 For users who prefer running the flight software directly on Windows without WSL, you can follow this guide to set up and run the simulation loop using Windows native tools and loopback IP. However, please note that the flight computer uses a linux based OS and therefore, discrepancies may occur.
 
