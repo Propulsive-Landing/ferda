@@ -161,9 +161,9 @@ Software-in-the-loop (SIL) testing allows you to connect your flight software to
 
 ### SIL Testing Using Windows + WSL2
 
-#### Install WSL2
+#### Install WSL2 - [help](https://gcore.com/learning/how-to-install-wsl-2-on-windows/)
 
-To run your flight software in a Linux environment on Windows, you need to install WSL2 (Windows Subsystem for Linux). Follow these steps:
+To run your flight software in a Linux environment on Windows, you need to install WSL2 (Windows Subsystem for Linux). The steps can varry depending on your setup so you may have to do some troubleshooting to install it properly. Follow these steps:
 
 1. Open PowerShell as Administrator and run:
    ```bash
@@ -359,6 +359,10 @@ To build and run the flight software natively on Windows, you'll need to install
    ./Ferda.exe
    ```
 
+Notes:
+- Run ferda (FSW) through WSL first if you're having trouble communicating with the simulation
+- WSL can be tricky to initially set up but there is plenty of available documentation to resolve these issues, start [here](https://gcore.com/learning/how-to-install-wsl-2-on-windows/) and use google if you still are having issues.
+  
 The flight software should be connected with the Simulink simulation, sending actuator commands and receiving simulated sensor data.
 
 ## Systemd Service Setup
