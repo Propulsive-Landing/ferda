@@ -147,21 +147,10 @@ void Controller::CalculateInput(){
 }
 
 
-Eigen::Vector2d Controller::TvcMath(Eigen::Vector2d input){
-    // Figures out what angle we need to move the servos
-    Eigen::Vector2d output;
 
-    input = input * MissionConstants::kRad2Deg;
-
-    output(0) = -.000095801*powf(input(0), 4) - .0027781*powf(input(0), 3) + .0012874*powf(input(0), 2) - 3.1271*input(0) -16.129;
-    output(1) = - .0002314576*powf(input(1), 4) - .002425139*powf(input(1), 3) - .01204116*powf(input(1), 2) - 2.959760*input(1) + 57.18794;
-
-    return output;
-}
 
 void Controller::Center(){
     // Center the tvc 
-
     input(0) = 0;
     input(1) = 0;
     // [TODO] Move to hardware tvc_angles = TvcMath(input);

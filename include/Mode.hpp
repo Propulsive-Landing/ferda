@@ -31,7 +31,7 @@ class Mode
 
         Mode::Phase UpdateTestTVC(Navigation& navigation, Controller& controller);
 
-        Mode::Phase UpdateIdle(Navigation& navigation, Controller& controller, bool reset);
+        Mode::Phase UpdateIdle(Navigation& navigation, Controller& controller);
         Mode::Phase UpdateLaunch(Navigation& navigation, Controller& controller, Igniter& igniter, double current_time);
         Mode::Phase UpdateFreefall(Navigation& navigation, Igniter& igniter, double currTime);
         Mode::Phase UpdateLand(Navigation& navigation, Controller& controller, double current_time);

@@ -41,10 +41,6 @@ double Navigation::GetHeight() {
     
 void Navigation::UpdateNavigation(){
     // Updates stateMat //
-
-    static auto start_time = std::chrono::high_resolution_clock::now();
-    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-    double seconds = milliseconds_since_start / 1000.0;
    
     // Create 2 tuples to hold the the linear acceleration and angular rate data from the imu 
     std::tuple<double,double,double> linearAcceleration = imu.GetBodyAcceleration();
@@ -69,7 +65,7 @@ void Navigation::UpdateNavigation(){
     stateMat.segment(3,3) += R * linearAccelerationVector * loopTime;
 
    // newState(5) = newState(5) - 9.81*loopTime;
-    stateMat(5) -=  9.81* loopTime;
+    stateMat(5) -=  9.81*loopTime;
 
     // Update the angles
     stateMat.segment(6,3) += stateMat.segment(9,3) * loopTime;

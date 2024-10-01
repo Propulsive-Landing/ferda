@@ -76,22 +76,16 @@ Mode::Phase Mode::UpdateTestTVC(Navigation& navigation, Controller& controller) 
 
 
 
-Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, bool reset) {
-    
-
-    static auto start_time = std::chrono::high_resolution_clock::now();
-    int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-
+Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller) {
 
 
     navigation.UpdateNavigation();
-    RF::Command command = RF::GetInstance().GetCommand();
-
+    
     // launch when we get the command
-
+    RF::Command command = RF::GetInstance().GetCommand();
     if(command == RF::Command::ABORT){
         Telemetry::GetInstance().Log("ABORT, EXITING");
-	exit(0);
+	    exit(0);
     }
     else if(command == RF::Command::Ignite){
         Telemetry::GetInstance().Log("Switching mode from idle to launch");
@@ -104,7 +98,7 @@ Mode::Phase Mode::UpdateIdle(Navigation& navigation, Controller& controller, boo
     return Mode::Idle;
 }
 
-Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, Igniter& igniter, double change_time) {
+Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, Igniter& igniter, double current_time) {
    
     static auto start_time = std::chrono::high_resolution_clock::now();
     int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
@@ -114,7 +108,7 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
     if(iteration > 0){
         Telemetry::GetInstance().Log("Igniting MOTOR");
         igniter.Ignite(Igniter::IgnitionSpecifier::LAUNCH);
-        controller.Start(change_time);
+        controller.Start(current_time);
         iteration--;
     }
 
@@ -123,10 +117,10 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
     }
 
     navigation.UpdateNavigation();
-    controller.UpdateLaunch(navigation, change_time);
+    controller.UpdateLaunch(navigation, current_time);
     
 
-    Eigen::Matrix<double, 12, 1> testState = navigation.GetNavigation();
+    // Eigen::Matrix<double, 12, 1> testState = navigation.GetNavigation();
     // If z acceleration is negative and the z height is not the starting height, then we should go to freefall
 
     // COMMENTED OUT FOR STABILITY TEST
@@ -211,44 +205,22 @@ Mode::Phase Mode::UpdateSafeMode(Navigation& navigation, Controller& controller)
 }
 
 
-bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& igniter) {
-    bool reset = false;
-    static bool liftoff = false;
-    
-    static int i =0;
+bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& igniter) { 
     static double currTime = 0;    
 
-    
     // Make sure the time between last_time and time_now is 0.005 and then keep on adding that change_time to currTime
     static auto last_time = std::chrono::high_resolution_clock::now();
     auto time_now = std::chrono::high_resolution_clock::now();
     double change_time = std::chrono::duration_cast<std::chrono::milliseconds>(time_now - last_time).count() / 1000.0;
     last_time = time_now;
-    while(change_time < 0.005)
-    {
-             change_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - last_time).count() / 1000.0;
 
-
-    }
-    
-    if(change_time != 0.005)
-    {
-        change_time = 0.005;
-    }
     currTime += change_time;
 
 
     // Update navigations and controller's loopTime to be changeTime which should be 0.005 each time
     navigation.loopTime = change_time;
     controller.loopTime = change_time;
-
-    // std::cout << std::to_string(eCurrentMode) << "\n";
-
-    // If currTime is greater than the designated Calibrated Time, then assign true to both reset and liftoff
-   if(currTime> MissionConstants::kFSWCalibrationTime && liftoff == false){
-     reset = true;
-     liftoff = true;
-   }
+    // TODO [MOVE TO FUNCTION CALLS FOR CONTROLLER AND NAVIGATION]
 
 
     /* Handle behavior based on current phase. Update phase*/
@@ -264,7 +236,7 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
             break;
         case Idle:
             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
-            this->eCurrentMode = UpdateIdle(navigation, controller, reset);
+            this->eCurrentMode = UpdateIdle(navigation, controller);
             break;
         case Launch:
             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
