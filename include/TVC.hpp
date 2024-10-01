@@ -22,6 +22,6 @@ class TVC
     public:
         TVC() = default;
         
-        void SetXServo(double dAngle); 
-        void SetYServo(double dAngle); 
+        void SetTVCX(double dAngle); 
+        void SetTVCY(double dAngle); 
 };
