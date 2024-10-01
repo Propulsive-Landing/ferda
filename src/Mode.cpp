@@ -220,7 +220,7 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
     // Update navigations and controller's loopTime to be changeTime which should be 0.005 each time
     navigation.loopTime = change_time;
     controller.loopTime = change_time;
-    // TODO [MOVE TO FUNCTION CALLS FOR CONTROLLER AND NAVIGATION]
+    // TODO [MOVE TO FUNCTION CALLS FOR CONTROLLER AND NAV]
 
 
     /* Handle behavior based on current phase. Update phase*/
