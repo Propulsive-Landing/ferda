@@ -4,7 +4,7 @@
 #include <string>
 
 
-void TVC::SetXServo(double dAngle)
+void TVC::SetTVCX(double dAngle)
 {
     dAngle += 90 + MissionConstants::kTvcYCenterAngle;
     dAngle = (dAngle < 0) ? 0 : dAngle;
@@ -16,7 +16,7 @@ void TVC::SetXServo(double dAngle)
 
 
 
-void TVC::SetYServo(double dAngle)
+void TVC::SetTVCY(double dAngle)
 {
     dAngle += 90 + MissionConstants::kTvcYCenterAngle;
     dAngle = (dAngle < 0) ? 0 : dAngle;

@@ -76,23 +76,22 @@ void Navigation::UpdateNavigation(){
     d_theta_now[1] =  std::get<1>(angularRate)*cos(phi) - std::get<2>(angularRate)*sin(phi);
     d_theta_now[2] =  std::get<1>(angularRate)*sin(phi)* (1/(cos(theta))) + std::get<2>(angularRate)*cos(phi)* (1/(cos(theta)));
     //std::cout<< d_theta_now[0]  << "\n";
-    // Append the vector, d_theta_now, to d_theta_queue_reckon
-    d_theta_queue_reckon.push_back(d_theta_now);
-    
     
     // Call ComputeAngularRollingAverage to sum up all of the data so far for p,q,r which represent the angular velocity in x, y, and z direction
-    std::tuple<double,double,double> rollingAngularAverage = ComputeAngularRollingAverage();
+    std::tuple<double,double,double> rollingAngularAverage = ComputeAngularRollingAverage(d_theta_now);
    // std::cout<< std::get<0>(rollingAngularAverage) << ", " << std::get<1>(rollingAngularAverage) << ", " << std::get<2>(rollingAngularAverage)<<"\n";
+    
     //Assign the sum to their respective states, that being p,q, and r
     stateMat(9) = std::get<0>(rollingAngularAverage);
     stateMat(10) = std::get<1>(rollingAngularAverage);
     stateMat(11) = std::get<2>(rollingAngularAverage);
-
-   
 }
 
-std::tuple<double,double,double> Navigation::ComputeAngularRollingAverage(){
+std::tuple<double,double,double> Navigation::ComputeAngularRollingAverage(std::vector<double> d_theta_now){
     // Computes a rolling average of the angular velocities //
+
+    // Append the vector, d_theta_now, to d_theta_queue_reckon
+    d_theta_queue_reckon.push_back(d_theta_now);
     
     // Calculate the maximum amount of entries that d_theta_queue_reckon can have
     int max_theta_dot_smooth_entries = MissionConstants::kNavThetaDotSmooth/loopTime;
@@ -112,7 +111,6 @@ std::tuple<double,double,double> Navigation::ComputeAngularRollingAverage(){
         q += d_theta_queue_reckon[i][1] / d_theta_queue_reckon.size();
         r += d_theta_queue_reckon[i][2] / d_theta_queue_reckon.size();
     }
-
 
     // Return a tuple of the rolling average of p,q, and r
     return std::make_tuple(p,q,r);

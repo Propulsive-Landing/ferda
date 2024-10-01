@@ -21,7 +21,6 @@ class TVC
 
     public:
         TVC() = default;
-        
         void SetTVCX(double angle_rad); 
         void SetTVCY(double angle_rad); 
 };

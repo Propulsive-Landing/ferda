@@ -12,9 +12,6 @@
 
 class Controller{
 
-//Constant to be figured out later
-//int kNumberControllerGains = 10;
-
 private:
     TVC tvc;
     std::vector<std::vector<double>> euler_queue;
@@ -37,7 +34,7 @@ public:
     void stabilizeAtOffset(Navigation& navigation, double current_time, double offset);
 
     void UpdateSafe();
-    void CalculateK(double startTime);
+    void GetNextController_Gain_Time_Index(double startTime);
     void CalculateInput();
     Eigen::Vector2d TvcMath(Eigen::Vector2d input);
     void Start(double current_time);
