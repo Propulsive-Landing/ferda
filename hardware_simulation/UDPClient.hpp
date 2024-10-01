@@ -198,13 +198,13 @@ public:
         return temperature;
     }
 
-    void SetXServo(double angle) {
+    void SetTVCX(double angle) {
         std::lock_guard<std::mutex> lock(data_mutex);
         motor_angle_x = angle;
         should_send = true;
     }
 
-    void SetYServo(double angle) {
+    void SetTVCY(double angle) {
         std::lock_guard<std::mutex> lock(data_mutex);
         motor_angle_y = angle;
         should_send = true;

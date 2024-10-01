@@ -28,10 +28,10 @@ void Controller::UpdateTestTVC(double testTime) {
 
     input(0) = angleA;
     input(1) = angleB;
-    tvc_angles = TvcMath(input);
+    // [TOD] Move to hardware tvc_angles = TvcMath(input);
 
-    tvc.SetXServo(tvc_angles(0));
-    tvc.SetYServo(tvc_angles(1));
+    tvc.SetTVCX(input(0));
+    tvc.SetTVCY(input(1));
 }
 
 void Controller::UpdateLaunch(Navigation &navigation, double current_time){
@@ -141,9 +141,9 @@ void Controller::CalculateInput(){
         input = input*MissionConstants::kMaximumTvcAngle/input.norm();
     }
     // Figures out what angle we need to move the servos and then set them
-    tvc_angles = TvcMath(input);
-    tvc.SetXServo(tvc_angles(0));
-    tvc.SetYServo(tvc_angles(1));
+    // [TODO] Move to hardware tvc_angles = TvcMath(input);
+    tvc.SetTVCX(input(0));
+    tvc.SetTVCY(input(1));
 }
 
 
@@ -164,9 +164,9 @@ void Controller::Center(){
 
     input(0) = 0;
     input(1) = 0;
-    tvc_angles = TvcMath(input);
-    tvc.SetXServo(tvc_angles(0));
-    tvc.SetYServo(tvc_angles(1));
+    // [TODO] Move to hardware tvc_angles = TvcMath(input);
+    tvc.SetTVCX(input(0));
+    tvc.SetTVCY(input(1));
 }
 
 void Controller::ImportControlParameters(std::string file_name){

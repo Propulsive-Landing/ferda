@@ -2,10 +2,10 @@
 #include "TVC.hpp"
 #include "UDPClient.hpp"
 
-void TVC::SetXServo(double dAngle) {
+void TVC::SetTVCX(double dAngle) {
     UDPClient::GetInstance().SetTVCX(dAngle);
 }
 
-void TVC::SetYServo(double dAngle) {
+void TVC::SetTVCY(double dAngle) {
     UDPClient::GetInstance().SetTVCY(dAngle);
 }

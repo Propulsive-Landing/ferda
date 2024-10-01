@@ -23,7 +23,7 @@ private:
     double next_tvc_time;
     double tvc_start_time;
     std::vector<float> controller_gain_times;
-    Eigen::Vector2d tvc_angles;
+    // Eigen::Vector2d tvc_angles; [TODO MOVE TO HARDWARE]
     int current_iteration_index = 0;
 
 public:
