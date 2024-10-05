@@ -36,8 +36,6 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
     static float YTVC = 0.0;
 
     RF::Command command = RF::GetInstance().GetCommand();
-
-    
     if(command == RF::Command::IncrementXTVC){
         XTVC += 0.1;
         ostringstream os;

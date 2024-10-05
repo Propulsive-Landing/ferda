@@ -12,7 +12,7 @@ void TVC::SetXServo(double angle_rad)
     double degrees = angle_rad * MissionConstants::kRad2Deg;
     double servoAngle = -.000095801*powf(degrees, 4) - .0027781*powf(degrees, 3) + .0012874*powf(degrees, 2) - 3.1271*degrees -16.129;
 
-    servoAngle += 90 + MissionConstants::kTvcYCenterAngle;
+    servoAngle += 90 + MissionConstants::kTvcXCenterAngle;
     servoAngle = (servoAngle < 0) ? 0 : servoAngle;
     servoAngle = (servoAngle > 180) ? 180 : servoAngle;
 
