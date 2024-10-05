@@ -7,7 +7,7 @@
 #include <MissionConstants.hpp>
 
 
-void TVC::SetXServo(double angle_rad)
+void TVC::SetTVCX(double angle_rad)
 {
     double degrees = angle_rad * MissionConstants::kRad2Deg;
     double servoAngle = -.000095801*powf(degrees, 4) - .0027781*powf(degrees, 3) + .0012874*powf(degrees, 2) - 3.1271*degrees -16.129;
@@ -20,7 +20,7 @@ void TVC::SetXServo(double angle_rad)
     gpioServo(16, round(dPulseWidth));
 }
 
-void TVC::SetYServo(double angle_rad)
+void TVC::SetTVCY(double angle_rad)
 {
 
     double degrees = angle_rad * MissionConstants::kRad2Deg;
