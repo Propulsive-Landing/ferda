@@ -16,7 +16,6 @@ class Controller{
 //int kNumberControllerGains = 10;
 
 private:
-    TVC tvc;
     std::vector<std::vector<double>> euler_queue;
     Eigen::Matrix<double, 8, 1> x_control;
     Eigen::Matrix<double, 2* MissionConstants::kNumberControllerGains, 8> controller_gains; 
@@ -27,6 +26,7 @@ private:
     int current_iteration_index = 0;
 
 public:
+    TVC tvc;
     Eigen::Vector2d input;
     double loopTime = 0.005;
     Controller(TVC& tvc);   

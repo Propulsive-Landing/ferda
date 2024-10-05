@@ -6,6 +6,9 @@
 #include "Telemetry.hpp"
 #include "RF.hpp"
 #include <iostream>
+#include <sstream>
+#include <string>
+#include <iostream>
 
 //CONSTANTS TO BE FIGURED OUT LATER
 int abort_threshold = 1;
@@ -29,8 +32,50 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
     int milliseconds_since_start = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
     double seconds = milliseconds_since_start / 1000.0;
 
+    static float XTVC = 0.0;
+    static float YTVC = 0.0;
 
     RF::Command command = RF::GetInstance().GetCommand();
+
+    
+    if(command == RF::Command::IncrementXTVC){
+        XTVC += 0.1;
+        ostringstream os;
+        os << "TVC Position, X: " << std::to_string(XTVC) << " Y: " << std::to_string(YTVC) << std::endl;
+        string s = os.str();
+        Telemetry::GetInstance().Log(s);
+        controller.tvc.SetXTVC(XTVC);
+        return Mode::Calibration;
+    }
+    if(command == RF::Command::IncrementYTVC){
+        YTVC += 0.1;
+        ostringstream os;
+        os << "TVC Position, X: " << std::to_string(XTVC) << " Y: " << std::to_string(YTVC) << std::endl;
+        string s = os.str();
+        Telemetry::GetInstance().Log(s);
+        controller.tvc.SetYTVC(XTVC);
+        return Mode::Calibration;
+    }
+    
+    if(command == RF::Command::DecrementXTVC){
+        XTVC -= 0.1;
+        ostringstream os;
+        os << "TVC Position, X: " << std::to_string(XTVC) << " Y: " << std::to_string(YTVC) << std::endl;
+        string s = os.str();
+        Telemetry::GetInstance().Log(s);
+        controller.tvc.SetXTVC(XTVC);
+        return Mode::Calibration;
+    }
+    if(command == RF::Command::DecrementYTVC){
+        YTVC -= 0.1;
+        ostringstream os;
+        os << "TVC Position, X: " << std::to_string(XTVC) << " Y: " << std::to_string(YTVC) << std::endl;
+        string s = os.str();
+        Telemetry::GetInstance().Log(s);
+        controller.tvc.SetYTVC(XTVC);
+        return Mode::Calibration;
+    }
+
     if(command == RF::Command::TestTVC){
         Telemetry::GetInstance().Log("Switching mode from calibration to test tvc");
         controller.ImportControlParameters("../k_matrix.csv");

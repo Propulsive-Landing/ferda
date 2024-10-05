@@ -174,6 +174,14 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
         return RF::Command::Ignite;
     else if(input_line == "Release\n")
         return RF::Command::Release;
+    else if(input_line == "IncrementXTVC\n")
+        return RF::Command::IncrementXTVC;
+    else if(input_line == "IncrementYTVC\n")
+        return RF::Command::IncrementYTVC;
+    else if(input_line == "DecrementXTVC\n")
+        return RF::Command::DecrementXTVC;
+    else if(input_line == "DecrementYTVC\n")
+        return RF::Command::DecrementYTVC;
     else
         return RF::Command::None;
 }

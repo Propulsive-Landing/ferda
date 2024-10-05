@@ -22,10 +22,14 @@ class RF {
             None,
             ABORT,
             Startup,
-	    TestTVC,
-	    GoIdle,
+            TestTVC,
+            GoIdle,
             Ignite,
-            Release
+            Release,
+            IncrementXTVC,
+            IncrementYTVC,
+            DecrementXTVC,
+            DecrementYTVC,
         };
 
 
