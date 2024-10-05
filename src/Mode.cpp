@@ -42,7 +42,7 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
         os << "TVC Position, X: " << std::to_string(XTVC) << " Y: " << std::to_string(YTVC) << std::endl;
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
-        controller.tvc.SetXTVC(XTVC);
+        controller.tvc.SetTVCX(XTVC);
         return Mode::Calibration;
     }
     if(command == RF::Command::IncrementYTVC){
@@ -51,7 +51,7 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
         os << "TVC Position, X: " << std::to_string(XTVC) << " Y: " << std::to_string(YTVC) << std::endl;
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
-        controller.tvc.SetYTVC(XTVC);
+        controller.tvc.SetTVCY(XTVC);
         return Mode::Calibration;
     }
     
@@ -61,7 +61,7 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
         os << "TVC Position, X: " << std::to_string(XTVC) << " Y: " << std::to_string(YTVC) << std::endl;
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
-        controller.tvc.SetXTVC(XTVC);
+        controller.tvc.SetTVCX(XTVC);
         return Mode::Calibration;
     }
     if(command == RF::Command::DecrementYTVC){
@@ -70,7 +70,7 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
         os << "TVC Position, X: " << std::to_string(XTVC) << " Y: " << std::to_string(YTVC) << std::endl;
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
-        controller.tvc.SetYTVC(XTVC);
+        controller.tvc.SetTVCY(XTVC);
         return Mode::Calibration;
     }
 
