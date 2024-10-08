@@ -149,7 +149,6 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
     std::cout << "GOT: " << buffer;
     
     std::string input_line(buffer); 
-
     
     tcflush(SerialFd, TCIFLUSH);
 
@@ -161,19 +160,5 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
     }
     std::cout << std::endl;
 
-    // if statement for which command to return
-    if(input_line == "ABORT\n")
-        return RF::Command::ABORT;
-    else if(input_line == "Startup\n")
-        return RF::Command::Startup;
-    else if(input_line == "TestTVC\n")
-        return RF::Command::TestTVC;
-    else if(input_line == "GoIdle\n")
-        return RF::Command::GoIdle;
-    else if(input_line == "Ignite\n")
-        return RF::Command::Ignite;
-    else if(input_line == "Release\n")
-        return RF::Command::Release;
-    else
-        return RF::Command::None;
+    return ParseCommand(input_line);
 }

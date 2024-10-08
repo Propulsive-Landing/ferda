@@ -85,7 +85,7 @@ void Controller::stabilizeAtOffset(Navigation& navigation, double current_time, 
     }
 
     // Extract roll and pitch from stateEstimate, and put it into euler_queue
-    std::vector<double> currentAngle {stateEstimate(6), stateEstimate(7)};
+    std::vector<double> currentAngle = {stateEstimate(6), stateEstimate(7)};
     euler_queue.push_back(currentAngle);
 
     // Determine if euler_queue apprahced its limit, and if so, delelete its first entry
@@ -107,7 +107,7 @@ void Controller::stabilizeAtOffset(Navigation& navigation, double current_time, 
 
 
     if(current_iteration_index < MissionConstants::kNumberControllerGains - 1){
-        CalculateK(current_time);
+        GetNextController_Gain_Time_Index(current_time);
     }
     // Calculate what angle we need to tell the tvc to move
     if (current_time > next_tvc_time){
@@ -123,7 +123,7 @@ void Controller::UpdateSafe(){
     // TODO. Center TVC, turn off reaction wheel, etc.
 }
 
-void Controller::CalculateK(double current_time){
+void Controller::GetNextController_Gain_Time_Index(double current_time){
     // Determine if a certain amount of time has passed, and if so, then increase the current_iteration_index and get the next K value
 
     double switch_time = (controller_gain_times[current_iteration_index+1] - controller_gain_times[current_iteration_index]) / 2.0;
@@ -149,9 +149,6 @@ void Controller::CalculateInput(){
     tvc.SetTVCX(input(0));
     tvc.SetTVCY(input(1));
 }
-
-
-
 
 void Controller::Center(){
     // Center the tvc 

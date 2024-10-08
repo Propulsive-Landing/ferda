@@ -61,19 +61,5 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
     std::getline(std::cin, input_line);
     std::cout << "GOT: " << input_line << "\n" << std::flush;
 
-    // if statement for which command to return
-    if(input_line == "ABORT")
-        return RF::Command::ABORT;
-    else if(input_line == "Startup")
-        return RF::Command::Startup;
-    else if(input_line == "TestTVC")
-        return RF::Command::TestTVC;
-    else if(input_line == "GoIdle")
-        return RF::Command::GoIdle;
-    else if(input_line == "Ignite")
-        return RF::Command::Ignite;
-    else if(input_line == "Release")
-        return RF::Command::Release;
-    else
-        return RF::Command::None;
+    return ParseCommand(input_line);
 }

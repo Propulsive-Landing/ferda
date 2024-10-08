@@ -12,11 +12,7 @@
 
 class Controller{
 
-//Constant to be figured out later
-//int kNumberControllerGains = 10;
-
 private:
-    TVC tvc;
     std::vector<std::vector<double>> euler_queue;
     Eigen::Matrix<double, 8, 1> x_control;
     Eigen::Matrix<double, 2* MissionConstants::kNumberControllerGains, 8> controller_gains; 
@@ -27,6 +23,7 @@ private:
     int current_iteration_index = 0;
 
 public:
+    TVC tvc;
     Eigen::Vector2d input;
     double loopTime = 0.005;
     Controller(TVC& tvc);   
@@ -37,7 +34,7 @@ public:
     void stabilizeAtOffset(Navigation& navigation, double current_time, double offset);
 
     void UpdateSafe();
-    void CalculateK(double startTime);
+    void GetNextController_Gain_Time_Index(double startTime);
     void CalculateInput();
     Eigen::Vector2d TvcMath(Eigen::Vector2d input);
     void Start(double current_time);
