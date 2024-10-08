@@ -16,7 +16,6 @@ void Controller::Start(double current_time){
 
     tvc_start_time = current_time;
     next_tvc_time = current_time;
-
 }
 
 
@@ -78,11 +77,6 @@ void Controller::stabilizeAtOffset(Navigation& navigation, double current_time, 
     x_control(1) = 0;
     x_control.segment(4,2) = stateEstimate.segment(6,2);
     x_control.segment(6,2) = stateEstimate.segment(9,2);
-    
-    //add offset to the rocket for a short amount of time after launch to avoid the pad when landing
-    if(current_time <= MissionConstants::timeAtOffset){
-        x_control(4) += offset;
-    }
 
     // Extract roll and pitch from stateEstimate, and put it into euler_queue
     std::vector<double> currentAngle = {stateEstimate(6), stateEstimate(7)};
@@ -109,8 +103,10 @@ void Controller::stabilizeAtOffset(Navigation& navigation, double current_time, 
     if(current_iteration_index < MissionConstants::kNumberControllerGains - 1){
         GetNextController_Gain_Time_Index(current_time);
     }
+    std::cout << "Current time: " << std::to_string(current_time) << " Nexttvc time: " <<std::to_string(next_tvc_time) << std::endl;
     // Calculate what angle we need to tell the tvc to move
     if (current_time > next_tvc_time){
+        std::cout << "Calc input" << std::endl;
         // Calculate what angle we need to tell the tvc to move
         CalculateInput();
         next_tvc_time += MissionConstants::TVCPeriod;

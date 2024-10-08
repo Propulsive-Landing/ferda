@@ -145,7 +145,7 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
     if(startup == 1){
         Telemetry::GetInstance().Log("Igniting MOTOR");
         igniter.Ignite(Igniter::IgnitionSpecifier::LAUNCH);
-        controller.Start(startTime);
+        controller.Start(seconds_since_start);
         startup = 0;
     }
 
