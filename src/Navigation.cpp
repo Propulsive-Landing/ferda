@@ -38,7 +38,26 @@ double Navigation::GetHeight() {
     return (log(pressure/pressureInit) * 8.3145 * temp) / (0.02897 * -9.81);
     // Pressure is in kpa
 }
-    
+
+// Function to write a double to a CSV file
+void writeDoubleToCSV(double myDouble1, double myDouble2, double myDouble3, double myDouble4, double myDouble5, double myDouble6, int precision = 6) {
+    // Open the CSV file in append mode
+    std::ofstream file;
+    file.open("data.csv", std::ios::app); // Append mode
+
+    // Check if the file is open
+    if (!file.is_open()) {
+        std::cerr << "Error: Unable to open file for writing.\n";
+        return; // Exit the function if the file couldn't be opened
+    }
+
+    // Set the desired precision and write the double to the file
+    file << std::fixed << std::setprecision(precision) << myDouble1 << "," << myDouble2 << "," << myDouble3 << "," << myDouble4 << "," << myDouble5 << "," << myDouble6 << "\n";
+
+    // Close the file
+    file.close();
+}
+
 void Navigation::UpdateNavigation(){
     // Updates stateMat //
    
@@ -49,11 +68,13 @@ void Navigation::UpdateNavigation(){
     // std::cout << "Accel Z:" << std::to_string(std::get<2>(linearAcceleration)) << " gyroX: " << std::to_string(std::get<0>(angularRate)) << "\n";    
     // Convert the linear acceleration tuple to a Vector so we can muliply the Eigen matrix R by another Eigen type which in this case is a vector
     Eigen::Vector3d linearAccelerationVector(std::get<0>(linearAcceleration), std::get<1>(linearAcceleration), std::get<2>(linearAcceleration));
-    //std::cout<< linearAccelerationVector "\n";;
+    // std::cout<< linearAccelerationVector << "\n";
     // Get phi, theta, and psi
     double phi = stateMat(6);
     double theta = stateMat(7);
     double psi = stateMat(8);
+
+
 
     // Convert the three euler angles to a rotation matrix that can move a vector from the body fixed frame into the ground fixed frame
     Eigen::Matrix<double, 3, 3> R = CreateRotationalMatrix(phi, theta, psi);
@@ -66,6 +87,8 @@ void Navigation::UpdateNavigation(){
 
    // newState(5) = newState(5) - 9.81*loopTime;
     stateMat(5) -=  9.81*loopTime;
+
+    writeDoubleToCSV(stateMat(6), stateMat(7), stateMat(8), stateMat(9), stateMat(10), stateMat(11));
 
     // Update the angles
     stateMat.segment(6,3) += stateMat.segment(9,3) * loopTime;
