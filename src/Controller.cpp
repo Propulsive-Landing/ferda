@@ -137,9 +137,6 @@ void Controller::CalculateInput(){
         input = input*MissionConstants::kMaximumTvcAngle/input.norm();
     }
 
-
-    std::cout << "Calculating input: " << std::to_string(input(0)) << ", "  << std::to_string(input(0)) << std::endl;
-
     // Figures out what angle we need to move the servos and then set them
     // [TODO] Move to hardware tvc_angles = TvcMath(input);
     tvc.SetTVCX(input(0));
