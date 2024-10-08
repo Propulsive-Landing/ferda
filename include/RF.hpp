@@ -34,7 +34,7 @@ class RF {
         };
 
 
-        ParseCommand(std::string input_line){        
+        RF::Command ParseCommand(std::string input_line){        
             // Define the regular expression to match leading and trailing whitespace/newline characters
             std::regex pattern("^\\s+|\\s+$");
 
