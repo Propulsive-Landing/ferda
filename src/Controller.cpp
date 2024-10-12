@@ -103,10 +103,10 @@ void Controller::stabilizeAtOffset(Navigation& navigation, double current_time, 
     if(current_iteration_index < MissionConstants::kNumberControllerGains - 1){
         GetNextController_Gain_Time_Index(current_time);
     }
-    std::cout << "Current time: " << std::to_string(current_time) << " Nexttvc time: " <<std::to_string(next_tvc_time) << std::endl;
+    // std::cout << "Current time: " << std::to_string(current_time) << " Nexttvc time: " <<std::to_string(next_tvc_time) << std::endl;
     // Calculate what angle we need to tell the tvc to move
     if (current_time > next_tvc_time){
-        std::cout << "Calc input" << std::endl;
+        // std::cout << "Calc input" << std::endl;
         // Calculate what angle we need to tell the tvc to move
         CalculateInput();
         next_tvc_time += MissionConstants::TVCPeriod;

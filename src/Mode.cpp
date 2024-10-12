@@ -20,7 +20,7 @@ double offset = 0.45;
 double motor_thrust_duration = 2.4250;
 double motor_thrust_percentage = 1;
 double fsw_clamp_time = 0.300;
-double second_motor_delta_x = 99.6451;
+double second_motor_delta_x = 59.1075;
 double gse_height = 0.2800;
 double result = 0;
 double time_till_second_ignite = 0;
@@ -157,19 +157,19 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
     controller.UpdateLaunch(navigation, seconds_since_start);
     
 
-    // Eigen::Matrix<double, 12, 1> testState = navigation.GetNavigation();
+    Eigen::Matrix<double, 12, 1> testState = navigation.GetNavigation();
     // If z acceleration is negative and the z height is not the starting height, then we should go to freefall
 
     // COMMENTED OUT FOR STABILITY TEST
-    // if(testState(5) < 0 && testState(2) > 0.28){ 
-    //     std::cout<<"We are switching to freefall"<<"\n";
-    //     Telemetry::GetInstance().Log("Switching mode from launch to freefall");
-    //     igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAUNCH);
-    //     return Mode::Freefall;
-    // }
-    // else{
+    if(testState(5) < 0 && testState(2) > 0.28){ 
+         std::cout<<"We are switching to freefall"<<"\n";
+         Telemetry::GetInstance().Log("Switching mode from launch to freefall");
+         igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAUNCH);
+         return Mode::Freefall;
+     }
+     else{
         return Mode::Launch;
-    // }
+     }
 }
 
 Mode::Phase Mode::UpdateFreefall(Navigation& navigation, Igniter& igniter, double currentTime) {
@@ -184,32 +184,22 @@ Mode::Phase Mode::UpdateFreefall(Navigation& navigation, Igniter& igniter, doubl
     
     // If the current time is greater than the calibration time + motor thrust duration + and offset, then figure out the best time to ignite
     // TODO THIS LOGIC IS BAD, CURRENT TIME IS VARIABLE DEPENDING ON LAUNCH PROCEDURE
-    if(currentTime > MissionConstants::kFSWCalibrationTime + motor_thrust_duration + offset){
-       double a = -9.81/2;
-       double b = currentState(5) + (-9.81*(motor_thrust_duration+motor_thrust_percentage));
+    double a = -9.81/2;
+    double b = currentState(5) + (-9.81*(motor_thrust_duration * motor_thrust_percentage));
 
-       double average_landing_throttle = 1;
+    double average_landing_throttle = 1;
 
-       double c = currentState(5) * (motor_thrust_duration * motor_thrust_percentage) + currentState(2) + -9.81*0.5*pow((motor_thrust_duration*motor_thrust_percentage),2) + average_landing_throttle*second_motor_delta_x - gse_height;
+    double c = currentState(5) * (motor_thrust_duration * motor_thrust_percentage) + currentState(2) + -9.81*0.5*pow((motor_thrust_duration*motor_thrust_percentage),2) + average_landing_throttle*second_motor_delta_x - gse_height;
 
-       result = (-b - sqrt(pow(b,2) - 4*a*c)) / (2*a);
+    result = (-b - sqrt(pow(b,2) - 4*a*c)) / (2*a);
 
-       time_till_second_ignite = result + offset;
-    }
-    else
-    {
-        return Mode::Freefall;
-    }
+    time_till_second_ignite = result;
 
-    // Figure out the height through the first iteration through the kinematic equations
-    static double height = -9.81/2 * pow(time_till_second_ignite,2) - currentState(5)*time_till_second_ignite + currentState(2);
-
-     // If the current height is around 20 meters, then ignite the second motor
-     if (currentState(2) < height - 20){
+    if (time_till_second_ignite < 0){
         igniter.Ignite(Igniter::IgnitionSpecifier::LAND);
+        std::cout<< "Switching from Freefall to Land" << "\n";
         return Mode::Land;
     }
-
 
     return Mode::Freefall;
 
