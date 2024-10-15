@@ -16,6 +16,7 @@ void Controller::Start(double current_time){
 
     tvc_start_time = current_time;
     next_tvc_time = current_time;
+    ResetKIteration(current_time); // Sets iteration start time
 }
 
 
@@ -122,8 +123,8 @@ void Controller::UpdateSafe(){
 void Controller::GetNextController_Gain_Time_Index(double current_time){
     // Determine if a certain amount of time has passed, and if so, then increase the current_iteration_index and get the next K value
 
-    double switch_time = (controller_gain_times[current_iteration_index+1] - controller_gain_times[current_iteration_index]) / 2.0;
-    if(current_time - tvc_start_time > switch_time)
+    double switch_time = (controller_gain_times[current_iteration_index+1] + controller_gain_times[current_iteration_index]) / 2.0;
+    if(current_time - k_iteration_start_time > switch_time)
     {
         current_iteration_index++;
     }
@@ -173,9 +174,12 @@ void Controller::ImportControlParameters(std::string file_name){
             controller_gains(i, j) = stod(item);
         }
     }
-    
 
     in.close();
+}
+
+void Controller::ResetKIteration(double current_time){
+    k_iteration_start_time = current_time;
 }
 
 Eigen::Matrix<double, 2, 8> Controller::GetCurrentKMatrix()

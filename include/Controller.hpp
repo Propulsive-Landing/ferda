@@ -18,6 +18,7 @@ private:
     Eigen::Matrix<double, 2* MissionConstants::kNumberControllerGains, 8> controller_gains; 
     double next_tvc_time;
     double tvc_start_time;
+    double k_iteration_start_time;
     std::vector<float> controller_gain_times;
     // Eigen::Vector2d tvc_angles; [TODO MOVE TO HARDWARE]
     int current_iteration_index = 0;
@@ -40,6 +41,7 @@ public:
     void Start(double current_time);
     void Center();
     void ImportControlParameters(std::string file_name);
+    void ResetKIteration(double current_time);
     Eigen::Matrix<double, 2, 8>  GetCurrentKMatrix();
 
 };

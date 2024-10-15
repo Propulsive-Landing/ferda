@@ -172,7 +172,7 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
      }
 }
 
-Mode::Phase Mode::UpdateFreefall(Navigation& navigation, Igniter& igniter, double currentTime) {
+Mode::Phase Mode::UpdateFreefall(Navigation& navigation, Controller &controller, Igniter& igniter, double currentTime) {
     
     // Continue to update navigation
     navigation.UpdateNavigation();
@@ -198,6 +198,7 @@ Mode::Phase Mode::UpdateFreefall(Navigation& navigation, Igniter& igniter, doubl
     if (time_till_second_ignite < 0){
         igniter.Ignite(Igniter::IgnitionSpecifier::LAND);
         std::cout<< "Switching from Freefall to Land" << "\n";
+        controller.ResetKIteration(currentTime);
         return Mode::Land;
     }
 
@@ -272,7 +273,7 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
             break;
         case Freefall:
             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
-            this->eCurrentMode = UpdateFreefall(navigation, igniter, currentTime);
+            this->eCurrentMode = UpdateFreefall(navigation, controller, igniter, currentTime);
             break;
         case Land:
             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
