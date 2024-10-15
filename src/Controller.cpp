@@ -180,6 +180,7 @@ void Controller::ImportControlParameters(std::string file_name){
 
 void Controller::ResetKIteration(double current_time){
     k_iteration_start_time = current_time;
+    current_iteration_index = 0;
 }
 
 Eigen::Matrix<double, 2, 8> Controller::GetCurrentKMatrix()

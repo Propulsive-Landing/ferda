@@ -98,7 +98,7 @@ private:
     void WriteThread() {
         char buffer[32];
         while (running) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10)); // Adjust as needed
+           std::this_thread::sleep_for(std::chrono::milliseconds(5)); // Adjust as needed
             
             if (should_send) {
                 std::lock_guard<std::mutex> lock(data_mutex);
