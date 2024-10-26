@@ -17,7 +17,7 @@ void TVC::SetTVCX(double angle_rad)
     servoAngle = (servoAngle > 180) ? 180 : servoAngle;
 
     double dPulseWidth = 1000 + (servoAngle * 1000 / 180.0);
-    gpioServo(16, round(dPulseWidth));
+    gpioServo(23, round(dPulseWidth));
 }
 
 void TVC::SetTVCY(double angle_rad)
@@ -32,5 +32,5 @@ void TVC::SetTVCY(double angle_rad)
     servoAngle = (servoAngle > 180) ? 180 : servoAngle;
 
     double dPulseWidth = 1000 + (servoAngle * 1000 / 180.0);
-    gpioServo(18, round(dPulseWidth));
+    gpioServo(24, round(dPulseWidth));
 }

@@ -29,8 +29,8 @@ int main()
 
         gpioSetMode(6, PI_OUTPUT);
 
-        gpioSetMode(18, PI_OUTPUT);
-        gpioSetMode(16, PI_OUTPUT);
+        gpioSetMode(23, PI_OUTPUT);
+        gpioSetMode(24, PI_OUTPUT);
 
 
         gpioWrite(6, 1);

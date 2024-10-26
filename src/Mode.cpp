@@ -256,7 +256,7 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
     switch(this->eCurrentMode)
     {
         case Calibration:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
+            // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
             this->eCurrentMode = UpdateCalibration(navigation, controller, currentTime);
             break;
         case TestTVC:
