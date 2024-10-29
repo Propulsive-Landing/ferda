@@ -66,14 +66,14 @@ void Telemetry::RfSendFrame(Navigation& navigation, Controller& controller)
 
     RF::rfFrame frame;
     frame.mode = 0;
-    frame.euler[0] = navigation.GetNavigation()(0, 0);
-    frame.euler[1] = navigation.GetNavigation()(1, 0);
-    frame.euler[2] = navigation.GetNavigation()(2, 0);
-    frame.input[0] = controller.input(0);
-    frame.input[1] = controller.input(1);
-    frame.velocity[0] = navigation.GetNavigation()(3, 0);
-    frame.velocity[1] = navigation.GetNavigation()(4, 0);
-    frame.velocity[2] = navigation.GetNavigation()(5, 0);
+    frame.euler[0] = 1.0;// navigation.GetNavigation()(0, 0);
+    frame.euler[1] = 2.0; // navigation.GetNavigation()(1, 0);
+    frame.euler[2] = 3.0; // navigation.GetNavigation()(2, 0);
+    frame.input[0] = 5.0; // controller.input(0);
+    frame.input[1] = 6.0; // controller.input(1);
+    frame.velocity[0] = 7.0; // navigation.GetNavigation()(3, 0);
+    frame.velocity[1] = 8.0; // navigation.GetNavigation()(4, 0);
+    frame.velocity[2] = 9.0; // navigation.GetNavigation()(5, 0);
     frame.dt = 0.0;
     
     RF::GetInstance().SendFrame(frame);
