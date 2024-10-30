@@ -17,10 +17,10 @@ int descent_time = 1;
 int total_time = 1;
 double ignition_height = 1;
 double offset = 0.45;
-double motor_thrust_duration = 2.4250;
+double motor_thrust_duration = 2.09;
 double motor_thrust_percentage = 1;
 double fsw_clamp_time = 0.300;
-double second_motor_delta_x = 59.1075;
+double second_motor_delta_x = 24.0477;
 double gse_height = 0.2800;
 double result = 0;
 double time_till_second_ignite = 0;
@@ -161,7 +161,7 @@ Mode::Phase Mode::UpdateLaunch(Navigation& navigation, Controller& controller, I
     // If z acceleration is negative and the z height is not the starting height, then we should go to freefall
 
     // COMMENTED OUT FOR STABILITY TEST
-    if(testState(5) < 0 && testState(2) > 0.28){ 
+    if(testState(5) < -1 && testState(2) > 2){ 
          std::cout<<"We are switching to freefall"<<"\n";
          Telemetry::GetInstance().Log("Switching mode from launch to freefall");
          igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAUNCH);
