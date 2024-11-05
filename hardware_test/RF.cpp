@@ -33,18 +33,7 @@ void RF::SendString(std::string message)
     RFSent << message << "\n";
 }
 
-void RF::SendFrame(RF::rfFrame frame)
-{
-    
-    frame.magic_number = FRAME_MAGIC_NUMBER;
-    frame.footer = RF_FOOTER;
 
-    uint8_t * packet = (uint8_t *) &frame;
-
-    std::string result((char *) packet, sizeof(RF::rfFrame));
-
-    SendString(result);
-}
 
 RF::Command RF::GetCommand() // Will check for commands and return the received command. Non-blocking.
 {
