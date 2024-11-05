@@ -26,10 +26,16 @@ add_executable(Ferda ${CppSources} ${EXTRA_CODE})
 
 target_include_directories(Ferda PRIVATE include)
 
+include(FetchContent)
+FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
+FetchContent_MakeAvailable(json)
+
+
+
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
-    target_link_libraries(Ferda Eigen3::Eigen)
+    target_link_libraries(Ferda Eigen3::Eigen nlohmann_json::nlohmann_json)
 elseif(CMAKE_BUILD_TYPE STREQUAL Simulation)
-    target_link_libraries(Ferda Eigen3::Eigen)
+    target_link_libraries(Ferda Eigen3::Eigen nlohmann_json::nlohmann_json)
     target_compile_definitions(Ferda PRIVATE 
         SIMULATION_MODE
         SIM_LOCAL_PORT=${SIM_LOCAL_PORT}
@@ -37,15 +43,8 @@ elseif(CMAKE_BUILD_TYPE STREQUAL Simulation)
         SIM_SERVER_IP="${SIM_SERVER_IP}"
     )
 else()
-    target_link_libraries(Ferda Eigen3::Eigen pigpio)
+    target_link_libraries(Ferda Eigen3::Eigen pigpio nlohmann_json::nlohmann_json)
 endif()
-
-
-include(FetchContent)
-FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
-FetchContent_MakeAvailable(json)
-
-target_link_libraries(Ferda PRIVATE nlohmann_json::nlohmann_json)
 
 
 # Add threading library
