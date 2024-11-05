@@ -40,6 +40,14 @@ else()
     target_link_libraries(Ferda Eigen3::Eigen pigpio)
 endif()
 
+
+include(FetchContent)
+FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
+FetchContent_MakeAvailable(json)
+
+target_link_libraries(Ferda PRIVATE nlohmann_json::nlohmann_json)
+
+
 # Add threading library
 find_package(Threads REQUIRED)
 target_link_libraries(Ferda Threads::Threads)

@@ -68,25 +68,11 @@ class RF {
             return ParsedCommand;
         }
 
-        struct rfFrame // A structure derrived from telemFrame that only contains a subset of attributes in order to save space.
-        {
-            uint32_t magic_number;
-
-            uint16_t mode;
-            float euler[3];
-            float velocity[3];
-	        float input[2];
-            float dt;
-
-            uint32_t footer;
-        } __attribute__((packed));
-
         
 
         std::ofstream RFSent;
 
         void SendString(std::string message);
-        void SendFrame(RF::rfFrame frame);
 
         static RF& GetInstance()
         {

@@ -48,6 +48,8 @@ void Telemetry::Log(std::string message) {
     auto in_time_t = std::chrono::system_clock::to_time_t(time_now);
 
 
+
+
     RF::GetInstance().SendString(message);
 
     std::cout << message << "\n";
@@ -64,7 +66,7 @@ void Telemetry::RfSendFrame(Navigation& navigation, Controller& controller)
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
 
-    RF::rfFrame frame;
+    
     frame.mode = 0;
     frame.euler[0] = 1.0;// navigation.GetNavigation()(0, 0);
     frame.euler[1] = 2.0; // navigation.GetNavigation()(1, 0);
@@ -113,7 +115,7 @@ Telemetry::Telemetry()
     auto str = oss.str();
 
     Logs.open ("../logs/logs"+str+".txt");
-    HardwareSaved.open ("../logs/data"+str+".txt");;
+    HardwareSaved.open ("../logs/data"+str+".txt");
 
     //TODO Write headers to data file where needed
 }
