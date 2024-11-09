@@ -52,7 +52,7 @@ void RF::SendString(std::string text)
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
 
-    write(SerialFd, text.c_str(), sizeof(char)*result.size());
+    write(SerialFd, text.c_str(), sizeof(char)*text.size());
 
     // write time to file
     this->RFSent << std::put_time(std::localtime(&in_time_t), "%c") << ",";
