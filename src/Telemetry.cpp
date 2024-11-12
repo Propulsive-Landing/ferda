@@ -21,27 +21,18 @@ void Telemetry::HardwareSaveFrame(Navigation& navigation, Controller& controller
     auto time_now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(time_now);
 
-    HardwareSaved << std::put_time(std::localtime(&in_time_t), "%c") << ",";
+    HardwareSaved << std::put_time(std::localtime(&in_time_t), "%c") << ", " ;
 
     // Navigation state, U, k matrix current index
     // Write data to file
     
 
     for(int i = 0; i < 12; ++i){
-        HardwareSaved << "State[" << i << "]: " << std::to_string(navigation.GetNavigation()(i))<< ", \n";
+        HardwareSaved << std::to_string(navigation.GetNavigation()(i))<< ", ";
     }
-    
-    for(int i = 0; i < 2; ++i)
-    {
-        for(int j = 0; j < 8; ++j)
-        {
-            double value = controller.GetCurrentKMatrix()(i,j); 
-            HardwareSaved << "k[" << i << "][" << j << "]: " << std::to_string(value)<< ", ";
-        }
-        HardwareSaved<<"\n" << std::flush;
-    }
+    HardwareSaved << std::to_string(controller.GetCurrentIterationIndex());
 
-    
+    HardwareSaved<<"\n" << std::flush;
 }
 
 
@@ -137,6 +128,9 @@ Telemetry::Telemetry()
 
     Logs.open ("../logs/logs"+str+".txt");
     HardwareSaved.open ("../logs/data"+str+".txt");
+
+    HardwareSaved << "Date, x, y, z, vx, vy, vz, phi, theta, psi, p, q, r, K_Matrix_Index \n";
+
 
     //TODO Write headers to data file where needed
 }
