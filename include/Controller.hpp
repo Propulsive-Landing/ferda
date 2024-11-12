@@ -30,10 +30,8 @@ public:
     Controller(TVC& tvc);   
     void UpdateLaunch(Navigation& navigation, double current_time);
     void UpdateTestTVC(double testTime);
-
     void UpdateLand(Navigation &navigation, double current_time);
     void stabilizeAtOffset(Navigation& navigation, double current_time, double offset);
-
     void UpdateSafe();
     void GetNextController_Gain_Time_Index(double startTime);
     void CalculateInput();
@@ -42,6 +40,7 @@ public:
     void Center();
     void ImportControlParameters(std::string file_name);
     void ResetKIteration(double current_time);
+    int GetCurrentIterationIndex();
     Eigen::Matrix<double, 2, 8>  GetCurrentKMatrix();
 
 };

@@ -14,7 +14,6 @@ class Navigation
         IMU& imu;
         Barometer& barometer;
         TVC& tvc;
-
         Eigen::Matrix<double, 12, 1> stateMat;
         std::deque<std::vector<double>> d_theta_queue_reckon;
         double pressureInit;
