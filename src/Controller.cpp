@@ -188,3 +188,9 @@ Eigen::Matrix<double, 2, 8> Controller::GetCurrentKMatrix()
 {
     return controller_gains.block(current_iteration_index*2, 0, 2, 8);
 }
+
+
+int Controller::GetCurrentIterationIndex()
+{
+    return current_iteration_index;
+}
