@@ -17,6 +17,9 @@ class Navigation
         Eigen::Matrix<double, 12, 1> stateMat;
         std::deque<std::vector<double>> d_theta_queue_reckon;
         double pressureInit;
+        std::tuple<double, double, double> linearAcceleration;
+        std::tuple<double, double, double> angularRate;
+
 
     public:
         double loopTime = 0.005;
@@ -27,5 +30,7 @@ class Navigation
         std::tuple<double,double,double> ComputeAngularRollingAverage(std::vector<double> d_theta_now);
         Eigen::Matrix3d CreateRotationalMatrix(double phi, double theta, double psi);
         double GetHeight();
-        std::tuple<double, double, double> GetBodyAcceleration();
+        std::tuple<double, double, double> GetLinearAcceleration();
+         std::tuple<double, double, double> GetAngularAcceleration();
+
 };

@@ -30,7 +30,6 @@ Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controller, double currentTime) {
     static float XTVC = 0.0;
     static float YTVC = 0.0;
-
     RF::Command command = RF::GetInstance().GetCommand();
     if(command == RF::Command::IncrementXTVC){
         XTVC += 0.01;
@@ -256,7 +255,7 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
     switch(this->eCurrentMode)
     {
         case Calibration:
-            // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
+             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
             this->eCurrentMode = UpdateCalibration(navigation, controller, currentTime);
             break;
         case TestTVC:

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <sys/poll.h> 
 #include <fstream>
+#include <tuple>
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -22,6 +23,7 @@ void Telemetry::HardwareSaveFrame(Navigation& navigation, Controller& controller
     auto in_time_t = std::chrono::system_clock::to_time_t(time_now);
 
     HardwareSaved << std::put_time(std::localtime(&in_time_t), "%c") << ", " ;
+    SensorSaved << std::put_time(std::localtime(&in_time_t), "%c") << ", " ;
 
     // Navigation state, U, k matrix current index
     // Write data to file
@@ -32,7 +34,18 @@ void Telemetry::HardwareSaveFrame(Navigation& navigation, Controller& controller
     }
     HardwareSaved << std::to_string(controller.GetCurrentIterationIndex());
 
+    std::tuple<double, double, double> linAc = navigation.GetLinearAcceleration();
+    std::tuple<double, double, double> angAc = navigation.GetAngularAcceleration();
+    SensorSaved << std::to_string(std::get<0>(linAc))<< ", ";
+    SensorSaved << std::to_string(std::get<1>(linAc))<< ", ";
+    SensorSaved << std::to_string(std::get<2>(linAc))<< ", ";
+    SensorSaved << std::to_string(std::get<0>(angAc))<< ", ";
+    SensorSaved << std::to_string(std::get<1>(angAc))<< ", ";
+    SensorSaved << std::to_string(std::get<2>(angAc));
+
     HardwareSaved<<"\n" << std::flush;
+    SensorSaved<<"\n" << std::flush;
+
 }
 
 
@@ -96,6 +109,7 @@ void Telemetry::RfSendFrame(Navigation& navigation, Controller& controller)
 
 
 void Telemetry::RunTelemetry(Navigation& navigation, Controller& controller, float HardwareSaveDelta, float RFSaveDelta) {
+       
         /* Start calculate time change*/
         static auto last_hardware_time = std::chrono::high_resolution_clock::now();
         auto hardware_change_time = std::chrono::high_resolution_clock::now() - last_hardware_time;
@@ -128,8 +142,12 @@ Telemetry::Telemetry()
 
     Logs.open ("../logs/logs"+str+".txt");
     HardwareSaved.open ("../logs/data"+str+".txt");
+    SensorSaved.open ("../logs/sensors"+str+".txt");
+
 
     HardwareSaved << "Date, x, y, z, vx, vy, vz, phi, theta, psi, p, q, r, K_Matrix_Index \n";
+    SensorSaved << "Date, accelX, accelY, accelZ, gyroX, gryoY, gyroZ \n";
+
 
 
     //TODO Write headers to data file where needed
