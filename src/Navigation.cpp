@@ -62,8 +62,8 @@ void Navigation::UpdateNavigation(){
     // Updates stateMat //
    
     // Create 2 tuples to hold the the linear acceleration and angular rate data from the imu 
-    std::tuple<double,double,double> linearAcceleration = imu.GetBodyAcceleration();
-    std::tuple<double,double,double> angularRate = imu.GetBodyAngularRate();
+     linearAcceleration = imu.GetBodyAcceleration();
+     angularRate = imu.GetBodyAngularRate();
    
     // std::cout << "Accel Z:" << std::to_string(std::get<2>(linearAcceleration)) << " gyroX: " << std::to_string(std::get<0>(angularRate)) << "\n";    
     // Convert the linear acceleration tuple to a Vector so we can muliply the Eigen matrix R by another Eigen type which in this case is a vector
@@ -158,8 +158,12 @@ Eigen::Matrix3d Navigation::CreateRotationalMatrix(double phi, double theta, dou
 
 }
 
-std::tuple<double, double, double> Navigation::GetBodyAcceleration()
+std::tuple<double, double, double> Navigation::GetLinearAcceleration()
 {
-    return imu.GetBodyAcceleration();
+    return linearAcceleration;
 }
 
+std::tuple<double, double, double> Navigation::GetAngularAcceleration()
+{
+    return angularRate;
+}

@@ -30,7 +30,6 @@ Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controller, double currentTime) {
     static float XTVC = 0.0;
     static float YTVC = 0.0;
-
     RF::Command command = RF::GetInstance().GetCommand();
     if(command == RF::Command::IncrementXTVC){
         XTVC += 0.01;
