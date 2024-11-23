@@ -42,5 +42,5 @@ public:
     void ResetKIteration(double current_time);
     int GetCurrentIterationIndex();
     Eigen::Matrix<double, 2, 8>  GetCurrentKMatrix();
-
+    Eigen::Matrix<double, 2, 1>  GetCurrentTVCCommand();
 };

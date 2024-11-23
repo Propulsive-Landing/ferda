@@ -32,6 +32,8 @@ void Telemetry::HardwareSaveFrame(Navigation& navigation, Controller& controller
     for(int i = 0; i < 12; ++i){
         HardwareSaved << std::to_string(navigation.GetNavigation()(i))<< ", ";
     }
+    HardwareSaved << std::to_string(controller.GetCurrentTVCCommand()[0]) << ", ";
+    HardwareSaved << std::to_string(controller.GetCurrentTVCCommand()[1]) << ", ";
     HardwareSaved << std::to_string(controller.GetCurrentIterationIndex());
 
     std::tuple<double, double, double> linAc = navigation.GetLinearAcceleration();
@@ -145,7 +147,7 @@ Telemetry::Telemetry()
     SensorSaved.open ("../logs/sensors"+str+".txt");
 
 
-    HardwareSaved << "Date, x, y, z, vx, vy, vz, phi, theta, psi, p, q, r, K_Matrix_Index \n";
+    HardwareSaved << "Date, x, y, z, vx, vy, vz, phi, theta, psi, p, q, r, ux, uy, K_Matrix_Index \n";
     SensorSaved << "Date, accelX, accelY, accelZ, gyroX, gryoY, gyroZ \n";
 
 
