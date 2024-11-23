@@ -88,7 +88,7 @@ void Navigation::UpdateNavigation(){
    // newState(5) = newState(5) - 9.81*loopTime;
     stateMat(5) -=  9.81*loopTime;
 
-    writeDoubleToCSV(stateMat(6), stateMat(7), stateMat(8), stateMat(9), stateMat(10), stateMat(11));
+    // writeDoubleToCSV(stateMat(6), stateMat(7), stateMat(8), stateMat(9), stateMat(10), stateMat(11));
 
     // Update the angles
     stateMat.segment(6,3) += stateMat.segment(9,3) * loopTime;

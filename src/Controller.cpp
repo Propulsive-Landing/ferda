@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 
 Controller::Controller(TVC& tvc) : tvc(tvc), x_control(Eigen::Matrix<double, 8, 1>::Zero()){}
 
@@ -79,9 +80,9 @@ void Controller::stabilizeAtOffset(Navigation& navigation, double current_time, 
     x_control.segment(4,2) = stateEstimate.segment(6,2);
     x_control.segment(6,2) = stateEstimate.segment(9,2);
 
-    // Extract roll and pitch from stateEstimate, and put it into euler_queue
-    std::vector<double> currentAngle = {stateEstimate(6), stateEstimate(7)};
-    euler_queue.push_back(currentAngle);
+    // Extract roll and pitch from stateEstimate, and put current integral step into euler_queue
+    std::vector<double> currentIntegralStep = {stateEstimate(6)*loopTime, stateEstimate(7)*loopTime};
+    euler_queue.push_back(currentIntegralStep);
 
     // Determine if euler_queue apprahced its limit, and if so, delelete its first entry
     if (euler_queue.size() > maxEulerEntries)
@@ -97,8 +98,8 @@ void Controller::stabilizeAtOffset(Navigation& navigation, double current_time, 
     }
 
     // Populate the second and third element with the integrals of roll and pitch
-    x_control[2] = euler_sum[0] * loopTime;
-    x_control[3] = euler_sum[1] * loopTime;
+    x_control[2] = euler_sum[0];
+    x_control[3] = euler_sum[1];
 
 
     if(current_iteration_index < MissionConstants::kNumberControllerGains - 1){
