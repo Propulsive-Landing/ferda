@@ -44,6 +44,7 @@ namespace MissionConstants {
     const int kTvcYPin = 18;
     const std::string kKMatrixFile = "k_matrix.csv";
     const int kNumberControllerGains = 10;
+    const double weights_control_velocity = 0;
     
     // Ignition constants, TODO: USER EDIT PRE-FlIGHT
     const int kIgnitionPin = 6;

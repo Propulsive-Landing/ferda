@@ -61,6 +61,12 @@ void Controller::stabilizeAtOffset(Navigation& navigation, double current_time, 
 
     // Create a matrix to store the returned stateEstimate from getNavigation() and store the yaw value into a varible
     Eigen::Matrix<double,12,1> stateEstimate = navigation.GetNavigation();
+
+    // phi_adjusted = phi - v_y*weights_control_velocity
+    stateEstimate[6] = stateEstimate[6] - stateEstimate[4]*MissionConstants::weights_control_velocity;
+
+    // theta_adjusted = theta - v_x*weights_control_velocity
+    stateEstimate[7] = stateEstimate[7] - stateEstimate[3]*MissionConstants::weights_control_velocity;
    
    /* WE DON'T NEED THIS CODE FOR RIGHT NOW. X AND Y VELOCITY WILL BE 0
     double yaw = stateEstimate(8);
@@ -79,6 +85,7 @@ void Controller::stabilizeAtOffset(Navigation& navigation, double current_time, 
     x_control(1) = 0;
     x_control.segment(4,2) = stateEstimate.segment(6,2);
     x_control.segment(6,2) = stateEstimate.segment(9,2);
+
 
     // Extract roll and pitch from stateEstimate, and put current integral step into euler_queue
     std::vector<double> currentIntegralStep = {stateEstimate(6)*loopTime, stateEstimate(7)*loopTime};
