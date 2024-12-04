@@ -101,7 +101,6 @@ Mode::Phase Mode::GetGyroBiasOffset(Navigation& navigation, Controller& controll
     gyro_y += std::get<1>(gyro);
     gyro_z += std::get<2>(gyro);
 
-
     if(loops == 100)
     {
         gyro_x /= loops;

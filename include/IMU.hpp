@@ -12,13 +12,9 @@ class IMU
         void SetGyroBiasX(double x);
         void SetGyroBiasY(double y);
         void SetGyroBiasZ(double z);
-        double gyroBiasX;
-        double gyroBiasY;
-        double gyroBiasZ;
-
-    // private:
-    //     double gyroBiasX;
-    //     double gyroBiasY;
-    //     double gyroBiasZ;
+    private:
+        double gyroBiasX = 0;
+        double gyroBiasY = 0;
+        double gyroBiasZ = 0;
 
 };
