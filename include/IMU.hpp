@@ -9,4 +9,16 @@ class IMU
         IMU();
         std::tuple<double, double, double> GetBodyAngularRate(); // Returns angular rate, p, q, and r in order
         std::tuple<double, double, double> GetBodyAcceleration(); // Returns linear acceleration, x, y, z
+        void SetGyroBiasX(double x);
+        void SetGyroBiasY(double y);
+        void SetGyroBiasZ(double z);
+        double gyroBiasX;
+        double gyroBiasY;
+        double gyroBiasZ;
+
+    // private:
+    //     double gyroBiasX;
+    //     double gyroBiasY;
+    //     double gyroBiasZ;
+
 };

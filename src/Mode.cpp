@@ -89,6 +89,38 @@ Mode::Phase Mode::UpdateCalibration(Navigation& navigation, Controller& controll
     return Mode::Calibration;
 }
 
+Mode::Phase Mode::GetGyroBiasOffset(Navigation& navigation, Controller& controller, IMU& imu, double currentTime)
+{
+    static int loops = 1;
+    std::tuple<double,double,double> gyro = imu.GetBodyAngularRate();
+    static double gyro_x = 0;
+    static double gyro_y = 0;
+    static double gyro_z = 0;
+
+    gyro_x +=  std::get<0>(gyro);
+    gyro_y += std::get<1>(gyro);
+    gyro_z += std::get<2>(gyro);
+
+
+    if(loops == 100)
+    {
+        gyro_x /= loops;
+        gyro_y /= loops;
+        gyro_z /= loops;
+
+        imu.SetGyroBiasX(-gyro_x);
+        imu.SetGyroBiasY(-gyro_y);
+        imu.SetGyroBiasZ(-gyro_z);
+        return Mode::Idle;
+    }
+
+    ++loops;
+    return Mode::GyroBiasOffset;
+
+
+    
+}
+
 Mode::Phase Mode::UpdateTestTVC(Navigation& navigation, Controller& controller, double currentTime) {
 
 
@@ -233,7 +265,7 @@ Mode::Phase Mode::UpdateSafeMode(Navigation& navigation, Controller& controller,
 }
 
 
-bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& igniter) { 
+bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& igniter, IMU& imu) { 
 
     // Track total elapsed time and delta time
     static double currentTime = 0;    
@@ -257,6 +289,10 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
         case Calibration:
             // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
             this->eCurrentMode = UpdateCalibration(navigation, controller, currentTime);
+            break;
+        case GyroBiasOffset:
+            // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
+            this->eCurrentMode = GetGyroBiasOffset(navigation, controller, imu, currentTime);
             break;
         case TestTVC:
             Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);

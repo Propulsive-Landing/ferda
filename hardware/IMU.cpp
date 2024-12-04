@@ -26,6 +26,19 @@ IMU::IMU()
     ifstream.close();
 }
 
+void IMU::SetGyroBiasX(double x)
+{
+    gyroBiasX = x;
+}
+void IMU::SetGyroBiasY(double y)
+{
+    gyroBiasY = y;
+}
+void IMU::SetGyroBiasZ(double z)
+{
+    gyroBiasZ = z;
+}
+
 std::tuple<double, double, double> IMU::GetBodyAcceleration()
 {
     std::fstream ifstream(accelPath + "/in_accel_x_raw");
@@ -76,6 +89,6 @@ std::tuple<double, double, double> IMU::GetBodyAngularRate()
     ifstream >> nAnglVelZ;
     ifstream.close();
 
-    return std::make_tuple(nAnglVelX * 0.000266, -nAnglVelY * 0.000266, -nAnglVelZ * 0.000266);
+    return std::make_tuple(nAnglVelX * 0.000266+ gyroBiasX, -nAnglVelY * 0.000266 + gyroBiasY, -nAnglVelZ * 0.000266 + gyroBiasZ);
     
 }
