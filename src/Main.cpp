@@ -52,7 +52,7 @@ int main()
 
 
 
-    while(mode.Update(navigation, controller, igniter)) {}
+    while(mode.Update(navigation, controller, igniter, imu)) {}
 
     //#ifdef NDEBUG
     //    gpioTerminate();
