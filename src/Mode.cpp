@@ -9,6 +9,7 @@
 #include <sstream>
 #include <string>
 #include <iostream>
+#include <thread>
 
 //CONSTANTS TO BE FIGURED OUT LATER
 int abort_threshold = 1;
@@ -238,6 +239,8 @@ bool Mode::Update(Navigation& navigation, Controller& controller, Igniter& ignit
     // Track total elapsed time and delta time
     static double currentTime = 0;    
     static auto last_time = std::chrono::high_resolution_clock::now();
+    // Helpful when running SIL
+    // std::this_thread::sleep_for(std::chrono::milliseconds(5));
     auto time_now = std::chrono::high_resolution_clock::now();
     unsigned int nanoseconds_since_start = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - last_time).count();
     double change_time = nanoseconds_since_start / 1000000000.0;

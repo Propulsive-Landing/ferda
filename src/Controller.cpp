@@ -65,8 +65,8 @@ void Controller::stabilizeAtOffset(Navigation& navigation, double current_time, 
     // phi_adjusted = phi - v_y*weights_control_velocity
     stateEstimate[6] = stateEstimate[6] - stateEstimate[4]*MissionConstants::weights_control_velocity;
 
-    // theta_adjusted = theta - v_x*weights_control_velocity
-    stateEstimate[7] = stateEstimate[7] - stateEstimate[3]*MissionConstants::weights_control_velocity;
+    // theta_adjusted = theta + v_x*weights_control_velocity
+    stateEstimate[7] = stateEstimate[7] + stateEstimate[3]*MissionConstants::weights_control_velocity;
    
    /* WE DON'T NEED THIS CODE FOR RIGHT NOW. X AND Y VELOCITY WILL BE 0
     double yaw = stateEstimate(8);
@@ -139,6 +139,9 @@ void Controller::GetNextController_Gain_Time_Index(double current_time){
 }
 
 void Controller::CalculateInput(){
+    static double offset1;
+    static double offset2;
+    
     // This calculates u = -Kx
 
     input = controller_gains.block(current_iteration_index*2, 0, 2, 8)*x_control;
@@ -146,10 +149,13 @@ void Controller::CalculateInput(){
         input = input*MissionConstants::kMaximumTvcAngle/input.norm();
     }
 
+    offset1 = offset1 + MissionConstants::weights_control_steady_state*input(0)*loopTime;
+    offset2 = offset2 + MissionConstants::weights_control_steady_state*input(1)*loopTime;
+
     // Figures out what angle we need to move the servos and then set them
     // [TODO] Move to hardware tvc_angles = TvcMath(input);
-    tvc.SetTVCX(input(0));
-    tvc.SetTVCY(input(1));
+    tvc.SetTVCX(input(0) + offset1);
+    tvc.SetTVCY(input(1) + offset2);
 }
 
 void Controller::Center(){
