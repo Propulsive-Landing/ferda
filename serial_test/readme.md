@@ -1,0 +1,1 @@
+`python telemetry_test.py COM3 --baud 115200 --telem-interval 0.5 --string-interval 2.0`
