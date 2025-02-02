@@ -8,7 +8,7 @@ from datetime import datetime
 import argparse
 
 class TelemetryTest:
-    def __init__(self, port, baudrate=115200, telem_interval=0.5, string_interval=2.0):
+    def __init__(self, port, baudrate=9600, telem_interval=0.5, string_interval=2.0):
         self.ser = serial.Serial(port, baudrate, timeout=0)
         self.telem_interval = telem_interval
         self.string_interval = string_interval
@@ -25,20 +25,22 @@ class TelemetryTest:
         return {
             "data_type": "telem",
             "payload": {
-                "euler": [
+                "euler_x": 
                     random.uniform(*self.euler_range),
+                "euler_y": 
                     random.uniform(*self.euler_range),
-                    random.uniform(*self.euler_range)
-                ],
-                "input": [
+                "euler_z":
+                    random.uniform(*self.euler_range),
+                "input_x":
                     random.uniform(*self.input_range),
-                    random.uniform(*self.input_range)
-                ],
-                "velocity": [
+                "input_y":
+                    random.uniform(*self.input_range),
+                "velocity_x":
                     random.uniform(*self.velocity_range),
+                "velocity_y":
                     random.uniform(*self.velocity_range),
-                    random.uniform(*self.velocity_range)
-                ],
+                "velocity_z":
+                    random.uniform(*self.velocity_range),
                 "dt": 0.0,
                 "timestamp": datetime.now().isoformat()
             }
