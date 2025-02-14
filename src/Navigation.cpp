@@ -23,10 +23,8 @@ void Navigation::reset()
     stateMat = Eigen::Matrix<double, 12, 1>::Zero();
     stateMat(2) = 0.28;
 
-    // Set euler angles to 5 degree offset
-    stateMat(6) = MissionConstants::originalOffsetAngle; // Phi
-    stateMat(7) = 0;                                     // Theta
-    stateMat(8) = 0;                                     // Psi
+    // Set euler angle to 5 degree offset
+    stateMat(7) = MissionConstants::originalOffsetAngle; // Theta
 
     d_theta_queue_reckon.clear();
 }
