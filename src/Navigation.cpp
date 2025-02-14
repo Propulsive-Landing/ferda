@@ -25,8 +25,8 @@ void Navigation::reset()
 
     // Set euler angles to 5 degree offset
     stateMat(6) = MissionConstants::originalOffsetAngle; // Phi
-    stateMat(7) = MissionConstants::originalOffsetAngle; // Theta
-    stateMat(8) = MissionConstants::originalOffsetAngle; // Psi
+    stateMat(7) = 0;                                     // Theta
+    stateMat(8) = 0;                                     // Psi
 
     d_theta_queue_reckon.clear();
 }
