@@ -61,6 +61,7 @@ namespace MissionConstants
     const int RF_SEND_DELTA = 300;
 
     // Abort constants
+    const double abortAngle = 25 * kDeg2Rad;
 
     // Time after launch until active stabalization begins.
     const float timeAtOffset = 0.0;
