@@ -197,11 +197,12 @@ Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, I
 
     Eigen::Matrix<double, 12, 1> testState = navigation.GetNavigation();
 
-    // IF under sqrt(phi^2 + theta^2)aborrt angle, (25 degrees), abort
+    // If under sqrt(phi^2 + theta^2)aborrt angle, (25 degrees), abort
     if (floor(sqrt(powf(testState(6), 2) + powf(testState(7), 2))) < MissionConstants::abortAngle)
         return Mode::Terminate;
+
     // If z acceleration is negative and the z height is not the starting height, then we should go to freefall
-    else if (testState(5) < -1 && testState(2) > 2)
+    if (testState(5) < -1 && testState(2) > 2)
     {
         std::cout << "We are switching to freefall" << "\n";
         Telemetry::GetInstance().Log("Switching mode from launch to freefall");
@@ -224,6 +225,10 @@ Mode::Phase Mode::UpdateFreefall(Navigation &navigation, Controller &controller,
     // Get currentState
     Eigen::Matrix<double, 12, 1> currentState = navigation.GetNavigation();
 
+    // If under sqrt(phi^2 + theta^2)aborrt angle, (25 degrees), abort
+    if (floor(sqrt(powf(currentState(6), 2) + powf(currentState(7), 2))) < MissionConstants::abortAngle)
+        return Mode::Terminate;
+
     // If the current time is greater than the calibration time + motor thrust duration + and offset, then figure out the best time to ignite
     // TODO THIS LOGIC IS BAD, CURRENT TIME IS VARIABLE DEPENDING ON LAUNCH PROCEDURE
     double a = -9.81 / 2;
@@ -236,10 +241,6 @@ Mode::Phase Mode::UpdateFreefall(Navigation &navigation, Controller &controller,
     result = (-b - sqrt(pow(b, 2) - 4 * a * c)) / (2 * a);
 
     time_till_second_ignite = result;
-
-    // If under sqrt(phi^2 + theta^2)aborrt angle, (25 degrees), abort
-    if (floor(sqrt(powf(currentState(6), 2) + powf(currentState(7), 2))) < MissionConstants::abortAngle)
-        return Mode::Terminate;
 
     if (time_till_second_ignite < 0)
     {
@@ -257,12 +258,6 @@ Mode::Phase Mode::UpdateLand(Navigation &navigation, Controller &controller, dou
     // Continue to update navigation and controller
     navigation.UpdateNavigation();
     controller.UpdateLand(navigation, currentTime);
-
-    Eigen::Matrix<double, 12, 1> currentState = navigation.GetNavigation();
-
-    // If under sqrt(phi^2 + theta^2)aborrt angle, (25 degrees), abort
-    if (floor(sqrt(powf(currentState(6), 2) + powf(currentState(7), 2))) < MissionConstants::abortAngle)
-        return Mode::Terminate;
 
     // If the get height method returns a value between 0 and 1, then we have landed and can go to Safe.
     if (0.0 < navigation.GetHeight() && navigation.GetHeight() < 1.0)
