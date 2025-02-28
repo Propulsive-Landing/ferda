@@ -29,6 +29,7 @@ namespace MissionConstants
     const double kFswLoopTime = .005;
     const double kFSWCalibrationTime = 0.05;
     const double originalOffsetAngle = 5 * kDeg2Rad;
+    const double offsetLandingHeight = 0.001;
 
     // Controller constants, TODO: USER EDIT PRE-FLIGHT
     const double kMaximumTvcAngle = 7.5 * kDeg2Rad;
@@ -47,7 +48,7 @@ namespace MissionConstants
     const int kNumberControllerGains = 10;
     const double weights_control_velocity = 0;
     const double weights_control_steady_state = 0;
-
+    const double timeToStartControllerBeforeIgnite2 = 0.001;
     // Ignition constants, TODO: USER EDIT PRE-FlIGHT
     const int kIgnitionPin = 6;
 

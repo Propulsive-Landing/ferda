@@ -15,8 +15,6 @@ Controller::Controller(TVC &tvc) : tvc(tvc), x_control(Eigen::Matrix<double, 8, 
 void Controller::Start(double current_time)
 {
     // Initialize variables
-
-    tvc_start_time = current_time;
     next_tvc_time = current_time;
     ResetKIteration(current_time); // Sets iteration start time
 }

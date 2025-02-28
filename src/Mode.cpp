@@ -218,9 +218,11 @@ Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, I
 Mode::Phase Mode::UpdateFreefall(Navigation &navigation, Controller &controller, Igniter &igniter, double currentTime)
 {
 
+    // Get bass startTime
+    static double startTime = currentTime;
+
     // Continue to update navigation
     navigation.UpdateNavigation();
-    // controller.UpdateLand(navigation, currTime);
 
     // Get currentState
     Eigen::Matrix<double, 12, 1> currentState = navigation.GetNavigation();
@@ -242,12 +244,20 @@ Mode::Phase Mode::UpdateFreefall(Navigation &navigation, Controller &controller,
 
     time_till_second_ignite = result;
 
-    if (time_till_second_ignite < 0)
+    // Check to see if we should ignite
+    if (time_till_second_ignite <= 0)
     {
+        controller.ResetKIteration(currentTime);
+        controller.UpdateLand(navigation, currentTime);
         igniter.Ignite(Igniter::IgnitionSpecifier::LAND);
         std::cout << "Switching from Freefall to Land" << "\n";
-        controller.ResetKIteration(currentTime);
         return Mode::Land;
+    }
+    // Start the controller before second ignition
+    else if ((time_till_second_ignite <= MissionConstants::timeToStartControllerBeforeIgnite2))
+    {
+        controller.ResetKIteration(currentTime);
+        controller.UpdateLand(navigation, currentTime);
     }
 
     return Mode::Freefall;
@@ -258,9 +268,10 @@ Mode::Phase Mode::UpdateLand(Navigation &navigation, Controller &controller, dou
     // Continue to update navigation and controller
     navigation.UpdateNavigation();
     controller.UpdateLand(navigation, currentTime);
+    Eigen::Matrix<double, 12, 1> currentState = navigation.GetNavigation();
 
     // If the get height method returns a value between 0 and 1, then we have landed and can go to Safe.
-    if (0.0 < navigation.GetHeight() && navigation.GetHeight() < 1.0)
+    if (currentState(2) < 0.28 - MissionConstants::offsetLandingHeight && currentState(2) > 0.28 + MissionConstants::offsetLandingHeight)
     {
         return Mode::Safe;
     }
