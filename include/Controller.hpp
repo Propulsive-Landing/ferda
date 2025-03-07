@@ -30,7 +30,7 @@ public:
     void UpdateLaunch(Navigation &navigation, double current_time);
     void UpdateTestTVC(double testTime);
     void UpdateLand(Navigation &navigation, double current_time);
-    void stabilizeAtOffset(Navigation &navigation, double current_time, double offset);
+    void stabilizeAtCenter(Navigation &navigation, double current_time);
     void UpdateSafe();
     void GetNextController_Gain_Time_Index(double startTime);
     void CalculateInput();

@@ -71,10 +71,6 @@ void Telemetry::Log(std::string message) {
 
 void Telemetry::RfSendFrame(Navigation& navigation, Controller& controller)
 {
-    // write data to rf file
-    auto now = std::chrono::system_clock::now();
-    auto in_time_t = std::chrono::system_clock::to_time_t(now);
-
     json json_msg;
     json_msg["data_type"] = "telem";
     json_msg["payload"] = {

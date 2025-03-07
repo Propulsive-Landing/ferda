@@ -9,7 +9,7 @@
 #include "Navigation.hpp"
 #include "MissionConstants.hpp"
 
-Navigation::Navigation(IMU &imu, Barometer &barometer, TVC &tvc) : imu(imu), barometer(barometer), tvc(tvc)
+Navigation::Navigation(IMU &inputImu, Barometer &inputBarometer, TVC &inputTvc) : imu(inputImu), barometer(inputBarometer), tvc(inputTvc)
 {
     std::cout << std::setprecision(4) << std::fixed;
     stateMat = Eigen::Matrix<double, 12, 1>::Zero();
@@ -23,8 +23,11 @@ void Navigation::reset()
     stateMat = Eigen::Matrix<double, 12, 1>::Zero();
     stateMat(2) = 0.28;
 
-    // Set euler angle to 5 degree offset
-    stateMat(7) = MissionConstants::originalOffsetAngle; // Theta
+    // Set euler angle to 5 degree offset, only if stability test
+    if(MissionConstants::isStabilityTest)
+    {
+        stateMat(7) = MissionConstants::originalOffsetAngle; // Theta
+    }
 
     d_theta_queue_reckon.clear();
 }
@@ -123,7 +126,7 @@ std::tuple<double, double, double> Navigation::ComputeAngularRollingAverage(std:
     d_theta_queue_reckon.push_back(d_theta_now);
 
     // Calculate the maximum amount of entries that d_theta_queue_reckon can have
-    int max_theta_dot_smooth_entries = MissionConstants::kNavThetaDotSmooth / loopTime;
+    unsigned int max_theta_dot_smooth_entries = MissionConstants::kNavThetaDotSmooth / loopTime;
 
     // Determine if the amount of entries in d_theta_reckon is greater than max_theta_dot_smooth_entries,
     // and if that is true, pop the first entry
@@ -135,7 +138,7 @@ std::tuple<double, double, double> Navigation::ComputeAngularRollingAverage(std:
     // Sum up all of the data so far for p,q,r which represent the angular velocity in x, y, and z direction
     double p = 0, q = 0, r = 0;
 
-    for (int i = 0; i < d_theta_queue_reckon.size(); i++)
+    for (unsigned int i = 0; i < d_theta_queue_reckon.size(); i++)
     {
         p += d_theta_queue_reckon[i][0] / d_theta_queue_reckon.size();
         q += d_theta_queue_reckon[i][1] / d_theta_queue_reckon.size();

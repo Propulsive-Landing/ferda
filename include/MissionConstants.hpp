@@ -17,6 +17,8 @@ namespace MissionConstants
     //     return constants;
     // }
 
+    const bool isStabilityTest = true;
+
     // Physical constants
     const double kPi = 3.1415926535897932384626433;
     const double kGravity = 9.80298; // calculated at Ashford Town Park using https://www.sensorsone.com/local-gravity-calculator/#height
@@ -29,7 +31,6 @@ namespace MissionConstants
     const double kFswLoopTime = .005;
     const double kFSWCalibrationTime = 0.05;
     const double originalOffsetAngle = 5 * kDeg2Rad;
-    const double offsetLandingHeight = 0.001;
 
     // Controller constants, TODO: USER EDIT PRE-FLIGHT
     const double kMaximumTvcAngle = 7.5 * kDeg2Rad;
@@ -48,7 +49,7 @@ namespace MissionConstants
     const int kNumberControllerGains = 10;
     const double weights_control_velocity = 0;
     const double weights_control_steady_state = 0;
-    const double timeToStartControllerBeforeIgnite2 = 0.001;
+    const double timeToStartControllerBeforeIgnite2 = 0.2;
     // Ignition constants, TODO: USER EDIT PRE-FlIGHT
     const int kIgnitionPin = 6;
 
@@ -60,9 +61,6 @@ namespace MissionConstants
     const int BAUD_RATE = 9600;
     const int HARDWARE_SAVE_DELTA = 100;
     const int RF_SEND_DELTA = 300;
-
-    // Abort constants
-    const double abortAngle = 25 * kDeg2Rad;
 
     // Time after launch until active stabalization begins.
     const float timeAtOffset = 0.0;

@@ -10,7 +10,7 @@
 #include <iostream>
 #include <iomanip>
 
-Controller::Controller(TVC &tvc) : tvc(tvc), x_control(Eigen::Matrix<double, 8, 1>::Zero()) {}
+Controller::Controller(TVC &inputTvc) : x_control(Eigen::Matrix<double, 8, 1>::Zero()), tvc(inputTvc) {}
 
 void Controller::Start(double current_time)
 {
@@ -37,8 +37,7 @@ void Controller::UpdateLaunch(Navigation &navigation, double current_time)
 {
     // Use the TVC to stabilize the rocket for landing
 
-    stabilizeAtOffset(navigation, current_time, 0);
-    //     stabilizeAtOffset(navigation, current_time, 5*kDeg2Rad); TODO ADDRESS WHY THIS IS
+    stabilizeAtCenter(navigation, current_time);
 }
 
 // communicate with TVC
@@ -46,17 +45,17 @@ void Controller::UpdateLand(Navigation &navigation, double current_time)
 {
     // Use the TVC to stabilize the rocket for landing
 
-    stabilizeAtOffset(navigation, current_time, 0);
+    stabilizeAtCenter(navigation, current_time);
 }
 
-void Controller::stabilizeAtOffset(Navigation &navigation, double current_time, double offset)
+void Controller::stabilizeAtCenter(Navigation &navigation, double current_time)
 {
     // IN X_CONRTOL:: FIRST 2 ARE X AND Y VELOCITIES, NEXT 2 ARE EULER INTEGRALS, NEXT 2 ARE ROLL AND PITCH, AND NEXT 2 ARE ROLl and pitch values
 
     // Calculate desired control inputs for launch and actuate all control surfaces accordingly
 
     // Create a variable to determine the max amount of Euler Entries;
-    int maxEulerEntries = MissionConstants::kControlIntegralPeriod / loopTime;
+    unsigned int maxEulerEntries = MissionConstants::kControlIntegralPeriod / loopTime;
 
     // Create a matrix to store the returned stateEstimate from getNavigation() and store the yaw value into a varible
     Eigen::Matrix<double, 12, 1> stateEstimate = navigation.GetNavigation();
@@ -98,7 +97,7 @@ void Controller::stabilizeAtOffset(Navigation &navigation, double current_time, 
     }
     // Create a vector that will hold the sums of all of the roll and pitch entries in euler_queue
     std::vector<double> euler_sum{0.0, 0.0};
-    for (int i = 0; i < euler_queue.size(); i++)
+    for (unsigned int i = 0; i < euler_queue.size(); i++)
     {
         euler_sum[0] += euler_queue[i][0];
         euler_sum[1] += euler_queue[i][1];
@@ -180,20 +179,23 @@ void Controller::ImportControlParameters(std::string file_name)
     std::string row, item;
     std::ifstream in(file_name);
     std::getline(in, row);
-    std::stringstream ss(row);
+    std::stringstream iterationTimeStringStream(row);
+    
+    // Get the iteration times of the k-matrix
     for (int i = 0; i < 10; i++)
     {
-        std::getline(ss, item, separator);
+        std::getline(iterationTimeStringStream, item, separator); // This gets values delimited by commas in the string
         controller_gain_times.push_back(stod(item));
     }
 
+    // Get the controller values of the k-matrix
     for (int i = 0; i < 2 * MissionConstants::kNumberControllerGains; i++)
     {
         std::getline(in, row);
-        std::stringstream ss(row);
+        std::stringstream controllerValueStringStream(row);
         for (int j = 0; j < 8; j++)
         {
-            std::getline(ss, item, separator);
+            std::getline(controllerValueStringStream, item, separator);
             controller_gains(i, j) = stod(item);
         }
     }
