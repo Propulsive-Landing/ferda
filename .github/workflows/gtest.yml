@@ -2,8 +2,7 @@ name: C++ Build Test
 
 on:
   push:
-    branches:
-      - dev
+  pull_request:
 
 jobs:
   build:
