@@ -26,6 +26,12 @@ add_executable(Ferda ${CppSources} ${EXTRA_CODE})
 
 target_include_directories(Ferda PRIVATE include)
 
+if(MSVC)
+  target_compile_options(Ferda PRIVATE /W4 /WX)
+else()
+  target_compile_options(Ferda PRIVATE -Wall -Wextra -Wpedantic -Wfloat-equal -Wundef -Wshadow -Wunreachable-code)
+endif()
+
 include(FetchContent)
 FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
 FetchContent_MakeAvailable(json)
