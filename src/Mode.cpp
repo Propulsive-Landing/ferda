@@ -1,5 +1,5 @@
 #include <chrono>
-#include <cmath>
+#include <math.h>
 #include "Mode.hpp"
 #include "Navigation.hpp"
 #include "MissionConstants.hpp"
@@ -25,6 +25,33 @@ double second_motor_delta_x = 24.0477;
 double gse_height = 0.2800;
 
 Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
+
+Mode::Phase Mode::FindFrequency(Controller &controller)
+{
+    static double amplitude = 1.0;
+    static double frequency = 1.0;
+    static int x = 0;
+
+    RF::Command command = RF::GetInstance().GetCommand();
+    if (command == RF::Command::IncrementAmplitude)
+    {
+        amplitude += 0.01;
+    }
+
+    if (command == RF::Command::IncrementFrequency)
+    {
+        frequency += 0.01;
+    }
+
+    double sin_value = amplitude * sin(frequency * x);
+    controller.tvc.SetTVCX(sin_value);
+    controller.tvc.SetTVCY(sin_value);
+    x += 0.01;
+
+    return Mode::ObserveTVC;
+}
+
+// Set freq and amplotude of sin wave
 
 Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controller, double currentTime)
 {
@@ -284,39 +311,42 @@ bool Mode::Update(Navigation &navigation, Controller &controller, Igniter &ignit
     /* Handle behavior based on current phase. Update phase*/
     switch (this->eCurrentMode)
     {
-        case Calibration:
-            // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
-            this->eCurrentMode = UpdateCalibration(navigation, controller, currentTime);
-            break;
-        case GyroBiasOffset:
-            // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
-            this->eCurrentMode = GetGyroBiasOffset(navigation, controller, imu, currentTime);
-            break;
-        case TestTVC:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
-            this->eCurrentMode = UpdateTestTVC(navigation, controller, currentTime);
-            break;
-        case Idle:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
-            this->eCurrentMode = UpdateIdle(navigation, controller, currentTime);
-            break;
-        case Launch:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
-            this->eCurrentMode = UpdateLaunch(navigation, controller, igniter, currentTime);
-            break;
-        case Freefall:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
-            this->eCurrentMode = UpdateFreefall(navigation, controller, igniter, currentTime);
-            break;
-        case Land:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
-            this->eCurrentMode = UpdateLand(navigation, controller, currentTime);
-            break;
-        case Safe:
-            this->eCurrentMode = UpdateSafeMode(navigation, controller, currentTime);
-            break;
-        case Terminate:
-            return false;
+    case ObserveTVC:
+        this->eCurrentMode = FindFrequency(controller);
+        break;
+    case Calibration:
+        // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
+        this->eCurrentMode = UpdateCalibration(navigation, controller, currentTime);
+        break;
+    case GyroBiasOffset:
+        // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
+        this->eCurrentMode = GetGyroBiasOffset(navigation, controller, imu, currentTime);
+        break;
+    case TestTVC:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
+        this->eCurrentMode = UpdateTestTVC(navigation, controller, currentTime);
+        break;
+    case Idle:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
+        this->eCurrentMode = UpdateIdle(navigation, controller, currentTime);
+        break;
+    case Launch:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
+        this->eCurrentMode = UpdateLaunch(navigation, controller, igniter, currentTime);
+        break;
+    case Freefall:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
+        this->eCurrentMode = UpdateFreefall(navigation, controller, igniter, currentTime);
+        break;
+    case Land:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
+        this->eCurrentMode = UpdateLand(navigation, controller, currentTime);
+        break;
+    case Safe:
+        this->eCurrentMode = UpdateSafeMode(navigation, controller, currentTime);
+        break;
+    case Terminate:
+        return false;
     }
 
     return true;
