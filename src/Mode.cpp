@@ -26,27 +26,65 @@ double gse_height = 0.2800;
 
 Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
-Mode::Phase Mode::FindFrequency(Controller &controller)
+Mode::Phase Mode::FindFrequency(Controller &controller, double currentTime)
 {
+
+    static double startTime = currentTime;
     static double amplitude = 1.0;
     static double frequency = 1.0;
-    static int x = 0;
+    const double MAX_AMPLITUDE = 15.0;
+    const double MAX_FREQUENCY = 20.0;
 
     RF::Command command = RF::GetInstance().GetCommand();
-    if (command == RF::Command::IncrementAmplitude)
+    if (command == RF::Command::IncrementAmplitude && amplitude < MAX_AMPLITUDE)
     {
-        amplitude += 0.01;
+        amplitude += 1.0;
+        std::ostringstream os;
+        os << "Increased amplitude to " << std::to_string(amplitude) << std::endl;
+        std::string s = os.str();
+        Telemetry::GetInstance().Log(s);
     }
-
-    if (command == RF::Command::IncrementFrequency)
+    else if (command == RF::Command::DecrementAmplitude && amplitude >= 1.0)
     {
-        frequency += 0.01;
+        amplitude -= 1.0;
+        std::ostringstream os;
+        os << "Decreased amplitude to " << std::to_string(amplitude) << std::endl;
+        std::string s = os.str();
+        Telemetry::GetInstance().Log(s);
     }
-
-    double sin_value = amplitude * sin(frequency * x);
-    controller.tvc.SetTVCX(sin_value);
-    controller.tvc.SetTVCY(sin_value);
-    x += 0.01;
+    else if (command == RF::Command::IncrementFrequency && frequency < MAX_FREQUENCY)
+    {
+        frequency += 0.1;
+        std::ostringstream os;
+        os << "Increased frequency to " << std::to_string(frequency) << std::endl;
+        std::string s = os.str();
+        Telemetry::GetInstance().Log(s);
+    }
+    else if (command == RF::Command::DecrementFrequency && frequency > 1.0)
+    {
+        frequency -= 0.1;
+        std::ostringstream os;
+        os << "Decreased frequency to " << std::to_string(frequency) << std::endl;
+        std::string s = os.str();
+        Telemetry::GetInstance().Log(s);
+    }
+    else if (command == RF::Command::CalculateXTVC)
+    {
+        double seconds_since_start = currentTime - startTime;
+        double sin_value = amplitude * sin(2 * EIGEN_PI * frequency * seconds_since_start);
+        controller.tvc.SetTVCX(sin_value);
+    }
+    else if (command == RF::Command::CalculateYTVC)
+    {
+        double seconds_since_start = currentTime - startTime;
+        double sin_value = amplitude * sin(2 * EIGEN_PI * frequency * seconds_since_start);
+        controller.tvc.SetTVCY(sin_value);
+    }
+    else if (command == RF::Command::ABORT)
+    {
+        Telemetry::GetInstance().Log("ABORT, EXITING");
+        exit(0);
+    }
 
     return Mode::ObserveTVC;
 }
@@ -291,9 +329,9 @@ Mode::Phase Mode::UpdateSafeMode(Navigation &navigation, Controller &controller,
 
 bool Mode::Update(Navigation &navigation, Controller &controller, Igniter &igniter, IMU &imu)
 {
-
     // Track total elapsed time and delta time
     static double currentTime = 0;
+
     static auto last_time = std::chrono::high_resolution_clock::now();
     // Helpful when running SIL
     // std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -312,7 +350,7 @@ bool Mode::Update(Navigation &navigation, Controller &controller, Igniter &ignit
     switch (this->eCurrentMode)
     {
     case ObserveTVC:
-        this->eCurrentMode = FindFrequency(controller);
+        this->eCurrentMode = FindFrequency(controller, currentTime);
         break;
     case Calibration:
         // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);

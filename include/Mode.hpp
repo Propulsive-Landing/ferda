@@ -29,7 +29,7 @@ public:
 
 private:
     Mode::Phase eCurrentMode;
-    Mode::Phase FindFrequency(Controller &controller);
+    Mode::Phase FindFrequency(Controller &controller, double currentTime);
     Mode::Phase UpdateCalibration(Navigation &navigation, Controller &controller, double currentTime);
     Mode::Phase GetGyroBiasOffset(Navigation &navigation, Controller &controller, IMU &imu, double currentTime);
     Mode::Phase UpdateTestTVC(Navigation &navigation, Controller &controller, double currentTime);

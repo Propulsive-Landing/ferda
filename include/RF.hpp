@@ -32,7 +32,11 @@ public:
         DecrementXTVC,
         DecrementYTVC,
         IncrementFrequency,
-        IncrementAmplitude
+        IncrementAmplitude,
+        DecrementFrequency,
+        DecrementAmplitude,
+        CalculateXTVC,
+        CalculateYTVC
     };
 
     RF::Command ParseCommand(std::string input_line)
@@ -68,6 +72,14 @@ public:
             ParsedCommand = RF::Command::IncrementFrequency;
         else if (input_line == "IncrementAmplitude")
             ParsedCommand = RF::Command::IncrementAmplitude;
+        else if (input_line == "DecrementFrequency")
+            ParsedCommand = RF::Command::DecrementFrequency;
+        else if (input_line == "DecrementAmplitude")
+            ParsedCommand = RF::Command::DecrementAmplitude;
+        else if (input_line == "CalculateXTVC")
+            ParsedCommand = RF::Command::CalculateXTVC;
+        else if (input_line == "CalculateYTVC")
+            ParsedCommand = RF::Command::CalculateYTVC;
         else
             ParsedCommand = RF::Command::None;
 
