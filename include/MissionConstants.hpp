@@ -38,10 +38,10 @@ namespace MissionConstants
 
     const double kControlIntegralPeriod = 0.25;
     const double kDeg2PulseWidth = ((double)1000.0) / ((double)90.0);
-    const double kTvcXCenterAngle = -10;
-    const double kTvcYCenterAngle = -55;
-    const double kTvcYInputCenterAngleDeg = 0.12;
-    const double kTvcXInputCenterAngleDeg = -0.29;
+    const double kTvcXCenterAngleDeg = -10;
+    const double kTvcYCenterAngleDeg = -55;
+    const double kTvcYInputCenterAngleRad = 0.12;
+    const double kTvcXInputCenterAngleRad = -0.29;
     const double TVCPeriod = 0.02;
     const int kTvcXPin = 19;
     const int kTvcYPin = 18;
