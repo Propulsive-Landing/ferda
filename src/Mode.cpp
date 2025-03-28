@@ -68,23 +68,15 @@ Mode::Phase Mode::FindFrequency(Controller &controller, double currentTime)
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
     }
-    else if (command == RF::Command::CalculateXTVC)
-    {
-        double seconds_since_start = currentTime - startTime;
-        double sin_value = amplitude * sin(2 * EIGEN_PI * frequency * seconds_since_start);
-        controller.tvc.SetTVCX(sin_value);
-    }
-    else if (command == RF::Command::CalculateYTVC)
-    {
-        double seconds_since_start = currentTime - startTime;
-        double sin_value = amplitude * sin(2 * EIGEN_PI * frequency * seconds_since_start);
-        controller.tvc.SetTVCY(sin_value);
-    }
     else if (command == RF::Command::ABORT)
     {
         Telemetry::GetInstance().Log("ABORT, EXITING");
         exit(0);
     }
+
+    double seconds_since_start = currentTime - startTime;
+    double sin_value = amplitude * sin(2 * EIGEN_PI * frequency * seconds_since_start);
+    controller.tvc.SetTVCX(sin_value);
 
     return Mode::ObserveTVC;
 }
