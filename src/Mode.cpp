@@ -28,25 +28,41 @@ Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
 Mode::Phase Mode::FindFrequency(Controller &controller, double currentTime)
 {
-
+    static bool start = true;
     static double startTime = currentTime;
-    static double amplitude = 1.0;
-    static double frequency = 1.0;
+    static double amplitude = 0;
+    static double frequency = 0;
+    static char TVC = ' ';
+
+    if (start)
+    {
+        std::cout << "Enter Starting Amplitude:  ";
+        std::cin >> amplitude;
+
+        std::cout << "Enter Starting Frequency:  ";
+        std::cin >> frequency;
+
+        std::cout << "Enter x or y for TVC:  ";
+        std::cin >> TVC;
+
+        start = false;
+    }
+
     const double MAX_AMPLITUDE = 15.0;
     const double MAX_FREQUENCY = 20.0;
 
     RF::Command command = RF::GetInstance().GetCommand();
     if (command == RF::Command::IncrementAmplitude && amplitude < MAX_AMPLITUDE)
     {
-        amplitude += 1.0;
+        amplitude += 0.01;
         std::ostringstream os;
         os << "Increased amplitude to " << std::to_string(amplitude) << std::endl;
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
     }
-    else if (command == RF::Command::DecrementAmplitude && amplitude >= 1.0)
+    else if (command == RF::Command::DecrementAmplitude && amplitude > 0.0)
     {
-        amplitude -= 1.0;
+        amplitude -= 0.01;
         std::ostringstream os;
         os << "Decreased amplitude to " << std::to_string(amplitude) << std::endl;
         std::string s = os.str();
@@ -60,7 +76,7 @@ Mode::Phase Mode::FindFrequency(Controller &controller, double currentTime)
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
     }
-    else if (command == RF::Command::DecrementFrequency && frequency > 1.0)
+    else if (command == RF::Command::DecrementFrequency && frequency > 0.0)
     {
         frequency -= 0.1;
         std::ostringstream os;
@@ -76,7 +92,15 @@ Mode::Phase Mode::FindFrequency(Controller &controller, double currentTime)
 
     double seconds_since_start = currentTime - startTime;
     double sin_value = amplitude * sin(2 * EIGEN_PI * frequency * seconds_since_start);
-    controller.tvc.SetTVCX(sin_value);
+
+    if (TVC == 'x')
+    {
+        controller.tvc.SetTVCX(sin_value);
+    }
+    else if (TVC == 'Y')
+    {
+        controller.tvc.SetTVCY(sin_value);
+    }
 
     return Mode::ObserveTVC;
 }
