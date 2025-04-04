@@ -46,6 +46,10 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
     if(ret != 1) // Return if no data
         return RF::Command::None;
 
+    // Extra safety check before reading
+    if (std::cin.eof() || !std::cin.good())
+        return RF::Command::None;
+
     std::string input_line;
     std::getline(std::cin, input_line);
 
