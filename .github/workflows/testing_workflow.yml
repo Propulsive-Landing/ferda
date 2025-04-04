@@ -26,10 +26,15 @@ jobs:
       run: |
         timeout 10s ./build-debug/Ferda < /dev/null || echo "Exited after timeout"
 
-    - name: Install Release dependencies
+    - name: Install pigpio from source
       run: |
         sudo apt update
-        sudo apt install -y pigpio
+        sudo apt install -y build-essential unzip
+        wget https://github.com/joan2937/pigpio/archive/master.zip
+        unzip master.zip
+        cd pigpio-master
+        make
+        sudo make install
 
     - name: Build Release Mode
       run: |
