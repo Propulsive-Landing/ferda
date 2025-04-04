@@ -24,7 +24,12 @@ jobs:
 
     - name: Run Debug Binary for 10 seconds
       run: |
-        timeout 10s ./build-debug/Ferda || echo "Exited after timeout"
+        timeout 10s ./build-debug/Ferda < /dev/null || echo "Exited after timeout"
+
+    - name: Install Release dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y pigpio
 
     - name: Build Release Mode
       run: |
