@@ -4,7 +4,7 @@
 
 #include <pigpio.h>
 #include <math.h>
-#include <algorithm.h>
+#include <algorithm>
 #include <MissionConstants.hpp>
 #include <iostream>
 #include <string>
