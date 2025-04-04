@@ -35,7 +35,7 @@ void RF::SendString(std::string message)
 
 
 
-RF::Command RF::GetCommand() // Will check for commands and return the received command. Non-blocking.
+RF::Command RF::GetCommand() // Will check for commands and return the received command. Non-blocking. Called frequently
 {
     struct pollfd fds;
     int ret;
@@ -46,8 +46,13 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
     if(ret != 1) // Return if no data
         return RF::Command::None;
 
+    // Extra safety check before reading
+    if (std::cin.eof() || !std::cin.good())
+        return RF::Command::None;
+
     std::string input_line;
     std::getline(std::cin, input_line);
+
     std::cout << "GOT: " << input_line << "\n" << std::flush;
 
     return ParseCommand(input_line);
