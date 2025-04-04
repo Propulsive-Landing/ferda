@@ -36,17 +36,23 @@ Mode::Phase Mode::FindFrequency(Controller &controller, double currentTime)
 
     if (start)
     {
+	float startingA;
         std::cout << "Enter Starting Amplitude:  ";
-        std::cin >> amplitude;
+        std::cin >> startingA;
+	amplitude = startingA;
 
+	float startingF;
         std::cout << "Enter Starting Frequency:  ";
-        std::cin >> frequency;
+        std::cin >> startingF;
+	frequency = startingF;
 
-        std::cout << "Enter x or y for TVC:  ";
-        std::cin >> TVC;
+        //std::cout << "Enter x or y for TVC:  ";
+        //std::cin >> TVC;
 
         start = false;
     }
+
+  
 
     const double MAX_AMPLITUDE = 15.0;
     const double MAX_FREQUENCY = 20.0;
@@ -92,16 +98,17 @@ Mode::Phase Mode::FindFrequency(Controller &controller, double currentTime)
 
     double seconds_since_start = currentTime - startTime;
     double sin_value = amplitude * sin(2 * EIGEN_PI * frequency * seconds_since_start);
-
-    if (TVC == 'x')
-    {
+    controller.tvc.SetTVCY(sin_value);
+    /*
+ if (TVC == 'x')
+   {
         controller.tvc.SetTVCX(sin_value);
     }
-    else if (TVC == 'Y')
+    else if (TVC == 'y')
     {
         controller.tvc.SetTVCY(sin_value);
     }
-
+*/
     return Mode::ObserveTVC;
 }
 
