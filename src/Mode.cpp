@@ -87,6 +87,20 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         controller.Center();
         return Mode::Idle;
     }
+    else if (command == RF::Command::AccelBias)
+    {
+        Telemetry::GetInstance().Log("Switching mode from calibration to AccelBias");
+        controller.ImportControlParameters("../k_matrix.csv");
+        controller.Center();
+        return Mode::AccelBiasOffset;
+    }
+    else if (command == RF::Command::GyroBias)
+    {
+        Telemetry::GetInstance().Log("Switching mode from calibration to GyroBias");
+        controller.ImportControlParameters("../k_matrix.csv");
+        controller.Center();
+        return Mode::GyroBiasOffset;
+    }
     else if (command == RF::Command::ABORT)
     {
         Telemetry::GetInstance().Log("ABORT, EXITING");
@@ -94,6 +108,34 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
     }
 
     return Mode::Calibration;
+}
+
+Mode::Phase Mode::GetAccelBiasOffset(Navigation &navigation, Controller &controller, IMU &imu, double currentTime)
+{
+    static int loops = 1;
+    std::tuple<double, double, double> accel = imu.GetBodyAcceleration();
+    static double accel_x = 0;
+    static double accel_y = 0;
+    static double accel_z = 0;
+
+    accel_x += std::get<0>(accel);
+    accel_y += std::get<1>(accel);
+    accel_z += std::get<2>(accel);
+
+    if (loops == 100)
+    {
+        accel_x /= loops;
+        accel_y /= loops;
+        accel_z /= loops;
+
+        imu.SetAccelBiasX(-accel_x);
+        imu.SetAccelBiasY(-accel_y);
+        imu.SetAccelBiasZ(-accel_z);
+        return Mode::Idle;
+    }
+
+    ++loops;
+    return Mode::AccelBiasOffset;
 }
 
 Mode::Phase Mode::GetGyroBiasOffset(Navigation &navigation, Controller &controller, IMU &imu, double currentTime)
@@ -284,39 +326,43 @@ bool Mode::Update(Navigation &navigation, Controller &controller, Igniter &ignit
     /* Handle behavior based on current phase. Update phase*/
     switch (this->eCurrentMode)
     {
-        case Calibration:
-            // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
-            this->eCurrentMode = UpdateCalibration(navigation, controller, currentTime);
-            break;
-        case GyroBiasOffset:
-            // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
-            this->eCurrentMode = GetGyroBiasOffset(navigation, controller, imu, currentTime);
-            break;
-        case TestTVC:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
-            this->eCurrentMode = UpdateTestTVC(navigation, controller, currentTime);
-            break;
-        case Idle:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
-            this->eCurrentMode = UpdateIdle(navigation, controller, currentTime);
-            break;
-        case Launch:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
-            this->eCurrentMode = UpdateLaunch(navigation, controller, igniter, currentTime);
-            break;
-        case Freefall:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
-            this->eCurrentMode = UpdateFreefall(navigation, controller, igniter, currentTime);
-            break;
-        case Land:
-            Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
-            this->eCurrentMode = UpdateLand(navigation, controller, currentTime);
-            break;
-        case Safe:
-            this->eCurrentMode = UpdateSafeMode(navigation, controller, currentTime);
-            break;
-        case Terminate:
-            return false;
+    case Calibration:
+        // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
+        this->eCurrentMode = UpdateCalibration(navigation, controller, currentTime);
+        break;
+    case AccelBiasOffset:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
+        this->eCurrentMode = GetAccelBiasOffset(navigation, controller, imu, currentTime);
+        break;
+    case GyroBiasOffset:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
+        this->eCurrentMode = GetGyroBiasOffset(navigation, controller, imu, currentTime);
+        break;
+    case TestTVC:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
+        this->eCurrentMode = UpdateTestTVC(navigation, controller, currentTime);
+        break;
+    case Idle:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
+        this->eCurrentMode = UpdateIdle(navigation, controller, currentTime);
+        break;
+    case Launch:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
+        this->eCurrentMode = UpdateLaunch(navigation, controller, igniter, currentTime);
+        break;
+    case Freefall:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
+        this->eCurrentMode = UpdateFreefall(navigation, controller, igniter, currentTime);
+        break;
+    case Land:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
+        this->eCurrentMode = UpdateLand(navigation, controller, currentTime);
+        break;
+    case Safe:
+        this->eCurrentMode = UpdateSafeMode(navigation, controller, currentTime);
+        break;
+    case Terminate:
+        return false;
     }
 
     return true;

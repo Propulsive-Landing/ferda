@@ -7,11 +7,11 @@
 
 #include "MissionConstants.hpp"
 
-namespace {
+namespace
+{
     std::string gyroPath = "/home/pi/gyroscope_device";
     std::string accelPath = "/home/pi/accel_device";
 }
-
 
 IMU::IMU()
 {
@@ -37,6 +37,19 @@ void IMU::SetGyroBiasY(double y)
 void IMU::SetGyroBiasZ(double z)
 {
     gyroBiasZ = z;
+}
+
+void IMU::SetAccelBiasX(double x)
+{
+    accelBiasX = x;
+}
+void IMU::SetAccelBiasY(double y)
+{
+    accelBiasY = y;
+}
+void IMU::SetAccelBiasZ(double z)
+{
+    accelBiasZ = z;
 }
 
 std::tuple<double, double, double> IMU::GetBodyAcceleration()
@@ -66,8 +79,8 @@ std::tuple<double, double, double> IMU::GetBodyAcceleration()
 }
 
 std::tuple<double, double, double> IMU::GetBodyAngularRate()
-{  
-    
+{
+
     std::fstream ifstream(gyroPath + "/in_anglvel_x_raw");
     if (!ifstream.is_open())
         throw std::runtime_error("accelerometer is not present");
@@ -89,6 +102,5 @@ std::tuple<double, double, double> IMU::GetBodyAngularRate()
     ifstream >> nAnglVelZ;
     ifstream.close();
 
-    return std::make_tuple(nAnglVelX * 0.000266+ gyroBiasX, -nAnglVelY * 0.000266 + gyroBiasY, -nAnglVelZ * 0.000266 + gyroBiasZ);
-    
+    return std::make_tuple(nAnglVelX * 0.000266 + gyroBiasX, -nAnglVelY * 0.000266 + gyroBiasY, -nAnglVelZ * 0.000266 + gyroBiasZ);
 }
