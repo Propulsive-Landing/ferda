@@ -1,0 +1,37 @@
+name: C++ Build & Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y libgtest-dev libeigen3-dev cmake
+
+    - name: Build Debug Mode
+      run: |
+        cmake -DCMAKE_BUILD_TYPE=Debug -B build-debug .
+        cmake --build build-debug
+
+    - name: Run Debug Binary for 10 seconds
+      run: |
+        timeout 10s ./build-debug/Ferda || echo "Exited after timeout"
+
+    - name: Build Release Mode
+      run: |
+        cmake -DCMAKE_BUILD_TYPE=Release -B build-release .
+        cmake --build build-release
+
+    - name: Build Simulation Mode
+      run: |
+        cmake -DCMAKE_BUILD_TYPE=Simulation -DSIM_LOCAL_PORT=8002 -DSIM_SERVER_PORT=8003 -DSIM_SERVER_IP="127.0.0.1" -B build-sim .
+        cmake --build build-sim
