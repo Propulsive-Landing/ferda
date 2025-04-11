@@ -27,12 +27,15 @@ int main()
     if (gpioInitialise() < 0)
         throw std::runtime_error("failed to initialize gpio");
 
+    gpioSetMode(5, PI_OUTPUT);
     gpioSetMode(6, PI_OUTPUT);
 
     gpioSetMode(23, PI_OUTPUT);
     gpioSetMode(24, PI_OUTPUT);
 
+    gpioWrite(5, 1);
     gpioWrite(6, 1);
+
 #endif
 
     IMU imu;
@@ -47,7 +50,7 @@ int main()
 
     // TODO we need to set controller iteration gains or there is a segmentation fault.
 
-    Mode mode(Mode::AccelBiasOffset);
+    Mode mode(Mode::Calibration);
 
     while (mode.Update(navigation, controller, igniter, imu))
     {
