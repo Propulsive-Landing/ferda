@@ -50,7 +50,7 @@ int main()
 
     // TODO we need to set controller iteration gains or there is a segmentation fault.
 
-    Mode mode(Mode::AccelBiasOffset);
+    Mode mode(Mode::Calibration);
 
     while (mode.Update(navigation, controller, igniter, imu))
     {
