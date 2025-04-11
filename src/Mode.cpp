@@ -242,7 +242,6 @@ Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, I
     {
         std::cout << "We are switching to freefall" << "\n";
         Telemetry::GetInstance().Log("Switching mode from launch to freefall");
-        igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAUNCH);
         controller.Center();
         return Mode::Freefall;
     }

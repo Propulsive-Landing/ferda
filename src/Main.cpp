@@ -27,12 +27,15 @@ int main()
     if (gpioInitialise() < 0)
         throw std::runtime_error("failed to initialize gpio");
 
-    gpioSetMode(6, PI_OUTPUT);
+    gpioSetMode(21, PI_OUTPUT);
+    gpioSetMode(22, PI_OUTPUT);
 
     gpioSetMode(23, PI_OUTPUT);
     gpioSetMode(24, PI_OUTPUT);
 
-    gpioWrite(6, 1);
+    gpioWrite(21, 1);
+    gpioWrite(22, 1);
+
 #endif
 
     IMU imu;
