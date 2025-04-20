@@ -229,6 +229,7 @@ Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, I
 
     if (seconds_since_start > 0.050)
     {
+        Telemetry::GetInstance().Log("Igniting MOTOR");
         igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAUNCH);
     }
 
