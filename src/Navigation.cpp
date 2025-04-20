@@ -27,7 +27,7 @@ void Navigation::reset()
     if (MissionConstants::isStabilityTest)
     {
         // stateMat(7) = MissionConstants::originalOffsetAngle; // Theta
-        stateMat(7) = 0 // Theta
+        stateMat(7) = 0; // Theta
     }
 
     // d_theta_queue_reckon.clear();
