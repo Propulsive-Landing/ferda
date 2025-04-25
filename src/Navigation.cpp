@@ -20,8 +20,8 @@ Navigation::Navigation(IMU &inputImu, Barometer &inputBarometer, TVC &inputTvc) 
 
 void Navigation::reset()
 {
-    // stateMat = Eigen::Matrix<double, 12, 1>::Zero();
-    //  stateMat(2) = 0.28;
+    stateMat = Eigen::Matrix<double, 12, 1>::Zero();
+    stateMat(2) = 0.28;
 
     // Set euler angle to 5 degree offset, only if stability test
     if (MissionConstants::isStabilityTest)
@@ -30,7 +30,7 @@ void Navigation::reset()
         stateMat(7) = 0; // Theta
     }
 
-    // d_theta_queue_reckon.clear();
+    d_theta_queue_reckon.clear();
 }
 
 Eigen::Matrix<double, 12, 1> Navigation::GetNavigation()
