@@ -180,11 +180,12 @@ void Controller::ImportControlParameters(std::string file_name)
     std::ifstream in(file_name);
     std::getline(in, row);
     std::stringstream iterationTimeStringStream(row);
-    
+
     // Get the iteration times of the k-matrix
     for (int i = 0; i < 10; i++)
     {
         std::getline(iterationTimeStringStream, item, separator); // This gets values delimited by commas in the string
+
         controller_gain_times.push_back(stod(item));
     }
 
@@ -201,6 +202,7 @@ void Controller::ImportControlParameters(std::string file_name)
     }
 
     in.close();
+    std::cout << "Here" << std::endl;
 }
 
 // When we go into landing mode, reset the k_iteration_start_time and current_iteration_index
