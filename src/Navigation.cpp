@@ -26,8 +26,7 @@ void Navigation::reset()
     // Set euler angle to 5 degree offset, only if stability test
     if (MissionConstants::isStabilityTest)
     {
-        // stateMat(7) = MissionConstants::originalOffsetAngle; // Theta
-        stateMat(7) = 0; // Theta
+        stateMat(7) = MissionConstants::originalOffsetAngle; // Theta
     }
 
     d_theta_queue_reckon.clear();
