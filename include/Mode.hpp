@@ -26,6 +26,8 @@ public:
 
     Mode(Mode::Phase eInitialMode);
     bool Update(Navigation &navigation, Controller &controller, Igniter &igniter, IMU &imu);
+    std::string LaunchKMatrix;
+    std::string LandKMatrix;
 
 private:
     Mode::Phase eCurrentMode;
@@ -39,4 +41,5 @@ private:
     Mode::Phase UpdateFreefall(Navigation &navigation, Controller &controller, Igniter &igniter, double currentTime);
     Mode::Phase UpdateLand(Navigation &navigation, Controller &controller, double current_time);
     Mode::Phase UpdateSafeMode(Navigation &navigation, Controller &controller, double currentTime);
+    void UploadKmatrices();
 };

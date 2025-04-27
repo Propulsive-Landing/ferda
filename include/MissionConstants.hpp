@@ -45,7 +45,6 @@ namespace MissionConstants
     const double TVCPeriod = 0.02;
     const int kTvcXPin = 19;
     const int kTvcYPin = 18;
-    const std::string kKMatrixFile = "k_matrix.csv";
     const int kNumberControllerGains = 10;
     const double weights_control_velocity = 0;
     const double weights_control_steady_state = 0;

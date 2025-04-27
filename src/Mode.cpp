@@ -26,6 +26,42 @@ double gse_height = 0.2800;
 
 Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
+void Mode::UploadKmatrices()
+{
+    std::cout << "Enter 0,1, or 2 to choose Launching K_matrix" << std::endl;
+    int launching_KMatrix;
+    std::cin >> launching_KMatrix;
+
+    std::cout << "Enter 0,1, or 2 to choose Landing K_matrix" << std::endl;
+    int landing_KMatrix;
+    std::cin >> landing_KMatrix;
+
+    switch (launching_KMatrix)
+    {
+    case 0:
+        LaunchKMatrix = "../k_matrix.csv";
+        break;
+    case 1:
+        LaunchKMatrix = "../k_matrix1.csv";
+        break;
+    case 2:
+        LaunchKMatrix = "../k_matrix2.csv";
+        break;
+    }
+
+    switch (landing_KMatrix)
+    {
+    case 0:
+        LandKMatrix = "../k_matrix.csv";
+        break;
+    case 1:
+        LandKMatrix = "../k_matrix1.csv";
+        break;
+    case 2:
+        LandKMatrix = "../k_matrix2.csv";
+        break;
+    }
+}
 Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controller, double currentTime)
 {
     static float XTVC = 0.0;
@@ -83,7 +119,8 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
     else if (command == RF::Command::GoIdle)
     {
         Telemetry::GetInstance().Log("Switching mode from calibration to idle");
-        controller.ImportControlParameters("../k_matrix.csv");
+        UploadKmatrices();
+        controller.ImportControlParameters(LaunchKMatrix);
         controller.Center();
         return Mode::Idle;
     }

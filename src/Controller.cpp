@@ -202,7 +202,6 @@ void Controller::ImportControlParameters(std::string file_name)
     }
 
     in.close();
-    std::cout << "Here" << std::endl;
 }
 
 // When we go into landing mode, reset the k_iteration_start_time and current_iteration_index
