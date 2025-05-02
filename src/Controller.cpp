@@ -10,7 +10,7 @@
 #include <iostream>
 #include <iomanip>
 
-Controller::Controller(TVC &inputTvc) : x_control(Eigen::Matrix<double, 8, 1>::Zero()), tvc(inputTvc) {}
+Controller::Controller(TVC &inputTvc) : x_control(Eigen::Matrix<double, 8, 1>::Zero()), controller_gain_times(10, 0), tvc(inputTvc) {}
 
 void Controller::Start(double current_time)
 {
@@ -186,7 +186,7 @@ void Controller::ImportControlParameters(std::string file_name)
     {
         std::getline(iterationTimeStringStream, item, separator); // This gets values delimited by commas in the string
 
-        controller_gain_times.push_back(stod(item));
+        controller_gain_times[i] = stod(item);
     }
 
     // Get the controller values of the k-matrix

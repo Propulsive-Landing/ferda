@@ -303,7 +303,7 @@ Mode::Phase Mode::UpdateFreefall(Navigation &navigation, Controller &controller,
     double c = currentState(5) * (motor_thrust_duration * motor_thrust_percentage) + currentState(2) + -9.81 * 0.5 * pow((motor_thrust_duration * motor_thrust_percentage), 2) + average_landing_throttle * second_motor_delta_x - gse_height;
 
     double time_till_second_ignite = (-b - sqrt(pow(b, 2) - 4 * a * c)) / (2 * a);
-
+    
     // Check to see if we should ignite
     if (time_till_second_ignite <= 0.0)
     {
@@ -316,6 +316,7 @@ Mode::Phase Mode::UpdateFreefall(Navigation &navigation, Controller &controller,
     // Start the controller before second ignition
     else if ((time_till_second_ignite <= MissionConstants::timeToStartControllerBeforeIgnite2))
     {
+        controller.ImportControlParameters(LandKMatrix);
         controller.ResetKIteration(currentTime);
         controller.UpdateLand(navigation, currentTime);
     }
