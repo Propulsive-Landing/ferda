@@ -207,6 +207,7 @@ void Controller::ImportControlParameters(std::string file_name)
 // When we go into landing mode, reset the k_iteration_start_time and current_iteration_index
 void Controller::ResetKIteration(double current_time)
 {
+    next_tvc_time = current_time;
     k_iteration_start_time = current_time;
     current_iteration_index = 0;
 }
