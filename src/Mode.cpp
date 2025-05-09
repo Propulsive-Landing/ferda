@@ -317,7 +317,7 @@ Mode::Phase Mode::UpdateLand(Navigation &navigation, Controller &controller, dou
     // Turn off ignitor after we have been in this function for 0.05 seconds
     if (seconds_since_start > 0.050)
     {
-        igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAUNCH);
+        igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAND);
     }
 
     // Continue to update navigation and controller
