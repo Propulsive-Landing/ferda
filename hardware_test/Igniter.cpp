@@ -7,7 +7,7 @@ void Igniter::Ignite(Igniter::IgnitionSpecifier ignite)
         std::cout << "Launch Motor Ignition Started" << "\n";
 
     else if (ignite == Igniter::IgnitionSpecifier::LAND)
-        std::cout << "Land" << "\n";
+        std::cout << "Land Motor Ignition Started" << "\n";
 
     return;
 }
@@ -20,6 +20,6 @@ void Igniter::DisableIgnite(Igniter::IgnitionSpecifier ignite)
     }
     else if (ignite == Igniter::IgnitionSpecifier::LAND)
     {
-        std::cout << "Launch" << "\n";
+        std::cout << "Disable Land Igniter" << "\n";
     }
 }
