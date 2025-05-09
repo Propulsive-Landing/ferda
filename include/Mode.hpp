@@ -13,8 +13,6 @@ public:
     enum Phase
     {
         Calibration,
-        GyroBiasOffset,
-        AccelBiasOffset,
         TestTVC,
         Idle,
         Launch,
@@ -26,17 +24,20 @@ public:
 
     Mode(Mode::Phase eInitialMode);
     bool Update(Navigation &navigation, Controller &controller, Igniter &igniter, IMU &imu);
+    std::string LaunchKMatrix;
+    std::string LandKMatrix;
 
 private:
     Mode::Phase eCurrentMode;
 
     Mode::Phase UpdateCalibration(Navigation &navigation, Controller &controller, double currentTime);
-    Mode::Phase GetGyroBiasOffset(Navigation &navigation, Controller &controller, IMU &imu, double currentTime);
-    Mode::Phase GetAccelBiasOffset(Navigation &navigation, Controller &controller, IMU &imu, double currentTime);
+    void GetGyroBiasOffset(Navigation &navigation, Controller &controller, IMU &imu, double currentTime);
+    void GetAccelBiasOffset(Navigation &navigation, Controller &controller, IMU &imu, double currentTime);
     Mode::Phase UpdateTestTVC(Navigation &navigation, Controller &controller, double currentTime);
-    Mode::Phase UpdateIdle(Navigation &navigation, Controller &controller, double currentTime);
+    Mode::Phase UpdateIdle(Navigation &navigation, Controller &controller, IMU &imu, double currentTime);
     Mode::Phase UpdateLaunch(Navigation &navigation, Controller &controller, Igniter &igniter, double current_time);
     Mode::Phase UpdateFreefall(Navigation &navigation, Controller &controller, Igniter &igniter, double currentTime);
-    Mode::Phase UpdateLand(Navigation &navigation, Controller &controller, double current_time);
+    Mode::Phase UpdateLand(Navigation &navigation, Controller &controller, double current_time, Igniter &igniter);
     Mode::Phase UpdateSafeMode(Navigation &navigation, Controller &controller, double currentTime);
+    void UploadKmatrices();
 };

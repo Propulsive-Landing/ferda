@@ -26,6 +26,42 @@ double gse_height = 0.2800;
 
 Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
+void Mode::UploadKmatrices()
+{
+    std::cout << "Enter 0,1, or 2 to choose Launching K_matrix" << std::endl;
+    int launching_KMatrix;
+    std::cin >> launching_KMatrix;
+
+    std::cout << "Enter 0,1, or 2 to choose Landing K_matrix" << std::endl;
+    int landing_KMatrix;
+    std::cin >> landing_KMatrix;
+
+    switch (launching_KMatrix)
+    {
+    case 0:
+        LaunchKMatrix = "../k_matrix.csv";
+        break;
+    case 1:
+        LaunchKMatrix = "../k_matrix1.csv";
+        break;
+    case 2:
+        LaunchKMatrix = "../k_matrix2.csv";
+        break;
+    }
+
+    switch (landing_KMatrix)
+    {
+    case 0:
+        LandKMatrix = "../k_matrix.csv";
+        break;
+    case 1:
+        LandKMatrix = "../k_matrix1.csv";
+        break;
+    case 2:
+        LandKMatrix = "../k_matrix2.csv";
+        break;
+    }
+}
 Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controller, double currentTime)
 {
     static float XTVC = 0.0;
@@ -76,30 +112,17 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
     if (command == RF::Command::TestTVC)
     {
         Telemetry::GetInstance().Log("Switching mode from calibration to test tvc");
-        controller.ImportControlParameters("../k_matrix.csv");
+        controller.ImportControlParameters(LaunchKMatrix);
         controller.Center();
         return Mode::TestTVC;
     }
     else if (command == RF::Command::GoIdle)
     {
         Telemetry::GetInstance().Log("Switching mode from calibration to idle");
-        controller.ImportControlParameters("../k_matrix.csv");
+        UploadKmatrices();
+        controller.ImportControlParameters(LaunchKMatrix);
         controller.Center();
         return Mode::Idle;
-    }
-    else if (command == RF::Command::AccelBias)
-    {
-        Telemetry::GetInstance().Log("Switching mode from calibration to AccelBias");
-        controller.ImportControlParameters("../k_matrix.csv");
-        controller.Center();
-        return Mode::AccelBiasOffset;
-    }
-    else if (command == RF::Command::GyroBias)
-    {
-        Telemetry::GetInstance().Log("Switching mode from calibration to GyroBias");
-        controller.ImportControlParameters("../k_matrix.csv");
-        controller.Center();
-        return Mode::GyroBiasOffset;
     }
     else if (command == RF::Command::ABORT)
     {
@@ -110,7 +133,7 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
     return Mode::Calibration;
 }
 
-Mode::Phase Mode::GetAccelBiasOffset(Navigation &navigation, Controller &controller, IMU &imu, double currentTime)
+void Mode::GetAccelBiasOffset(Navigation &navigation, Controller &controller, IMU &imu, double currentTime)
 {
     static int loops = 1;
     std::tuple<double, double, double> accel = imu.GetBodyAcceleration();
@@ -131,14 +154,12 @@ Mode::Phase Mode::GetAccelBiasOffset(Navigation &navigation, Controller &control
         imu.SetAccelBiasX(-accel_x);
         imu.SetAccelBiasY(-accel_y);
         imu.SetAccelBiasZ(-accel_z);
-        return Mode::Idle;
     }
 
     ++loops;
-    return Mode::AccelBiasOffset;
 }
 
-Mode::Phase Mode::GetGyroBiasOffset(Navigation &navigation, Controller &controller, IMU &imu, double currentTime)
+void Mode::GetGyroBiasOffset(Navigation &navigation, Controller &controller, IMU &imu, double currentTime)
 {
     static int loops = 1;
     std::tuple<double, double, double> gyro = imu.GetBodyAngularRate();
@@ -159,11 +180,9 @@ Mode::Phase Mode::GetGyroBiasOffset(Navigation &navigation, Controller &controll
         imu.SetGyroBiasX(-gyro_x);
         imu.SetGyroBiasY(-gyro_y);
         imu.SetGyroBiasZ(-gyro_z);
-        return Mode::Idle;
     }
 
     ++loops;
-    return Mode::GyroBiasOffset;
 }
 
 Mode::Phase Mode::UpdateTestTVC(Navigation &navigation, Controller &controller, double currentTime)
@@ -190,7 +209,7 @@ Mode::Phase Mode::UpdateTestTVC(Navigation &navigation, Controller &controller, 
     return Mode::TestTVC;
 }
 
-Mode::Phase Mode::UpdateIdle(Navigation &navigation, Controller &controller, double currentTime)
+Mode::Phase Mode::UpdateIdle(Navigation &navigation, Controller &controller, IMU &imu, double currentTime)
 {
 
     navigation.UpdateNavigation();
@@ -205,6 +224,8 @@ Mode::Phase Mode::UpdateIdle(Navigation &navigation, Controller &controller, dou
     else if (command == RF::Command::Ignite)
     {
         Telemetry::GetInstance().Log("Switching mode from idle to launch");
+        // GetAccelBiasOffset(navigation, controller, imu, currentTime);
+        // GetGyroBiasOffset(navigation, controller, imu, currentTime);
         navigation.reset();
         return Mode::Launch;
     }
@@ -217,8 +238,8 @@ Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, I
     // Launch rocket and start Controller on first iteration
     static double startTime = currentTime;
     double seconds_since_start = currentTime - startTime;
-
     static int startup = 1;
+
     if (startup == 1)
     {
         Telemetry::GetInstance().Log("Igniting MOTOR");
@@ -240,7 +261,6 @@ Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, I
     // If z acceleration is negative and the z height is not the starting height, then we should go to freefall
     if (testState(5) < -1 && testState(2) > 2)
     {
-        std::cout << "We are switching to freefall" << "\n";
         Telemetry::GetInstance().Log("Switching mode from launch to freefall");
         controller.Center();
         return Mode::Freefall;
@@ -250,6 +270,7 @@ Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, I
 
 Mode::Phase Mode::UpdateFreefall(Navigation &navigation, Controller &controller, Igniter &igniter, double currentTime)
 {
+
     // Continue to update navigation
     navigation.UpdateNavigation();
 
@@ -273,12 +294,13 @@ Mode::Phase Mode::UpdateFreefall(Navigation &navigation, Controller &controller,
         controller.ResetKIteration(currentTime);
         controller.UpdateLand(navigation, currentTime);
         igniter.Ignite(Igniter::IgnitionSpecifier::LAND);
-        std::cout << "Switching from Freefall to Land" << "\n";
+        Telemetry::GetInstance().Log("Switching from Freefall to Land");
         return Mode::Land;
     }
     // Start the controller before second ignition
     else if ((time_till_second_ignite <= MissionConstants::timeToStartControllerBeforeIgnite2))
     {
+        controller.ImportControlParameters(LandKMatrix);
         controller.ResetKIteration(currentTime);
         controller.UpdateLand(navigation, currentTime);
     }
@@ -286,8 +308,18 @@ Mode::Phase Mode::UpdateFreefall(Navigation &navigation, Controller &controller,
     return Mode::Freefall;
 }
 
-Mode::Phase Mode::UpdateLand(Navigation &navigation, Controller &controller, double currentTime)
+Mode::Phase Mode::UpdateLand(Navigation &navigation, Controller &controller, double currentTime, Igniter &igniter)
 {
+    // Create variables to hold time difference since being in this function
+    static double startTime = currentTime;
+    double seconds_since_start = currentTime - startTime;
+
+    // Turn off ignitor after we have been in this function for 0.05 seconds
+    if (seconds_since_start > 0.050)
+    {
+        igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAUNCH);
+    }
+
     // Continue to update navigation and controller
     navigation.UpdateNavigation();
     controller.UpdateLand(navigation, currentTime);
@@ -329,21 +361,13 @@ bool Mode::Update(Navigation &navigation, Controller &controller, Igniter &ignit
         // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
         this->eCurrentMode = UpdateCalibration(navigation, controller, currentTime);
         break;
-    case AccelBiasOffset:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
-        this->eCurrentMode = GetAccelBiasOffset(navigation, controller, imu, currentTime);
-        break;
-    case GyroBiasOffset:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
-        this->eCurrentMode = GetGyroBiasOffset(navigation, controller, imu, currentTime);
-        break;
     case TestTVC:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
         this->eCurrentMode = UpdateTestTVC(navigation, controller, currentTime);
         break;
     case Idle:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
-        this->eCurrentMode = UpdateIdle(navigation, controller, currentTime);
+        this->eCurrentMode = UpdateIdle(navigation, controller, imu, currentTime);
         break;
     case Launch:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
@@ -355,7 +379,7 @@ bool Mode::Update(Navigation &navigation, Controller &controller, Igniter &ignit
         break;
     case Land:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
-        this->eCurrentMode = UpdateLand(navigation, controller, currentTime);
+        this->eCurrentMode = UpdateLand(navigation, controller, currentTime, igniter);
         break;
     case Safe:
         this->eCurrentMode = UpdateSafeMode(navigation, controller, currentTime);
