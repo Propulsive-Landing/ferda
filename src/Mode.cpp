@@ -21,7 +21,7 @@ double offset = 0.45;
 double motor_thrust_duration = 2.09;
 double motor_thrust_percentage = 1;
 double fsw_clamp_time = 0.300;
-double second_motor_delta_x = 24.0477;
+double second_motor_delta_x = 25.96;
 double gse_height = 0.2800;
 
 Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
