@@ -39,26 +39,26 @@ void Mode::UploadKmatrices()
     switch (launching_KMatrix)
     {
     case 0:
-        LaunchKMatrix = "../k_matrix.csv";
+        LaunchKMatrix = "../Normal_Launch.csv";
         break;
     case 1:
-        LaunchKMatrix = "../k_matrix1.csv";
+        LaunchKMatrix = "../Lazy_Launch.csv";
         break;
     case 2:
-        LaunchKMatrix = "../k_matrix2.csv";
+        LaunchKMatrix = "../Aggressive_Launch.csv";
         break;
     }
 
     switch (landing_KMatrix)
     {
     case 0:
-        LandKMatrix = "../k_matrix.csv";
+        LandKMatrix = "../Normal_Land.csv";
         break;
     case 1:
-        LandKMatrix = "../k_matrix1.csv";
+        LandKMatrix = "../Lazy_Land.csv";
         break;
     case 2:
-        LandKMatrix = "../k_matrix2.csv";
+        LandKMatrix = "../Aggressive_Land.csv";
         break;
     }
 }
