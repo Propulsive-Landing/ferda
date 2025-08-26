@@ -112,6 +112,7 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
     if (command == RF::Command::TestTVC)
     {
         Telemetry::GetInstance().Log("Switching mode from calibration to test tvc");
+        UploadKmatrices();
         controller.ImportControlParameters(LaunchKMatrix);
         controller.Center();
         return Mode::TestTVC;
@@ -242,7 +243,7 @@ Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, I
 
     if (startup == 1)
     {
-        Telemetry::GetInstance().Log("Igniting MOTOR");
+        Telemetry::GetInstance().Log("Igniting LAUNCH MOTOR");
         igniter.Ignite(Igniter::IgnitionSpecifier::LAUNCH);
         controller.Start(seconds_since_start);
         startup = 0;
@@ -293,12 +294,13 @@ Mode::Phase Mode::UpdateFreefall(Navigation &navigation, Controller &controller,
     {
         controller.ResetKIteration(currentTime);
         controller.UpdateLand(navigation, currentTime);
+        Telemetry::GetInstance().Log("Igniting LAND MOTOR");
         igniter.Ignite(Igniter::IgnitionSpecifier::LAND);
         Telemetry::GetInstance().Log("Switching from Freefall to Land");
         return Mode::Land;
     }
     // Start the controller before second ignition
-    else if ((time_till_second_ignite <= MissionConstants::timeToStartControllerBeforeIgnite2))
+    else if (time_till_second_ignite <= MissionConstants::timeToStartControllerBeforeIgnite2)
     {
         controller.ImportControlParameters(LandKMatrix);
         controller.ResetKIteration(currentTime);
@@ -358,7 +360,7 @@ bool Mode::Update(Navigation &navigation, Controller &controller, Igniter &ignit
     switch (this->eCurrentMode)
     {
     case Calibration:
-        // Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
         this->eCurrentMode = UpdateCalibration(navigation, controller, currentTime);
         break;
     case TestTVC:
