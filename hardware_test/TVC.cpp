@@ -3,10 +3,9 @@
 #include <iostream>
 #include <string>
 
-
 void TVC::SetTVCX(double dAngle)
 {
-    dAngle += 90 + MissionConstants::kTvcYCenterAngle;
+    dAngle += 90 + MissionConstants::kTvcYCenterAngleDeg;
     dAngle = (dAngle < 0) ? 0 : dAngle;
     dAngle = (dAngle > 180) ? 180 : dAngle;
 
@@ -14,11 +13,9 @@ void TVC::SetTVCX(double dAngle)
     std::cout << "Wrote angle to X: " + std::to_string(dAngle) + " PW: " + std::to_string(dPulseWidth) + "\n";
 }
 
-
-
 void TVC::SetTVCY(double dAngle)
 {
-    dAngle += 90 + MissionConstants::kTvcYCenterAngle;
+    dAngle += 90 + MissionConstants::kTvcYCenterAngleDeg;
     dAngle = (dAngle < 0) ? 0 : dAngle;
     dAngle = (dAngle > 180) ? 180 : dAngle;
 

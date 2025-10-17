@@ -22,9 +22,11 @@ Create features in branches originating from the `dev` branch. When a feature is
 
 1. Clone this repo.
 2. Install the CMake Tools extension on VS Code.
-3. Run `sudo apt install libeigen3-dev`.
-4. Build the repo (ensure you're in either debug or release mode depending on your need).
-5. Run the executable that gets created in the `build/` folder.
+3. Run `sudo apt install`
+4. Run `sudo apt update`
+5. Run `sudo apt install libeigen3-dev`.
+6. Build the repo (ensure you're in either debug or release mode depending on your need).
+7. Run the executable that gets created in the `build/` folder.
 
 ## Building the Source Code
 

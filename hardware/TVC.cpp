@@ -4,33 +4,31 @@
 
 #include <pigpio.h>
 #include <math.h>
+#include <algorithm>
 #include <MissionConstants.hpp>
-
+#include <iostream>
+#include <string>
 
 void TVC::SetTVCX(double angle_rad)
 {
-    double degrees = angle_rad * MissionConstants::kRad2Deg;
-    double servoAngle = -.000095801*powf(degrees, 4) - .0027781*powf(degrees, 3) + .0012874*powf(degrees, 2) - 3.1271*degrees -16.129;
+    angle_rad = std::clamp(angle_rad, -10.0 * MissionConstants::kDeg2Rad, 10.0 * MissionConstants::kDeg2Rad);
+    double degrees = (MissionConstants::kTvcXInputCenterAngleRad + angle_rad) * MissionConstants::kRad2Deg;
 
-    servoAngle += 90 + MissionConstants::kTvcXCenterAngle;
-    servoAngle = (servoAngle < 0) ? 0 : servoAngle;
-    servoAngle = (servoAngle > 180) ? 180 : servoAngle;
+    double servoAngle = -.000095801*powf(degrees, 4) - .0027781*powf(degrees, 3) + .0012874*powf(degrees, 2) - 3.1271*degrees -16.129;
+    servoAngle += 90 + MissionConstants::kTvcXCenterAngleDeg;
 
     double dPulseWidth = 1000 + (servoAngle * 1000 / 180.0);
-    gpioServo(16, round(dPulseWidth));
+    gpioServo(23, round(dPulseWidth));
 }
 
 void TVC::SetTVCY(double angle_rad)
 {
-
-    double degrees = angle_rad * MissionConstants::kRad2Deg;
+    angle_rad = std::clamp(angle_rad, -10.0 * MissionConstants::kDeg2Rad, 10.0 * MissionConstants::kDeg2Rad);
+    double degrees = (MissionConstants::kTvcYInputCenterAngleRad + angle_rad) * MissionConstants::kRad2Deg;
+    
     double servoAngle = - .0002314576*powf(degrees, 4) - .002425139*powf(degrees, 3) - .01204116*powf(degrees, 2) - 2.959760*degrees + 57.18794;
-
-
-    servoAngle += 90 + MissionConstants::kTvcYCenterAngle;
-    servoAngle = (servoAngle < 0) ? 0 : servoAngle;
-    servoAngle = (servoAngle > 180) ? 180 : servoAngle;
+    servoAngle += 90 + MissionConstants::kTvcYCenterAngleDeg;
 
     double dPulseWidth = 1000 + (servoAngle * 1000 / 180.0);
-    gpioServo(18, round(dPulseWidth));
+    gpioServo(24, round(dPulseWidth));
 }

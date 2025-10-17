@@ -9,15 +9,14 @@
 #include "Navigation.hpp"
 #include "MissionConstants.hpp"
 
-
-class Controller{
+class Controller
+{
 
 private:
     std::vector<std::vector<double>> euler_queue;
     Eigen::Matrix<double, 8, 1> x_control;
-    Eigen::Matrix<double, 2* MissionConstants::kNumberControllerGains, 8> controller_gains; 
+    Eigen::Matrix<double, 2 * MissionConstants::kNumberControllerGains, 8> controller_gains;
     double next_tvc_time;
-    double tvc_start_time;
     double k_iteration_start_time;
     std::vector<float> controller_gain_times;
     // Eigen::Vector2d tvc_angles; [TODO MOVE TO HARDWARE]
@@ -27,13 +26,11 @@ public:
     TVC tvc;
     Eigen::Vector2d input;
     double loopTime = 0.005;
-    Controller(TVC& tvc);   
-    void UpdateLaunch(Navigation& navigation, double current_time);
+    Controller(TVC &tvc);
+    void UpdateLaunch(Navigation &navigation, double current_time);
     void UpdateTestTVC(double testTime);
-
     void UpdateLand(Navigation &navigation, double current_time);
-    void stabilizeAtOffset(Navigation& navigation, double current_time, double offset);
-
+    void stabilizeAtCenter(Navigation &navigation, double current_time);
     void UpdateSafe();
     void GetNextController_Gain_Time_Index(double startTime);
     void CalculateInput();
@@ -42,6 +39,7 @@ public:
     void Center();
     void ImportControlParameters(std::string file_name);
     void ResetKIteration(double current_time);
-    Eigen::Matrix<double, 2, 8>  GetCurrentKMatrix();
-
+    int GetCurrentIterationIndex();
+    Eigen::Matrix<double, 2, 8> GetCurrentKMatrix();
+    Eigen::Matrix<double, 2, 1> GetCurrentTVCCommand();
 };

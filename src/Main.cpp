@@ -18,23 +18,25 @@
 #include <tuple>
 
 #ifdef NDEBUG
-    #include <pigpio.h>
+#include <pigpio.h>
 #endif
 
 int main()
 {
-    #ifdef NDEBUG
-        if (gpioInitialise() < 0)
-            throw std::runtime_error("failed to initialize gpio");
+#ifdef NDEBUG
+    if (gpioInitialise() < 0)
+        throw std::runtime_error("failed to initialize gpio");
 
-        gpioSetMode(6, PI_OUTPUT);
+    gpioSetMode(5, PI_OUTPUT);
+    gpioSetMode(6, PI_OUTPUT);
 
-        gpioSetMode(18, PI_OUTPUT);
-        gpioSetMode(16, PI_OUTPUT);
+    gpioSetMode(23, PI_OUTPUT);
+    gpioSetMode(24, PI_OUTPUT);
 
+    gpioWrite(5, 1);
+    gpioWrite(6, 1);
 
-        gpioWrite(6, 1);
-    #endif
+#endif
 
     IMU imu;
     Barometer barometer;
@@ -50,19 +52,13 @@ int main()
 
     Mode mode(Mode::Calibration);
 
+    while (mode.Update(navigation, controller, igniter, imu))
+    {
+    }
 
-
-    while(mode.Update(navigation, controller, igniter)) {}
-
-    //#ifdef NDEBUG
-    //    gpioTerminate();
-   // #endif
-
-
-
-
-
-
+    // #ifdef NDEBUG
+    //     gpioTerminate();
+    // #endif
 
     return 0;
 }
