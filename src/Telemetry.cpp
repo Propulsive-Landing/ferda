@@ -105,6 +105,25 @@ void Telemetry::RfSendFrame(Navigation& navigation, Controller& controller)
     RF::GetInstance().SendString(json_msg.dump());
 }
 
+void Telemetry::RfSendLiquidPropulsionData(PressureTransducer& pt, LoadCell& lc)
+{
+    // Match the original hotfire.ino data structure
+    // Original struct: header (uint32_t), 8 floats, footer (uint32_t)
+    json json_msg;
+    json_msg["data_type"] = "liquid_telem";
+    json_msg["payload"] = {
+        pt.ReadPSI2(PressureTransducer::NitrogenLine),    // 0-1000 PSI
+        pt.ReadPSI2(PressureTransducer::EthanolTank),     // 0-1000 PSI
+        pt.ReadPSI2(PressureTransducer::NitrousLine),     // 0-1000 PSI
+        pt.ReadPSI(PressureTransducer::OxygenLine),        // 0-200 PSI
+        pt.ReadPSI2(PressureTransducer::FuelInlet),        // 0-1000 PSI
+        pt.ReadPSI2(PressureTransducer::FuelOutlet),       // 0-1000 PSI
+        pt.ReadPSI2(PressureTransducer::ChamberPressure),  // 0-1000 PSI
+        lc.ReadLBS()                                       // Load cell in pounds
+    };
+    
+    RF::GetInstance().SendString(json_msg.dump());
+}
 
 void Telemetry::RunTelemetry(Navigation& navigation, Controller& controller, float HardwareSaveDelta, float RFSaveDelta) {
        
