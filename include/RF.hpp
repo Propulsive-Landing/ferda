@@ -32,7 +32,27 @@ public:
         DecrementXTVC,
         DecrementYTVC,
         AccelBias,
-        GyroBias
+        GyroBias,
+        // Liquid Propulsion Commands
+        ValveNitrogenOpen,
+        ValveNitrogenClose,
+        ValvePurgeOpen,
+        ValvePurgeClose,
+        ValveMainEthanolOpen,
+        ValveMainEthanolClose,
+        ValveMainNitrousOpen,
+        ValveMainNitrousClose,
+        ValveASIEthanolOpen,
+        ValveASIEthanolClose,
+        ValveASIOxygenOpen,
+        ValveASIOxygenClose,
+        ValveNitrogenBleedOpen,
+        ValveNitrogenBleedClose,
+        SparkOn,
+        SparkOff,
+        ASITest,
+        WaterFlow,
+        GoHotfireIdle
     };
 
     RF::Command ParseCommand(std::string input_line)
@@ -68,6 +88,45 @@ public:
             ParsedCommand = RF::Command::DecrementYTVC;
         else if (input_line == "Release")
             ParsedCommand = RF::Command::Release;
+        // Liquid Propulsion Commands
+        else if (input_line == "VALVE: nitrogen open")
+            ParsedCommand = RF::Command::ValveNitrogenOpen;
+        else if (input_line == "VALVE: nitrogen close")
+            ParsedCommand = RF::Command::ValveNitrogenClose;
+        else if (input_line == "VALVE: purge open")
+            ParsedCommand = RF::Command::ValvePurgeOpen;
+        else if (input_line == "VALVE: purge close")
+            ParsedCommand = RF::Command::ValvePurgeClose;
+        else if (input_line == "VALVE: main ethanol open")
+            ParsedCommand = RF::Command::ValveMainEthanolOpen;
+        else if (input_line == "VALVE: main ethanol close")
+            ParsedCommand = RF::Command::ValveMainEthanolClose;
+        else if (input_line == "VALVE: main nitrous open")
+            ParsedCommand = RF::Command::ValveMainNitrousOpen;
+        else if (input_line == "VALVE: main nitrous close")
+            ParsedCommand = RF::Command::ValveMainNitrousClose;
+        else if (input_line == "VALVE: ASI ethanol open")
+            ParsedCommand = RF::Command::ValveASIEthanolOpen;
+        else if (input_line == "VALVE: ASI ethanol close")
+            ParsedCommand = RF::Command::ValveASIEthanolClose;
+        else if (input_line == "VALVE: ASI oxygen open")
+            ParsedCommand = RF::Command::ValveASIOxygenOpen;
+        else if (input_line == "VALVE: ASI oxygen close")
+            ParsedCommand = RF::Command::ValveASIOxygenClose;
+        else if (input_line == "VALVE: nitrogen bleed open")
+            ParsedCommand = RF::Command::ValveNitrogenBleedOpen;
+        else if (input_line == "VALVE: nitrogen bleed close")
+            ParsedCommand = RF::Command::ValveNitrogenBleedClose;
+        else if (input_line == "SPARK: on")
+            ParsedCommand = RF::Command::SparkOn;
+        else if (input_line == "SPARK: off")
+            ParsedCommand = RF::Command::SparkOff;
+        else if (input_line == "asitest")
+            ParsedCommand = RF::Command::ASITest;
+        else if (input_line == "waterflow")
+            ParsedCommand = RF::Command::WaterFlow;
+        else if (input_line == "GoHotfireIdle")
+            ParsedCommand = RF::Command::GoHotfireIdle;
         else
             ParsedCommand = RF::Command::None;
 
