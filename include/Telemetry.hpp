@@ -4,6 +4,8 @@
 
 #include "Mode.hpp"
 #include "Navigation.hpp"
+#include "PressureTransducer.hpp"
+#include "LoadCell.hpp"
 
 class Telemetry {
     private:
@@ -13,6 +15,7 @@ class Telemetry {
 
         void HardwareSaveFrame(Navigation& navigation, Controller& controller);
         void RfSendFrame(Navigation& navigation, Controller& controller);
+        void RfSendLiquidPropulsionData(PressureTransducer& pt, LoadCell& lc);
 
     public:
         std::ofstream Logs;
