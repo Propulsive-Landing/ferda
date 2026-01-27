@@ -50,9 +50,3 @@ double PressureTransducer::ReadPSI(PTSensor sensor)
     }
     return ReadSensor(pin, maxPSI);
 }
-
-double PressureTransducer::ReadPSI2(PTSensor sensor)
-{
-    return ReadPSI(sensor); // Same implementation for test
-}
-

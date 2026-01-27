@@ -11,15 +11,15 @@ double PressureTransducer::ReadSensor(int pin, double maxPSI)
     // Placeholder: Replace with actual ADC reading
     // Example implementation would be:
     // uint16_t rawVal = readADC(pin); // Read from your ADC hardware
-    
+
     // For now, return 0.0 - this MUST be implemented for actual hardware
     uint16_t rawVal = 0; // TODO: Read from actual ADC
-    
+
     // Convert to voltage (0.0 to 5.0 volts)
     // Original: (float)rawVal / 204.6 for 0-1023 range mapped to 0-5V
     // For 10-bit ADC: 1023 / 5.0 = 204.6
     float rawVolt = (float)rawVal / 204.6;
-    
+
     // Clamp voltage to sensor range (0.5V to 4.5V)
     if (rawVolt < 0.5)
     {
@@ -29,13 +29,13 @@ double PressureTransducer::ReadSensor(int pin, double maxPSI)
     {
         rawVolt = 4.5;
     }
-    
+
     // Normalize from 0.0 to 1.0 (0.5V = 0.0, 4.5V = 1.0)
     float normalized = (rawVolt - 0.5) / (4.5 - 0.5);
-    
+
     // Convert to PSI
     float psi = normalized * maxPSI;
-    
+
     return psi;
 }
 
@@ -43,7 +43,7 @@ double PressureTransducer::ReadPSI(PTSensor sensor)
 {
     int pin;
     double maxPSI = 200.0; // Default for low-pressure sensors
-    
+
     switch (sensor)
     {
     case NitrogenLine:
@@ -79,33 +79,3 @@ double PressureTransducer::ReadPSI(PTSensor sensor)
     }
     return ReadSensor(pin, maxPSI);
 }
-
-double PressureTransducer::ReadPSI2(PTSensor sensor)
-{
-    int pin;
-    switch (sensor)
-    {
-    case NitrogenLine:
-        pin = MissionConstants::kNitrogenLinePTPin;
-        break;
-    case EthanolTank:
-        pin = MissionConstants::kEthanolTankPTPin;
-        break;
-    case NitrousLine:
-        pin = MissionConstants::kNitrousLinePTPin;
-        break;
-    case FuelInlet:
-        pin = MissionConstants::kFuelInletPTPin;
-        break;
-    case FuelOutlet:
-        pin = MissionConstants::kFuelOutletPTPin;
-        break;
-    case ChamberPressure:
-        pin = MissionConstants::kChamberPressurePTPin;
-        break;
-    default:
-        return 0.0;
-    }
-    return ReadSensor(pin, 1000.0); // 0-1000 PSI range
-}
-

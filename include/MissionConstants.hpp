@@ -49,6 +49,7 @@ namespace MissionConstants
     const double weights_control_velocity = 0;
     const double weights_control_steady_state = 0;
     const double timeToStartControllerBeforeIgnite2 = 0.2;
+
     // Ignition constants, TODO: USER EDIT PRE-FlIGHT
     const int kIgnitionPin = 6;
 
@@ -58,31 +59,31 @@ namespace MissionConstants
     const int kPurgeServoPin = 0;
     const int kMainEthanolServoPin = 11;
     const int kMainNitrousServoPin = 0;
-    
+
     // Valve Solenoid Pins (GPIO)
     const int kASIEthanolPin = 0;
     const int kASIOxygenPin = 5;
     const int kNitrogenBleedPin = 0;
-    
+
     // Spark Plug Pins
-    const int kSparkPin = 0;  // Relay control
-    const int kRPMPin = 0;    // PWM output
-    
+    const int kSparkPin = 0; // Relay control
+    const int kRPMPin = 0;   // PWM output
+
     // Pressure Transducer Pins (Analog)
-    const int kNitrogenLinePTPin = 0;      // A0
-    const int kEthanolTankPTPin = 0;       // A0
-    const int kNitrousLinePTPin = 0;       // A0
-    const int kOxygenLinePTPin = 0;        // A0
-    const int kFuelInletPTPin = 0;         // A0
-    const int kFuelOutletPTPin = 0;        // A0
-    const int kChamberPressurePTPin = 0;   // A0
-    
+    const int kNitrogenLinePTPin = 0;    // A0
+    const int kEthanolTankPTPin = 0;     // A0
+    const int kNitrousLinePTPin = 0;     // A0
+    const int kOxygenLinePTPin = 0;      // A0
+    const int kFuelInletPTPin = 0;       // A0
+    const int kFuelOutletPTPin = 0;      // A0
+    const int kChamberPressurePTPin = 0; // A0
+
     // Load Cell Pin (Analog)
-    const int kLoadCellPin = 0;  // A0
-    
+    const int kLoadCellPin = 0; // A0
+
     // Valve Servo Angles
-    const int kValveClosedAngle = 179;  // degrees
-    const int kValveOpenAngle = 91;     // degrees
+    const int kValveClosedAngle = 179; // degrees
+    const int kValveOpenAngle = 91;    // degrees
 
     // Voltage reading, TODO: USER EDIT PRE-FLIGHT
     const double kR1 = 100000;
@@ -95,6 +96,12 @@ namespace MissionConstants
 
     // Time after launch until active stabalization begins.
     const float timeAtOffset = 0.0;
+
+    // Mode constants
+    const double motor_thrust_duration = 2.09;
+    const double motor_thrust_percentage = 1;
+    const double gse_height = 0.2800;
+    const double second_motor_delta_x = 25.96;
 
 } // MissionConstants
 

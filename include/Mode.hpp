@@ -31,20 +31,13 @@ public:
     };
 
     Mode(Mode::Phase eInitialMode);
-    bool Update(Navigation &navigation, Controller &controller, Igniter &igniter, IMU &imu);
+    bool Update(Navigation &navigation, Controller &controller, Igniter &igniter, IMU &imu, ValveControl &valveControl,
+                SparkPlug &sparkPlug, PressureTransducer &pressureTransducer, LoadCell &loadCell);
     std::string LaunchKMatrix;
     std::string LandKMatrix;
-    
-    // Liquid Propulsion Hardware (optional, only used in liquid states)
-    void SetLiquidPropulsionHardware(ValveControl* vc, SparkPlug* sp, PressureTransducer* pt, LoadCell* lc);
 
 private:
     Mode::Phase eCurrentMode;
-    // Liquid Propulsion Hardware (optional, only used in liquid states)
-    ValveControl* valveControl = nullptr;
-    SparkPlug* sparkPlug = nullptr;
-    PressureTransducer* pressureTransducer = nullptr;
-    LoadCell* loadCell = nullptr;
 
     Mode::Phase UpdateCalibration(Navigation &navigation, Controller &controller, double currentTime);
     void GetGyroBiasOffset(Navigation &navigation, Controller &controller, IMU &imu, double currentTime);
@@ -57,7 +50,7 @@ private:
     Mode::Phase UpdateSafeMode(Navigation &navigation, Controller &controller, double currentTime);
     void UploadKmatrices();
     // Liquid Propulsion State Updates
-    Mode::Phase UpdateHotfireIdle(Navigation &navigation, Controller &controller, double currentTime);
-    Mode::Phase UpdateASITest(Navigation &navigation, Controller &controller, double currentTime);
-    Mode::Phase UpdateWaterFlow(Navigation &navigation, Controller &controller, double currentTime);
+    Mode::Phase UpdateHotfireIdle(Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug);
+    Mode::Phase UpdateASITest(Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug, double currentTime);
+    Mode::Phase UpdateWaterFlow(Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug, double currentTime);
 };
