@@ -1,4 +1,5 @@
 #include "SparkPlug.hpp"
+#include "Telemetry.hpp"
 #include <pigpio.h>
 
 void SparkPlug::TurnOn()

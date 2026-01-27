@@ -1,4 +1,5 @@
 #include "ValveControl.hpp"
+#include "Telemetry.hpp"
 #include <pigpio.h>
 
 void ValveControl::OpenValve(ValveType valve)
