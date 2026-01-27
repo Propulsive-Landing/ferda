@@ -134,58 +134,6 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
     return Mode::Calibration;
 }
 
-void Mode::GetAccelBiasOffset(Navigation &navigation, Controller &controller, IMU &imu, double currentTime)
-{
-    static int loops = 1;
-    std::tuple<double, double, double> accel = imu.GetBodyAcceleration();
-    static double accel_x = 0;
-    static double accel_y = 0;
-    static double accel_z = 0;
-
-    accel_x += std::get<0>(accel);
-    accel_y += std::get<1>(accel);
-    accel_z += std::get<2>(accel);
-
-    if (loops == 100)
-    {
-        accel_x /= loops;
-        accel_y /= loops;
-        accel_z /= loops;
-
-        imu.SetAccelBiasX(-accel_x);
-        imu.SetAccelBiasY(-accel_y);
-        imu.SetAccelBiasZ(-accel_z);
-    }
-
-    ++loops;
-}
-
-void Mode::GetGyroBiasOffset(Navigation &navigation, Controller &controller, IMU &imu, double currentTime)
-{
-    static int loops = 1;
-    std::tuple<double, double, double> gyro = imu.GetBodyAngularRate();
-    static double gyro_x = 0;
-    static double gyro_y = 0;
-    static double gyro_z = 0;
-
-    gyro_x += std::get<0>(gyro);
-    gyro_y += std::get<1>(gyro);
-    gyro_z += std::get<2>(gyro);
-
-    if (loops == 100)
-    {
-        gyro_x /= loops;
-        gyro_y /= loops;
-        gyro_z /= loops;
-
-        imu.SetGyroBiasX(-gyro_x);
-        imu.SetGyroBiasY(-gyro_y);
-        imu.SetGyroBiasZ(-gyro_z);
-    }
-
-    ++loops;
-}
-
 Mode::Phase Mode::UpdateTestTVC(Navigation &navigation, Controller &controller, double currentTime)
 {
 
@@ -225,8 +173,6 @@ Mode::Phase Mode::UpdateIdle(Navigation &navigation, Controller &controller, IMU
     else if (command == RF::Command::Ignite)
     {
         Telemetry::GetInstance().Log("Switching mode from idle to launch");
-        // GetAccelBiasOffset(navigation, controller, imu, currentTime);
-        // GetGyroBiasOffset(navigation, controller, imu, currentTime);
         navigation.reset();
         return Mode::Launch;
     }
@@ -259,55 +205,15 @@ Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, I
 
     Eigen::Matrix<double, 12, 1> testState = navigation.GetNavigation();
 
+    //TODO: Update this
     // If z acceleration is negative and the z height is not the starting height, then we should go to freefall
     if (testState(5) < -1 && testState(2) > 2)
     {
-        Telemetry::GetInstance().Log("Switching mode from launch to freefall");
+        Telemetry::GetInstance().Log("Switching mode from launch to land");
         controller.Center();
-        return Mode::Freefall;
-    }
-    return Mode::Launch;
-}
-
-Mode::Phase Mode::UpdateFreefall(Navigation &navigation, Controller &controller, Igniter &igniter, double currentTime)
-{
-
-    // Continue to update navigation
-    navigation.UpdateNavigation();
-
-    // Get currentState
-    Eigen::Matrix<double, 12, 1> currentState = navigation.GetNavigation();
-
-    // If the current time is greater than the calibration time + motor thrust duration + and offset, then figure out the best time to ignite
-    // TODO THIS LOGIC IS BAD, CURRENT TIME IS VARIABLE DEPENDING ON LAUNCH PROCEDURE
-    double a = -9.81 / 2;
-    double b = currentState(5) + (-9.81 * (motor_thrust_duration * motor_thrust_percentage));
-
-    double average_landing_throttle = 1;
-
-    double c = currentState(5) * (motor_thrust_duration * motor_thrust_percentage) + currentState(2) + -9.81 * 0.5 * pow((motor_thrust_duration * motor_thrust_percentage), 2) + average_landing_throttle * second_motor_delta_x - gse_height;
-
-    double time_till_second_ignite = (-b - sqrt(pow(b, 2) - 4 * a * c)) / (2 * a);
-
-    // Check to see if we should ignite
-    if (time_till_second_ignite <= 0.0)
-    {
-        controller.ResetKIteration(currentTime);
-        controller.UpdateLand(navigation, currentTime);
-        Telemetry::GetInstance().Log("Igniting LAND MOTOR");
-        igniter.Ignite(Igniter::IgnitionSpecifier::LAND);
-        Telemetry::GetInstance().Log("Switching from Freefall to Land");
         return Mode::Land;
     }
-    // Start the controller before second ignition
-    else if (time_till_second_ignite <= MissionConstants::timeToStartControllerBeforeIgnite2)
-    {
-        controller.ImportControlParameters(LandKMatrix);
-        controller.ResetKIteration(currentTime);
-        controller.UpdateLand(navigation, currentTime);
-    }
-
-    return Mode::Freefall;
+    return Mode::Launch;
 }
 
 Mode::Phase Mode::UpdateLand(Navigation &navigation, Controller &controller, double currentTime, Igniter &igniter)
@@ -374,10 +280,6 @@ bool Mode::Update(Navigation &navigation, Controller &controller, Igniter &ignit
     case Launch:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
         this->eCurrentMode = UpdateLaunch(navigation, controller, igniter, currentTime);
-        break;
-    case Freefall:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
-        this->eCurrentMode = UpdateFreefall(navigation, controller, igniter, currentTime);
         break;
     case Land:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);

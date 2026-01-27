@@ -116,11 +116,10 @@ Our Custom PCB communicates with various sensors through different protocols whi
 
    # Define the symbolic links
    ACCEL_LINK="${HOME_DIR}/accel_device"
-   BAROMETER_LINK="${HOME_DIR}/barometer_device"
    GYROSCOPE_LINK="${HOME_DIR}/gyroscope_device"
 
    # Remove old links if they exist
-   rm -f "$ACCEL_LINK" "$BAROMETER_LINK" "$GYROSCOPE_LINK"
+   rm -f "$ACCEL_LINK" "$GYROSCOPE_LINK"
 
    log "Starting device linking script..."
 
@@ -133,10 +132,6 @@ Our Custom PCB communicates with various sensors through different protocols whi
                ln -s "$device" "$ACCEL_LINK"
                echo "IMU device found: $device"
                log "IMU device found and linked: $device"
-           elif [[ -f "$device/in_pressure_scale" ]]; then
-               ln -s "$device" "$BAROMETER_LINK"
-               echo "Barometer device found: $device"
-               log "Barometer device found and linked: $device"
            elif [[ -f "$device/in_anglvel_scale" ]]; then
                ln -s "$device" "$GYROSCOPE_LINK"
                echo "Gyroscope device found: $device"

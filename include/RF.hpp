@@ -30,9 +30,7 @@ public:
         IncrementXTVC,
         IncrementYTVC,
         DecrementXTVC,
-        DecrementYTVC,
-        AccelBias,
-        GyroBias
+        DecrementYTVC
     };
 
     RF::Command ParseCommand(std::string input_line)
@@ -48,10 +46,6 @@ public:
             ParsedCommand = RF::Command::ABORT;
         else if (input_line == "Startup")
             ParsedCommand = RF::Command::Startup;
-        else if (input_line == "AccelBias")
-            ParsedCommand = RF::Command::AccelBias;
-        else if (input_line == "GyroBias")
-            ParsedCommand = RF::Command::GyroBias;
         else if (input_line == "TestTVC")
             ParsedCommand = RF::Command::TestTVC;
         else if (input_line == "GoIdle")

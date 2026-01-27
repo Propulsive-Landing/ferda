@@ -5,6 +5,9 @@
 #include <vector>
 #include <tuple>
 #include "IMU.hpp"
+#include "Magnetometer.hpp"
+#include "Camera.hpp"
+#include "GPS.hpp"
 #include "Barometer.hpp"
 #include "TVC.hpp"
 
@@ -12,23 +15,46 @@ class Navigation
 {
 private:
     IMU &imu;
-    Barometer &barometer;
+    Magnetometer &magnetometer;
+    Camera &camera;
+    GPS &gps;
     TVC &tvc;
-    Eigen::Matrix<double, 12, 1> stateMat;
+    Eigen::Matrix<double, 16, 1> stateMat;
     std::deque<std::vector<double>> d_theta_queue_reckon;
     double pressureInit;
     std::tuple<double, double, double> linearAcceleration;
     std::tuple<double, double, double> angularRate;
+    std::tuple<double, double, double> magneticField;
+    std::tuple<double, double, double> gpsPosition;
+    std::tuple<double, double, double, double, double, double, double, double, double, double, double, double> cameraDirections;
+    void magnetometerUpdate(const Eigen::Vector3d& magneticField, const Eigen::Matrix3d& R);
+    void gpsUpdate(const Eigen::Vector3d& gpsPosition);
+    void cameraUpdate(const Eigen::Vector3d& cameraDirectionsVector, const Eigen::Matrix3d& R);
+    bool magnetometerAvailable;
+    bool gpsAvailable;
+    bool cameraAvailable;
 
 public:
     double loopTime = 0.005;
-    Navigation(IMU &imu, Barometer &barometer, TVC &tvc);
+    Navigation(IMU &imu, Magnetometer &magnetometer, Camera &camera, GPS &gps, TVC &tvc);
     void reset();
-    Eigen::Matrix<double, 12, 1> GetNavigation(); // Defintion of state matrix: TODO (determine dimensions and document form)
+    Eigen::MatrixXd P;
+    Eigen::Matrix<double, 16, 1> GetNavigation(); // Defintion of state matrix: TODO (determine dimensions and document form)
     void UpdateNavigation();                      // Defintion updates: TODO (determine dimensions and document form)
     std::tuple<double, double, double> ComputeAngularRollingAverage(std::vector<double> d_theta_now);
+    Eigen::Vector3d x_e, v_e;
+    Eigen::Quaterniond q;
+    Eigen::Vector3d a_b, w_b;
     Eigen::Matrix3d CreateRotationalMatrix(double phi, double theta, double psi);
-    double GetHeight();
+    Eigen::Matrix3d skew(const Eigen::Vector3d& v);
+    void kalmanUpdate(
+        const Eigen::MatrixXd& H,
+        const Eigen::MatrixXd& V,
+        const Eigen::VectorXd& y,
+        const Eigen::VectorXd& y_pred);
     std::tuple<double, double, double> GetLinearAcceleration();
     std::tuple<double, double, double> GetAngularAcceleration();
+    std::tuple<double, double, double> GetMagneticField();
+    std::tuple<double, double, double> GetPosition();
+    std::tuple<double, double, double, double, double, double, double, double, double, double, double, double> GetUnitVectors();
 };

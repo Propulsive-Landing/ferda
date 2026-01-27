@@ -9,41 +9,26 @@
 #include "Navigation.hpp"
 #include "MissionConstants.hpp"
 
-Navigation::Navigation(IMU &inputImu, Barometer &inputBarometer, TVC &inputTvc) : imu(inputImu), barometer(inputBarometer), tvc(inputTvc)
+Navigation::Navigation(IMU &inputImu, Magnetometer &inputMagnetometer, Camera &inputCamera, GPS &inputGps, TVC &inputTvc) : imu(inputImu), magnetometer(inputMagnetometer), gps(inputGps), camera(inputCamera), tvc(inputTvc)
 {
     std::cout << std::setprecision(4) << std::fixed;
-    stateMat = Eigen::Matrix<double, 12, 1>::Zero();
+    stateMat = Eigen::Matrix<double, 16, 1>::Zero();
     // Set z position to rocket com
     stateMat(2) = 0.28;
-    pressureInit = barometer.GetPressure();
+    // Initializes Quaternion to [1,0,0,0] equivalent to 0 roll, 0 pitch, 0 yaw
+    stateMat(6) = 1;
 }
 
 void Navigation::reset()
 {
-    stateMat = Eigen::Matrix<double, 12, 1>::Zero();
+    stateMat = Eigen::Matrix<double, 16, 1>::Zero();
     stateMat(2) = 0.28;
-
-    // Set euler angle to 5 degree offset, only if stability test
-    if (MissionConstants::isStabilityTest)
-    {
-        stateMat(7) = MissionConstants::originalOffsetAngle; // Theta
-    }
-
-    d_theta_queue_reckon.clear();
+    stateMat(6) = 1;
 }
 
-Eigen::Matrix<double, 12, 1> Navigation::GetNavigation()
+Eigen::Matrix<double, 16, 1> Navigation::GetNavigation()
 {
     return stateMat;
-}
-
-double Navigation::GetHeight()
-{
-    double pressure = barometer.GetPressure();
-    double temp = barometer.GetTemperature();
-    temp += 273.15; // Convert to K;
-    return (log(pressure / pressureInit) * 8.3145 * temp) / (0.02897 * -9.81);
-    // Pressure is in kpa
 }
 
 // Function to write a double to a CSV file
@@ -69,7 +54,21 @@ void writeDoubleToCSV(double myDouble1, double myDouble2, double myDouble3, doub
 
 void Navigation::UpdateNavigation()
 {
-    // Updates stateMat //
+    // Extract states from stateMat //
+    x_e = stateMat.segment(0, 3);
+    v_e = stateMat.segment(3, 3);
+    q = Eigen::Quaterniond(
+        stateMat(6),   // w
+        stateMat(7),   // x
+        stateMat(8),   // y
+        stateMat(9)    // z
+    );
+    q.normalize();
+    a_b = stateMat.segment(10, 3);
+    w_b = stateMat.segment(13, 3);
+
+    Eigen::Matrix3d R = q.toRotationMatrix();
+    Eigen::Vector3d g(0, 0, -9.81);
 
     // Create 2 tuples to hold the the linear acceleration and angular rate data from the imu
     linearAcceleration = imu.GetBodyAcceleration();
@@ -77,95 +76,139 @@ void Navigation::UpdateNavigation()
 
     // std::cout << "Accel Z:" << std::to_string(std::get<2>(linearAcceleration)) << " gyroX: " << std::to_string(std::get<0>(angularRate)) << "\n";
     // Convert the linear acceleration tuple to a Vector so we can muliply the Eigen matrix R by another Eigen type which in this case is a vector
-    Eigen::Vector3d linearAccelerationVector(std::get<0>(linearAcceleration), std::get<1>(linearAcceleration), std::get<2>(linearAcceleration));
-    // std::cout<< linearAccelerationVector << "\n";
-    // Get phi, theta, and psi
-    double phi = stateMat(6);
-    double theta = stateMat(7);
-    double psi = stateMat(8);
+    Eigen::Vector3d a_m(std::get<0>(linearAcceleration), std::get<1>(linearAcceleration), std::get<2>(linearAcceleration));
+    Eigen::Vector3d w_m(std::get<0>(angularRate), std::get<1>(angularRate), std::get<2>(angularRate));
 
-    // Convert the three euler angles to a rotation matrix that can move a vector from the body fixed frame into the ground fixed frame
-    Eigen::Matrix<double, 3, 3> R = CreateRotationalMatrix(phi, theta, psi);
+    // Nominal State Calculation //
+    x_e += v_e * loopTime + 0.5 * (R * (a_m - a_b) + g) * loopTime * loopTime;
+    v_e += (R * (a_m - a_b) + g) * loopTime;
 
-    // Update the linear positions
-    stateMat.segment(0, 3) += stateMat.segment(3, 3) * loopTime;
+    // Small-angle quaternion
+    Eigen::Vector3d theta = (w_m - w_b) * loopTime;
+    double angle = theta.norm();
 
-    // Update the linear velocities
-    stateMat.segment(3, 3) += R * linearAccelerationVector * loopTime;
-
-    // newState(5) = newState(5) - 9.81*loopTime;
-    stateMat(5) -= 9.81 * loopTime;
-
-    // writeDoubleToCSV(stateMat(6), stateMat(7), stateMat(8), stateMat(9), stateMat(10), stateMat(11));
-
-    // Update the angles
-    stateMat.segment(6, 3) += stateMat.segment(9, 3) * loopTime;
-
-    // Create a vector that will hold d_theta and set all of the elements to 0 and get the angular rate
-    std::vector<double> d_theta_now = {0, 0, 0};
-    d_theta_now[0] = std::get<0>(angularRate) + std::get<1>(angularRate) * sin(phi) * tan(theta) + std::get<2>(angularRate) * cos(phi) * tan(theta);
-    d_theta_now[1] = std::get<1>(angularRate) * cos(phi) - std::get<2>(angularRate) * sin(phi);
-    d_theta_now[2] = std::get<1>(angularRate) * sin(phi) * (1 / (cos(theta))) + std::get<2>(angularRate) * cos(phi) * (1 / (cos(theta)));
-    // std::cout<< d_theta_now[0]  << "\n";
-
-    // Call ComputeAngularRollingAverage to sum up all of the data so far for p,q,r which represent the angular velocity in x, y, and z direction
-    std::tuple<double, double, double> rollingAngularAverage = ComputeAngularRollingAverage(d_theta_now);
-    // std::cout<< std::get<0>(rollingAngularAverage) << ", " << std::get<1>(rollingAngularAverage) << ", " << std::get<2>(rollingAngularAverage)<<"\n";
-
-    // Assign the sum to their respective states, that being p,q, and r
-    stateMat(9) = std::get<0>(rollingAngularAverage);
-    stateMat(10) = std::get<1>(rollingAngularAverage);
-    stateMat(11) = std::get<2>(rollingAngularAverage);
-}
-
-std::tuple<double, double, double> Navigation::ComputeAngularRollingAverage(std::vector<double> d_theta_now)
-{
-    // Computes a rolling average of the angular velocities //
-
-    // Append the vector, d_theta_now, to d_theta_queue_reckon
-    d_theta_queue_reckon.push_back(d_theta_now);
-
-    // Calculate the maximum amount of entries that d_theta_queue_reckon can have
-    unsigned int max_theta_dot_smooth_entries = MissionConstants::kNavThetaDotSmooth / loopTime;
-
-    // Determine if the amount of entries in d_theta_reckon is greater than max_theta_dot_smooth_entries,
-    // and if that is true, pop the first entry
-    if (d_theta_queue_reckon.size() > max_theta_dot_smooth_entries)
-    {
-        d_theta_queue_reckon.pop_front();
+    Eigen::Quaterniond dq;
+    if (angle < 1e-12) {
+        dq = Eigen::Quaterniond::Identity();
+    } else {
+        dq = Eigen::AngleAxisd(angle, theta / angle);
     }
 
-    // Sum up all of the data so far for p,q,r which represent the angular velocity in x, y, and z direction
-    double p = 0, q = 0, r = 0;
+    q = (q * dq).normalized();
 
-    for (unsigned int i = 0; i < d_theta_queue_reckon.size(); i++)
-    {
-        p += d_theta_queue_reckon[i][0] / d_theta_queue_reckon.size();
-        q += d_theta_queue_reckon[i][1] / d_theta_queue_reckon.size();
-        r += d_theta_queue_reckon[i][2] / d_theta_queue_reckon.size();
+    // Covariance Calculation //
+
+    Eigen::MatrixXd Fx = Eigen::MatrixXd::Zero(15,15);
+
+    Fx.block<3,3>(0,0) = Eigen::Matrix3d::Identity();
+    Fx.block<3,3>(0,3) = Eigen::Matrix3d::Identity() * loopTime;
+    Fx.block<3,3>(3,3) = Eigen::Matrix3d::Identity();
+    Fx.block<3,3>(3,6) = -R * skew(a_m - a_b) * loopTime;
+    Fx.block<3,3>(3,9) = -R * loopTime;
+    Fx.block<3,3>(6,6) = dq.toRotationMatrix().transpose();
+    Fx.block<3,3>(6,12) = -Eigen::Matrix3d::Identity() * loopTime;
+    Fx.block<3,3>(9,9) = Eigen::Matrix3d::Identity();
+    Fx.block<3,3>(12,12) = Eigen::Matrix3d::Identity();
+
+    Eigen::MatrixXd Fi = Eigen::MatrixXd::Zero(15,12);
+    Fi.block<3,3>(3,0) = Eigen::Matrix3d::Identity();
+    Fi.block<3,3>(6,3) = Eigen::Matrix3d::Identity();
+    Fi.block<3,3>(9,6) = Eigen::Matrix3d::Identity();
+    Fi.block<3,3>(12,9) = Eigen::Matrix3d::Identity();
+
+    double sigma_a_n = 0.0316;
+    double sigma_w_n = 0.00224;
+
+    Eigen::MatrixXd Qi = Eigen::MatrixXd::Zero(12,12);
+    Qi.block<3,3>(0,0) = sigma_a_n*sigma_a_n * loopTime*loopTime * Eigen::Matrix3d::Identity();
+    Qi.block<3,3>(3,3) = sigma_w_n*sigma_w_n * loopTime*loopTime * Eigen::Matrix3d::Identity();
+
+    // Compute Covariance Matrix //
+    P = Fx * P * Fx.transpose() + Fi * Qi * Fi.transpose();
+
+    // Update state estimates with available measurements
+
+    if (magnetometerAvailable) {
+        magneticField = magnetometer.GetMagneticField();
+        Eigen::Vector3d magneticFieldVector(std::get<0>(magneticField), std::get<1>(magneticField), std::get<2>(magneticField));
+        magnetometerUpdate(magneticFieldVector, R);
     }
 
-    // Return a tuple of the rolling average of p,q, and r
-    return std::make_tuple(p, q, r);
+    if (gpsAvailable) {
+        gpsPosition = gps.GetPosition();
+        Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
+        gpsUpdate(gpsPositionVector);
+    }
+
+    if (cameraAvailable) {
+        cameraDirections = camera.GetUnitVectors();
+        Eigen::Vector3d cameraDirectionsVector(std::get<0>(cameraDirections), std::get<1>(cameraDirections), std::get<2>(cameraDirections));
+        cameraUpdate(cameraDirectionsVector, R);
+    }
 }
 
-Eigen::Matrix3d Navigation::CreateRotationalMatrix(double phi, double theta, double psi)
+void Navigation::magnetometerUpdate(const Eigen::Vector3d& magneticField, const Eigen::Matrix3d& R)
 {
-    // Update the roational matrix that is used to transform the body frame to the ground frame //
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
+    H.block<3,3>(0,6) = skew(R.transpose() * MissionConstants::kEarthMagField);
+    Eigen::Vector3d y_pred = R.transpose() * MissionConstants::kEarthMagField;
+    kalmanUpdate(H, (1e-2) * (1e-2) * Eigen::Matrix3d::Identity(), magneticField, y_pred);
+}
 
-    Eigen::Matrix3d rotationalMatrix;
+void Navigation::gpsUpdate(const Eigen::Vector3d& gpsPosition)
+{
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
+    H.block<3,3>(0,0) = Eigen::Matrix3d::Identity();
+    kalmanUpdate(H, (1) * (1) * Eigen::Matrix3d::Identity(), gpsPosition, x_e);
+}
 
-    rotationalMatrix(0, 0) = cos(theta) * cos(psi);
-    rotationalMatrix(0, 1) = sin(phi) * sin(theta) * cos(psi) - cos(phi) * sin(psi);
-    rotationalMatrix(0, 2) = cos(phi) * sin(theta) * cos(psi) + sin(phi) * sin(psi);
-    rotationalMatrix(1, 0) = cos(theta) * sin(psi);
-    rotationalMatrix(1, 1) = sin(phi) * sin(theta) * sin(psi) + cos(phi) * cos(psi);
-    rotationalMatrix(1, 2) = cos(phi) * sin(theta) * sin(psi) - sin(phi) * cos(psi);
-    rotationalMatrix(2, 0) = -sin(theta);
-    rotationalMatrix(2, 1) = sin(phi) * cos(theta);
-    rotationalMatrix(2, 2) = cos(phi) * cos(theta);
+void Navigation::cameraUpdate(const Eigen::Vector3d& cameraDirectionsVector, const Eigen::Matrix3d& R)
+{
+    int N = MissionConstants::kMarkerData.cols();
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3*N, 15);
+    Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(3*N);
 
-    return rotationalMatrix;
+    for (int i = 0; i < N; ++i) {
+        Eigen::Vector3d delta =
+            R.transpose() * (MissionConstants::kMarkerData.col(i) - x_e) + MissionConstants::kSensorCameraPosition;
+
+        double d = delta.norm();
+        Eigen::Vector3d rho = delta / d;
+        Eigen::Vector3d u = (MissionConstants::kMarkerData.col(i) - x_e) / d;
+        y_pred.segment<3>(3*i) = rho;
+
+        H.block<3,3>(3*i, 0) =
+            -R.transpose() * (Eigen::Matrix3d::Identity() - u*u.transpose()) / d;
+
+        H.block<3,3>(3*i, 6) =
+            -skew(R.transpose() * u);
+    }
+    kalmanUpdate(H, (1e-2) * (1e-2) * Eigen::MatrixXd::Identity(3*N, 3*N), cameraDirectionsVector, y_pred);
+}
+
+void Navigation::kalmanUpdate(
+    const Eigen::MatrixXd& H,
+    const Eigen::MatrixXd& V,
+    const Eigen::VectorXd& y,
+    const Eigen::VectorXd& y_pred
+) {
+    Eigen::VectorXd r = y - y_pred;
+    Eigen::MatrixXd S = H * P * H.transpose() + V;
+    Eigen::MatrixXd K = P * H.transpose() * S.inverse();
+
+    Eigen::VectorXd dx = K * r;
+    P = (Eigen::MatrixXd::Identity(15,15) - K * H) * P;
+
+    // Inject error state
+    x_e += dx.segment<3>(0);
+    v_e += dx.segment<3>(3);
+
+    Eigen::Vector3d dtheta = dx.segment<3>(6);
+    Eigen::Quaterniond dq(1, 0.5*dtheta.x(), 0.5*dtheta.y(), 0.5*dtheta.z());
+    q = (q * dq).normalized();
+
+    a_b += dx.segment<3>(9);
+    w_b += dx.segment<3>(12);
 }
 
 std::tuple<double, double, double> Navigation::GetLinearAcceleration()
@@ -176,4 +219,12 @@ std::tuple<double, double, double> Navigation::GetLinearAcceleration()
 std::tuple<double, double, double> Navigation::GetAngularAcceleration()
 {
     return angularRate;
+}
+
+Eigen::Matrix3d Navigation::skew(const Eigen::Vector3d& v) {
+    Eigen::Matrix3d S;
+    S <<     0, -v.z(),  v.y(),
+          v.z(),     0, -v.x(),
+         -v.y(),  v.x(),     0;
+    return S;
 }

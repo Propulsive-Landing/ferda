@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <iostream>
+#include <Eigen/Dense>
 
 #ifndef __MISSION_CONSTANTS__
 
@@ -16,8 +17,6 @@ namespace MissionConstants
     //     YAML::Node constants = YAML::LoadFile(filepath);
     //     return constants;
     // }
-
-    const bool isStabilityTest = false;
 
     // Physical constants
     const double kPi = 3.1415926535897932384626433;
@@ -31,6 +30,9 @@ namespace MissionConstants
     const double kFswLoopTime = .005;
     const double kFSWCalibrationTime = 0.05;
     const double originalOffsetAngle = 5 * kDeg2Rad;
+    const Eigen::Vector3d kEarthMagField = Eigen::Vector3d(-0.089, 0.378, -0.921).normalized(); // Unit vector pointing in the direction of Earth's magnetic field
+    const Eigen::Vector3d kSensorCameraPosition = Eigen::Vector3d(0.2, 0.2, -0.1); // Position of the camera in the body frame (in meters)
+    Eigen::Matrix3Xd kMarkerData; // 3xN matrix where each column represents a landmark location in the world frame
 
     // Controller constants, TODO: USER EDIT PRE-FLIGHT
     const double kMaximumTvcAngle = 7.5 * kDeg2Rad;
