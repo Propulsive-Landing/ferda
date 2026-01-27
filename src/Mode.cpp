@@ -363,83 +363,67 @@ Mode::Phase Mode::UpdateHotfireIdle(Navigation &navigation, ValveControl &valveC
     // Handle Valve commands
     else if (command == RF::Command::ValveNitrogenOpen)
     {
-        Telemetry::GetInstance().Log("Opening Nitrogen Valve");
         valveControl.OpenValve(ValveControl::Nitrogen);
     }
     else if (command == RF::Command::ValveNitrogenClose)
     {
-        Telemetry::GetInstance().Log("Closing Nitrogen Valve");
         valveControl.CloseValve(ValveControl::Nitrogen);
     }
     else if (command == RF::Command::ValvePurgeOpen)
     {
-        Telemetry::GetInstance().Log("Opening purge Valve");
         valveControl.OpenValve(ValveControl::Purge);
     }
     else if (command == RF::Command::ValvePurgeClose)
     {
-        Telemetry::GetInstance().Log("Closing purge Valve");
         valveControl.CloseValve(ValveControl::Purge);
     }
     else if (command == RF::Command::ValveMainEthanolOpen)
     {
-        Telemetry::GetInstance().Log("Opening Main Ethanol Valve");
         valveControl.OpenValve(ValveControl::MainEthanol);
     }
     else if (command == RF::Command::ValveMainEthanolClose)
     {
-        Telemetry::GetInstance().Log("Closing Main Ethanol Valve");
         valveControl.CloseValve(ValveControl::MainEthanol);
     }
     else if (command == RF::Command::ValveMainNitrousOpen)
     {
-        Telemetry::GetInstance().Log("Opening Main Nitrous Valve");
         valveControl.OpenValve(ValveControl::MainNitrous);
     }
     else if (command == RF::Command::ValveMainNitrousClose)
     {
-        Telemetry::GetInstance().Log("Closing Main Nitrous Valve");
         valveControl.CloseValve(ValveControl::MainNitrous);
     }
     else if (command == RF::Command::ValveASIEthanolOpen)
     {
-        Telemetry::GetInstance().Log("Opening ASI Ethanol Valve");
         valveControl.OpenValve(ValveControl::ASIEthanol);
     }
     else if (command == RF::Command::ValveASIEthanolClose)
     {
-        Telemetry::GetInstance().Log("Closing Main Ethanol Valve");
         valveControl.CloseValve(ValveControl::ASIEthanol);
     }
     else if (command == RF::Command::ValveASIOxygenOpen)
     {
-        Telemetry::GetInstance().Log("Opening ASI Oxygen Valve");
         valveControl.OpenValve(ValveControl::ASIOxygen);
     }
     else if (command == RF::Command::ValveASIOxygenClose)
     {
-        Telemetry::GetInstance().Log("Closing ASI Oxygen Valve");
         valveControl.CloseValve(ValveControl::ASIOxygen);
     }
     else if (command == RF::Command::ValveNitrogenBleedOpen)
     {
-        Telemetry::GetInstance().Log("Opening Nitrogen Bleed Valve");
         valveControl.OpenValve(ValveControl::NitrogenBleed);
     }
     else if (command == RF::Command::ValveNitrogenBleedClose)
     {
-        Telemetry::GetInstance().Log("Closing Nitrogen Bleed Valve");
         valveControl.CloseValve(ValveControl::NitrogenBleed);
     }
     // Handle spark commands
     else if (command == RF::Command::SparkOn)
     {
-        Telemetry::GetInstance().Log("Turning Spark on");
         sparkPlug.TurnOn();
     }
     else if (command == RF::Command::SparkOff)
     {
-        Telemetry::GetInstance().Log("Turning Spark off");
         sparkPlug.TurnOff();
     }
 
@@ -491,7 +475,6 @@ Mode::Phase Mode::UpdateASITest(Navigation &navigation, ValveControl &valveContr
         // Return to HotfireIdle after sequence completes
         if (seconds_since_start >= 3.0)
         {
-            Telemetry::GetInstance().Log("ASI Test sequence completed, returning to HotfireIdle");
             startTime = 0;
             sequenceStarted = false;
             return Mode::HotfireIdle;
