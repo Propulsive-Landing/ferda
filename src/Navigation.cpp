@@ -8,8 +8,9 @@
 
 #include "Navigation.hpp"
 #include "MissionConstants.hpp"
+#include <iostream>
 
-Navigation::Navigation(IMU &inputImu, Magnetometer &inputMagnetometer, Camera &inputCamera, GPS &inputGps, TVC &inputTvc) : imu(inputImu), magnetometer(inputMagnetometer), gps(inputGps), camera(inputCamera), tvc(inputTvc)
+Navigation::Navigation(IMU &inputImu, Magnetometer &inputMagnetometer, GPS &inputGps, Camera &inputCamera, TVC &inputTvc) : imu(inputImu), magnetometer(inputMagnetometer), gps(inputGps), camera(inputCamera), tvc(inputTvc)
 {
     std::cout << std::setprecision(4) << std::fixed;
     stateMat = Eigen::Matrix<double, 16, 1>::Zero();
@@ -17,6 +18,7 @@ Navigation::Navigation(IMU &inputImu, Magnetometer &inputMagnetometer, Camera &i
     stateMat(2) = 0.28;
     // Initializes Quaternion to [1,0,0,0] equivalent to 0 roll, 0 pitch, 0 yaw
     stateMat(6) = 1;
+    P = Eigen::MatrixXd::Identity(15, 15) * 0.01;
 }
 
 void Navigation::reset()
@@ -79,6 +81,8 @@ void Navigation::UpdateNavigation()
     Eigen::Vector3d a_m(std::get<0>(linearAcceleration), std::get<1>(linearAcceleration), std::get<2>(linearAcceleration));
     Eigen::Vector3d w_m(std::get<0>(angularRate), std::get<1>(angularRate), std::get<2>(angularRate));
 
+    writeDoubleToCSV(a_m(0), a_m(1), a_m(2), w_m(0), w_m(1), w_m(2), 6);
+
     // Nominal State Calculation //
     x_e += v_e * loopTime + 0.5 * (R * (a_m - a_b) + g) * loopTime * loopTime;
     v_e += (R * (a_m - a_b) + g) * loopTime;
@@ -128,23 +132,33 @@ void Navigation::UpdateNavigation()
 
     // Update state estimates with available measurements
 
-    if (magnetometerAvailable) {
+    if (std::get<0>(magnetometer.MagnetometerAvailable()) > 2) {
         magneticField = magnetometer.GetMagneticField();
         Eigen::Vector3d magneticFieldVector(std::get<0>(magneticField), std::get<1>(magneticField), std::get<2>(magneticField));
         magnetometerUpdate(magneticFieldVector, R);
     }
 
-    if (gpsAvailable) {
-        gpsPosition = gps.GetPosition();
+    if (std::get<0>(gps.GPSAvailable()) > 2) {
+        gpsPosition = gps.GetGPSPosition();
         Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
         gpsUpdate(gpsPositionVector);
     }
 
-    if (cameraAvailable) {
+    if (std::get<0>(camera.CameraAvailable()) > 2) {
         cameraDirections = camera.GetUnitVectors();
         Eigen::Vector3d cameraDirectionsVector(std::get<0>(cameraDirections), std::get<1>(cameraDirections), std::get<2>(cameraDirections));
         cameraUpdate(cameraDirectionsVector, R);
     }
+
+    // Repack states into stateMat //
+    stateMat.segment(0, 3) = x_e;
+    stateMat.segment(3, 3) = v_e;
+    stateMat(6) = q.w();
+    stateMat(7) = q.x();
+    stateMat(8) = q.y();
+    stateMat(9) = q.z();
+    stateMat.segment(10, 3) = a_b;
+    stateMat.segment(13, 3) = w_b;
 }
 
 void Navigation::magnetometerUpdate(const Eigen::Vector3d& magneticField, const Eigen::Matrix3d& R)

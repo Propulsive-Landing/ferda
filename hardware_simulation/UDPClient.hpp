@@ -69,28 +69,34 @@ private:
     // Shared variables for sensor data
     std::array<double, 3> angular_rate{0};
     std::array<double, 3> acceleration{0};
-    double temperature{0};
-    double pressure{0};
+    std::array<double, 3> magnetic_field{0};
+    std::array<double, 3> gps_position{0};
+    std::array<double, 12> camera_vectors{0};
+    std::array<double, 3> available_sensors{0};
 
     // Shared variables for actuator data sending
 
     bool should_send = false;
 
-    double motor_1_ignition{0};
-    double motor_2_ignition{0};
     double motor_angle_x{0};
     double motor_angle_y{0};
+    double motor_1_ignition{0};
+    double thrust{0};
 
     void ReadThread() {
+        
         char buffer[64];
         while (running) {
             int recv_len = recvfrom(socket_fd, buffer, sizeof(buffer), 0, nullptr, nullptr);
-            if (recv_len == sizeof(double) * 8) {
+
+            if (recv_len == sizeof(double) * 24) {
                 std::lock_guard<std::mutex> lock(data_mutex);
                 memcpy(angular_rate.data(), buffer, sizeof(double) * 3);
                 memcpy(acceleration.data(), buffer + sizeof(double) * 3, sizeof(double) * 3);
-                memcpy(&temperature, buffer + sizeof(double) * 6, sizeof(double));
-                memcpy(&pressure, buffer + sizeof(double) * 7, sizeof(double));
+                memcpy(magnetic_field.data(), buffer + sizeof(double) * 6, sizeof(double) * 3);
+                memcpy(gps_position.data(), buffer + sizeof(double) * 9, sizeof(double) * 3);
+                memcpy(camera_vectors.data(), buffer + sizeof(double) * 12, sizeof(double) * 12);
+                memcpy(available_sensors.data(), buffer + sizeof(double) * 21, sizeof(double) * 3);
             }
         }
     }
@@ -106,7 +112,7 @@ private:
                 memcpy(buffer, &motor_angle_x, sizeof(double));
                 memcpy(buffer + sizeof(double), &motor_angle_y, sizeof(double));
                 memcpy(buffer + sizeof(double) * 2, &motor_1_ignition, sizeof(double));
-                memcpy(buffer + sizeof(double) * 3, &motor_2_ignition, sizeof(double));
+                memcpy(buffer + sizeof(double) * 3, &thrust, sizeof(double));
             }
             if (should_send) {
                 sendto(socket_fd, buffer, sizeof(buffer), 0, 
@@ -188,14 +194,38 @@ public:
         return std::make_tuple(acceleration[0], acceleration[1], acceleration[2]);
     }
 
-    double GetPressure() {
+    std::tuple<double, double, double> GetMagneticField() {
         std::lock_guard<std::mutex> lock(data_mutex);
-        return pressure;
+        return std::make_tuple(magnetic_field[0], magnetic_field[1], magnetic_field[2]);
     }
 
-    double GetTemperature() {
+    std::tuple<double, double, double> GetGPSPosition() {
         std::lock_guard<std::mutex> lock(data_mutex);
-        return temperature;
+        return std::make_tuple(gps_position[0], gps_position[1], gps_position[2]);
+    }
+
+    std::tuple<double, double, double, double, double, double, double, double, double> GetUnitVectors() {
+        std::lock_guard<std::mutex> lock(data_mutex);
+        return std::make_tuple(
+            camera_vectors[0], camera_vectors[1], camera_vectors[2],
+            camera_vectors[3], camera_vectors[4], camera_vectors[5],
+            camera_vectors[6], camera_vectors[7], camera_vectors[8]
+        );
+    }
+
+    std::tuple<double> GetMagnetometerAvailable() {
+        std::lock_guard<std::mutex> lock(data_mutex);
+        return available_sensors[0];
+    }
+
+    std::tuple<double> GetGPSAvailable() {
+        std::lock_guard<std::mutex> lock(data_mutex);
+        return available_sensors[1];
+    }
+
+    std::tuple<double> GetCameraAvailable() {
+        std::lock_guard<std::mutex> lock(data_mutex);
+        return available_sensors[2];
     }
 
     void SetTVCX(double angle) {
@@ -214,8 +244,7 @@ public:
         std::lock_guard<std::mutex> lock(data_mutex);
         if (is_launch) {
             motor_1_ignition = 1.0;
-        } else {
-            motor_2_ignition = 1.0;
+            thrust = 1000.0;
         }
         should_send = true;
     }

@@ -3,7 +3,6 @@
 #include <vector>
 #include <Eigen/Dense>
 
-#include "Barometer.hpp"
 #include "IMU.hpp"
 #include "TVC.hpp"
 #include "Navigation.hpp"

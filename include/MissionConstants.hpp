@@ -32,7 +32,12 @@ namespace MissionConstants
     const double originalOffsetAngle = 5 * kDeg2Rad;
     const Eigen::Vector3d kEarthMagField = Eigen::Vector3d(-0.089, 0.378, -0.921).normalized(); // Unit vector pointing in the direction of Earth's magnetic field
     const Eigen::Vector3d kSensorCameraPosition = Eigen::Vector3d(0.2, 0.2, -0.1); // Position of the camera in the body frame (in meters)
-    Eigen::Matrix3Xd kMarkerData; // 3xN matrix where each column represents a landmark location in the world frame
+    inline const Eigen::Matrix<double, 3, 3> kMarkerData =
+        (Eigen::Matrix<double, 3, 3>() <<
+            -2.5, -2.5, 5.0,
+            4.3301, -4.3301, 0.0,
+            0.5,  0.5,  0.5
+        ).finished();
 
     // Controller constants, TODO: USER EDIT PRE-FLIGHT
     const double kMaximumTvcAngle = 7.5 * kDeg2Rad;

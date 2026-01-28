@@ -37,7 +37,7 @@ void Controller::UpdateLaunch(Navigation &navigation, double current_time)
 {
     // Use the TVC to stabilize the rocket for landing
 
-    stabilizeAtCenter(navigation, current_time);
+    Center();
 }
 
 // communicate with TVC
@@ -45,7 +45,7 @@ void Controller::UpdateLand(Navigation &navigation, double current_time)
 {
     // Use the TVC to stabilize the rocket for landing
 
-    stabilizeAtCenter(navigation, current_time);
+    Center();
 }
 
 void Controller::stabilizeAtCenter(Navigation &navigation, double current_time)
@@ -58,7 +58,8 @@ void Controller::stabilizeAtCenter(Navigation &navigation, double current_time)
     unsigned int maxEulerEntries = MissionConstants::kControlIntegralPeriod / loopTime;
 
     // Create a matrix to store the returned stateEstimate from getNavigation() and store the yaw value into a varible
-    Eigen::Matrix<double, 12, 1> stateEstimate = navigation.GetNavigation();
+    //TODO: This is incorrect
+    Eigen::Matrix<double, 16, 1> stateEstimate = navigation.GetNavigation();
 
     // Extract yaw
     double yaw = stateEstimate(8);

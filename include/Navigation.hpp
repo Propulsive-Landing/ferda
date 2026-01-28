@@ -8,7 +8,6 @@
 #include "Magnetometer.hpp"
 #include "Camera.hpp"
 #include "GPS.hpp"
-#include "Barometer.hpp"
 #include "TVC.hpp"
 
 class Navigation
@@ -16,8 +15,8 @@ class Navigation
 private:
     IMU &imu;
     Magnetometer &magnetometer;
-    Camera &camera;
     GPS &gps;
+    Camera &camera;
     TVC &tvc;
     Eigen::Matrix<double, 16, 1> stateMat;
     std::deque<std::vector<double>> d_theta_queue_reckon;
@@ -26,17 +25,17 @@ private:
     std::tuple<double, double, double> angularRate;
     std::tuple<double, double, double> magneticField;
     std::tuple<double, double, double> gpsPosition;
-    std::tuple<double, double, double, double, double, double, double, double, double, double, double, double> cameraDirections;
+    std::tuple<double, double, double, double, double, double, double, double, double> cameraDirections;
     void magnetometerUpdate(const Eigen::Vector3d& magneticField, const Eigen::Matrix3d& R);
     void gpsUpdate(const Eigen::Vector3d& gpsPosition);
     void cameraUpdate(const Eigen::Vector3d& cameraDirectionsVector, const Eigen::Matrix3d& R);
-    bool magnetometerAvailable;
-    bool gpsAvailable;
-    bool cameraAvailable;
+    std::tuple<double> magnetometerAvailable;
+    std::tuple<double> gpsAvailable;
+    std::tuple<double> cameraAvailable;
 
 public:
     double loopTime = 0.005;
-    Navigation(IMU &imu, Magnetometer &magnetometer, Camera &camera, GPS &gps, TVC &tvc);
+    Navigation(IMU &imu, Magnetometer &magnetometer, GPS &gps, Camera &camera, TVC &tvc);
     void reset();
     Eigen::MatrixXd P;
     Eigen::Matrix<double, 16, 1> GetNavigation(); // Defintion of state matrix: TODO (determine dimensions and document form)
@@ -55,6 +54,9 @@ public:
     std::tuple<double, double, double> GetLinearAcceleration();
     std::tuple<double, double, double> GetAngularAcceleration();
     std::tuple<double, double, double> GetMagneticField();
-    std::tuple<double, double, double> GetPosition();
-    std::tuple<double, double, double, double, double, double, double, double, double, double, double, double> GetUnitVectors();
+    std::tuple<double, double, double> GetGPSPosition();
+    std::tuple<double> MagnetometerAvailable();
+    std::tuple<double> GPSAvailable();
+    std::tuple<double> CameraAvailable();
+    std::tuple<double, double, double, double, double, double, double, double, double> GetUnitVectors();
 };

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Barometer.hpp"
 #include "IMU.hpp"
 #include "TVC.hpp"
 #include "Navigation.hpp"

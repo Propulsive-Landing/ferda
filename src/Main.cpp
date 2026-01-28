@@ -1,5 +1,7 @@
-#include "Barometer.hpp"
 #include "IMU.hpp"
+#include "Magnetometer.hpp"
+#include "GPS.hpp"
+#include "Camera.hpp"
 #include "TVC.hpp"
 
 #include "Navigation.hpp"
@@ -39,11 +41,13 @@ int main()
 #endif
 
     IMU imu;
-    Barometer barometer;
+    GPS gps;
+    Magnetometer magnetometer;
+    Camera camera;
     TVC tvc;
     Igniter igniter;
 
-    Navigation navigation(imu, barometer, tvc);
+    Navigation navigation(imu, magnetometer, gps, camera, tvc);
     Controller controller(tvc);
 
     Telemetry::GetInstance().Log("Starting program...");

@@ -203,7 +203,7 @@ Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, I
     navigation.UpdateNavigation();
     controller.UpdateLaunch(navigation, seconds_since_start);
 
-    Eigen::Matrix<double, 12, 1> testState = navigation.GetNavigation();
+    Eigen::Matrix<double, 16, 1> testState = navigation.GetNavigation();
 
     //TODO: Update this
     // If z acceleration is negative and the z height is not the starting height, then we should go to freefall

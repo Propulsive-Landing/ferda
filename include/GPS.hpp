@@ -6,5 +6,6 @@ class GPS
 {
 public:
     GPS();
-    std::tuple<double, double, double> GetPosition();
+    std::tuple<double, double, double> GetGPSPosition();
+    std::tuple<double> GPSAvailable();
 };
