@@ -67,8 +67,8 @@ private:
     std::mutex data_mutex;
 
     // Shared variables for sensor data
-    std::array<double, 3> angular_rate{0};
     std::array<double, 3> acceleration{0};
+    std::array<double, 3> angular_rate{0};
     std::array<double, 3> magnetic_field{0};
     std::array<double, 3> gps_position{0};
     std::array<double, 12> camera_vectors{0};
@@ -85,14 +85,14 @@ private:
 
     void ReadThread() {
         
-        char buffer[64];
+        char buffer[256];
         while (running) {
             int recv_len = recvfrom(socket_fd, buffer, sizeof(buffer), 0, nullptr, nullptr);
 
             if (recv_len == sizeof(double) * 24) {
                 std::lock_guard<std::mutex> lock(data_mutex);
-                memcpy(angular_rate.data(), buffer, sizeof(double) * 3);
-                memcpy(acceleration.data(), buffer + sizeof(double) * 3, sizeof(double) * 3);
+                memcpy(acceleration.data(), buffer, sizeof(double) * 3);
+                memcpy(angular_rate.data(), buffer + sizeof(double) * 3, sizeof(double) * 3);
                 memcpy(magnetic_field.data(), buffer + sizeof(double) * 6, sizeof(double) * 3);
                 memcpy(gps_position.data(), buffer + sizeof(double) * 9, sizeof(double) * 3);
                 memcpy(camera_vectors.data(), buffer + sizeof(double) * 12, sizeof(double) * 12);

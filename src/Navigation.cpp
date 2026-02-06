@@ -18,7 +18,15 @@ Navigation::Navigation(IMU &inputImu, Magnetometer &inputMagnetometer, GPS &inpu
     stateMat(2) = 0.28;
     // Initializes Quaternion to [1,0,0,0] equivalent to 0 roll, 0 pitch, 0 yaw
     stateMat(6) = 1;
-    P = Eigen::MatrixXd::Identity(15, 15) * 0.01;
+    
+    Eigen::VectorXd d(15);
+    d << 1e-5, 1e-5, 1e-5, // Position variances
+         0, 0, 0, // Velocity variances
+         0, 0, 0, // Attitude variances
+         1e-2, 1e-2, 1e-2, // Accelerometer bias variances
+         1e-5, 1e-5, 1e-5; // Gyroscope bias variances
+
+    P = d.asDiagonal();
 }
 
 void Navigation::reset()
@@ -81,7 +89,7 @@ void Navigation::UpdateNavigation()
     Eigen::Vector3d a_m(std::get<0>(linearAcceleration), std::get<1>(linearAcceleration), std::get<2>(linearAcceleration));
     Eigen::Vector3d w_m(std::get<0>(angularRate), std::get<1>(angularRate), std::get<2>(angularRate));
 
-    writeDoubleToCSV(a_m(0), a_m(1), a_m(2), w_m(0), w_m(1), w_m(2), 6);
+    writeDoubleToCSV(x_e(0), x_e(1), x_e(2), v_e(0), v_e(1), v_e(2), 6);
 
     // Nominal State Calculation //
     x_e += v_e * loopTime + 0.5 * (R * (a_m - a_b) + g) * loopTime * loopTime;
@@ -132,22 +140,28 @@ void Navigation::UpdateNavigation()
 
     // Update state estimates with available measurements
 
-    if (std::get<0>(magnetometer.MagnetometerAvailable()) > 2) {
+    if (std::get<0>(magnetometer.MagnetometerAvailable()) > 0.5) {
         magneticField = magnetometer.GetMagneticField();
         Eigen::Vector3d magneticFieldVector(std::get<0>(magneticField), std::get<1>(magneticField), std::get<2>(magneticField));
         magnetometerUpdate(magneticFieldVector, R);
+        // std::cout << "Magnetometer Update: X=" << std::get<0>(magneticField) << ", Y=" << std::get<1>(magneticField) << ", Z=" << std::get<2>(magneticField) << "\n";
     }
 
-    if (std::get<0>(gps.GPSAvailable()) > 2) {
+    if (std::get<0>(gps.GPSAvailable()) > 0.5) {
         gpsPosition = gps.GetGPSPosition();
         Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
         gpsUpdate(gpsPositionVector);
+        std::cout << "GPS Update: X=" << std::get<0>(gpsPosition) << ", Y=" << std::get<1>(gpsPosition) << ", Z=" << std::get<2>(gpsPosition) << "\n";
     }
 
-    if (std::get<0>(camera.CameraAvailable()) > 2) {
+    if (std::get<0>(camera.CameraAvailable()) > 0.5) {
         cameraDirections = camera.GetUnitVectors();
-        Eigen::Vector3d cameraDirectionsVector(std::get<0>(cameraDirections), std::get<1>(cameraDirections), std::get<2>(cameraDirections));
+        Eigen::VectorXd cameraDirectionsVector(9);
+        cameraDirectionsVector << std::get<0>(cameraDirections), std::get<1>(cameraDirections), std::get<2>(cameraDirections),
+                                  std::get<3>(cameraDirections), std::get<4>(cameraDirections), std::get<5>(cameraDirections),
+                                  std::get<6>(cameraDirections), std::get<7>(cameraDirections), std::get<8>(cameraDirections);
         cameraUpdate(cameraDirectionsVector, R);
+        //std::cout << "Camera Update: X=" << std::get<0>(cameraDirections) << ", Y=" << std::get<1>(cameraDirections) << ", Z=" << std::get<2>(cameraDirections) << "\n";
     }
 
     // Repack states into stateMat //
@@ -176,7 +190,7 @@ void Navigation::gpsUpdate(const Eigen::Vector3d& gpsPosition)
     kalmanUpdate(H, (1) * (1) * Eigen::Matrix3d::Identity(), gpsPosition, x_e);
 }
 
-void Navigation::cameraUpdate(const Eigen::Vector3d& cameraDirectionsVector, const Eigen::Matrix3d& R)
+void Navigation::cameraUpdate(const Eigen::VectorXd& cameraDirectionsVector, const Eigen::Matrix3d& R)
 {
     int N = MissionConstants::kMarkerData.cols();
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3*N, 15);

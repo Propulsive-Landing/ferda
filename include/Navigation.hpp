@@ -28,7 +28,7 @@ private:
     std::tuple<double, double, double, double, double, double, double, double, double> cameraDirections;
     void magnetometerUpdate(const Eigen::Vector3d& magneticField, const Eigen::Matrix3d& R);
     void gpsUpdate(const Eigen::Vector3d& gpsPosition);
-    void cameraUpdate(const Eigen::Vector3d& cameraDirectionsVector, const Eigen::Matrix3d& R);
+    void cameraUpdate(const Eigen::VectorXd& cameraDirectionsVector, const Eigen::Matrix3d& R);
     std::tuple<double> magnetometerAvailable;
     std::tuple<double> gpsAvailable;
     std::tuple<double> cameraAvailable;
