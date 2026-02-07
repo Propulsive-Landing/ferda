@@ -32,10 +32,6 @@ void Mode::UploadKmatrices()
     int launching_KMatrix;
     std::cin >> launching_KMatrix;
 
-    std::cout << "Enter 0,1, or 2 to choose Landing K_matrix" << std::endl;
-    int landing_KMatrix;
-    std::cin >> landing_KMatrix;
-
     switch (launching_KMatrix)
     {
     case 0:
@@ -46,19 +42,6 @@ void Mode::UploadKmatrices()
         break;
     case 2:
         LaunchKMatrix = "../Aggressive_Launch.csv";
-        break;
-    }
-
-    switch (landing_KMatrix)
-    {
-    case 0:
-        LandKMatrix = "../Normal_Land.csv";
-        break;
-    case 1:
-        LandKMatrix = "../Lazy_Land.csv";
-        break;
-    case 2:
-        LandKMatrix = "../Aggressive_Land.csv";
         break;
     }
 }
@@ -182,7 +165,7 @@ Mode::Phase Mode::UpdateIdle(Navigation &navigation, Controller &controller, IMU
 
 Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, Igniter &igniter, double currentTime)
 {
-    // Launch rocket and start Controller on first iteration
+    // Manage ignition and controller start on first call, then delegate launch behavior
     static double startTime = currentTime;
     double seconds_since_start = currentTime - startTime;
     static int startup = 1;
@@ -193,6 +176,8 @@ Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, I
         igniter.Ignite(Igniter::IgnitionSpecifier::LAUNCH);
         controller.Start(seconds_since_start);
         startup = 0;
+        // reset launch manager
+        this->launchManager.Reset();
     }
 
     if (seconds_since_start > 0.050)
@@ -200,39 +185,13 @@ Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, I
         igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAUNCH);
     }
 
-    navigation.UpdateNavigation();
-    controller.UpdateLaunch(navigation, seconds_since_start);
-
-    Eigen::Matrix<double, 16, 1> testState = navigation.GetNavigation();
-
-    //TODO: Update this
-    // If z acceleration is negative and the z height is not the starting height, then we should go to freefall
-    if (testState(5) < -1 && testState(2) > 2)
+    bool handoffToLand = this->launchManager.Step(navigation, controller, igniter, currentTime);
+    if (handoffToLand)
     {
-        Telemetry::GetInstance().Log("Switching mode from launch to land");
-        controller.Center();
         return Mode::Land;
     }
+
     return Mode::Launch;
-}
-
-Mode::Phase Mode::UpdateLand(Navigation &navigation, Controller &controller, double currentTime, Igniter &igniter)
-{
-    // Create variables to hold time difference since being in this function
-    static double startTime = currentTime;
-    double seconds_since_start = currentTime - startTime;
-
-    // Turn off ignitor after we have been in this function for 0.05 seconds
-    if (seconds_since_start > 0.050)
-    {
-        igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAND);
-    }
-
-    // Continue to update navigation and controller
-    navigation.UpdateNavigation();
-    controller.UpdateLand(navigation, currentTime);
-
-    return Mode::Land;
 }
 
 Mode::Phase Mode::UpdateSafeMode(Navigation &navigation, Controller &controller, double currentTime)
@@ -280,10 +239,6 @@ bool Mode::Update(Navigation &navigation, Controller &controller, Igniter &ignit
     case Launch:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
         this->eCurrentMode = UpdateLaunch(navigation, controller, igniter, currentTime);
-        break;
-    case Land:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
-        this->eCurrentMode = UpdateLand(navigation, controller, currentTime, igniter);
         break;
     case Safe:
         this->eCurrentMode = UpdateSafeMode(navigation, controller, currentTime);

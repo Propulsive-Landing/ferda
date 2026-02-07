@@ -25,6 +25,8 @@ public:
     TVC tvc;
     Eigen::Vector2d input;
     double loopTime = 0.005;
+    double refPositionZ = 0.0;      // reference altitude / position in z (meters)
+    double refVelocityZ = 0.0;      // reference velocity in z (m/s, positive is up)
     Controller(TVC &tvc);
     void UpdateLaunch(Navigation &navigation, double current_time);
     void UpdateTestTVC(double testTime);

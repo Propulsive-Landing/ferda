@@ -40,14 +40,6 @@ void Controller::UpdateLaunch(Navigation &navigation, double current_time)
     Center();
 }
 
-// communicate with TVC
-void Controller::UpdateLand(Navigation &navigation, double current_time)
-{
-    // Use the TVC to stabilize the rocket for landing
-
-    Center();
-}
-
 void Controller::stabilizeAtCenter(Navigation &navigation, double current_time)
 {
     // IN X_CONRTOL:: FIRST 2 ARE X AND Y VELOCITIES, NEXT 2 ARE EULER INTEGRALS, NEXT 2 ARE ROLL AND PITCH, AND NEXT 2 ARE ROLl and pitch values
