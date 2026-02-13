@@ -46,9 +46,11 @@ int main()
     Camera camera;
     TVC tvc;
     Igniter igniter;
+    Engine engine;
+
 
     Navigation navigation(imu, magnetometer, gps, camera, tvc);
-    Controller controller(tvc);
+    Controller controller(tvc, engine);
 
     Telemetry::GetInstance().Log("Starting program...");
 

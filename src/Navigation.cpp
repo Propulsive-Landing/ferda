@@ -41,6 +41,11 @@ Eigen::Matrix<double, 16, 1> Navigation::GetNavigation()
     return stateMat;
 }
 
+Eigen::Vector3d Navigation::GetAngularVelocity()
+{
+    return w;
+}
+
 // Function to write a double to a CSV file
 void writeDoubleToCSV(double myDouble1, double myDouble2, double myDouble3, double myDouble4, double myDouble5, double myDouble6, int precision = 6)
 {
@@ -173,6 +178,8 @@ void Navigation::UpdateNavigation()
     stateMat(9) = q.z();
     stateMat.segment(10, 3) = a_b;
     stateMat.segment(13, 3) = w_b;
+    Eigen::Vector3d angularRateVector = Eigen::Vector3d(std::get<0>(angularRate), std::get<1>(angularRate), std::get<2>(angularRate));
+    w = angularRateVector - w_b;
 }
 
 void Navigation::magnetometerUpdate(const Eigen::Vector3d& magneticField, const Eigen::Matrix3d& R)

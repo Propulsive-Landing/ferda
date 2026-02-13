@@ -18,33 +18,17 @@ int descent_time = 1;
 int total_time = 1;
 double ignition_height = 1;
 double offset = 0.45;
-double motor_thrust_duration = 2.09;
-double motor_thrust_percentage = 1;
-double fsw_clamp_time = 0.300;
-double second_motor_delta_x = 25.96;
 double gse_height = 0.2800;
 
 Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
 void Mode::UploadKmatrices()
 {
-    std::cout << "Enter 0,1, or 2 to choose Launching K_matrix" << std::endl;
-    int launching_KMatrix;
-    std::cin >> launching_KMatrix;
-
-    switch (launching_KMatrix)
-    {
-    case 0:
-        LaunchKMatrix = "../Normal_Launch.csv";
-        break;
-    case 1:
-        LaunchKMatrix = "../Lazy_Launch.csv";
-        break;
-    case 2:
-        LaunchKMatrix = "../Aggressive_Launch.csv";
-        break;
-    }
+    AngleKMatrix = "../Angles.csv";
+    HeightKMatrix = "../Height.csv";
+    TranslationKMatrix = "../Translation.csv";
 }
+
 Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controller, double currentTime)
 {
     static float XTVC = 0.0;
@@ -96,7 +80,9 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
     {
         Telemetry::GetInstance().Log("Switching mode from calibration to test tvc");
         UploadKmatrices();
-        controller.ImportControlParameters(LaunchKMatrix);
+        //controller.ImportAngleParameters(AngleKMatrix);
+        //controller.ImportHeightParameters(HeightKMatrix);
+        //controller.ImportTranslationParameters(TranslationKMatrix);
         controller.Center();
         return Mode::TestTVC;
     }
@@ -104,7 +90,9 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
     {
         Telemetry::GetInstance().Log("Switching mode from calibration to idle");
         UploadKmatrices();
-        controller.ImportControlParameters(LaunchKMatrix);
+        //controller.ImportAngleParameters(AngleKMatrix);
+        //controller.ImportHeightParameters(HeightKMatrix);
+        //controller.ImportTranslationParameters(TranslationKMatrix);
         controller.Center();
         return Mode::Idle;
     }

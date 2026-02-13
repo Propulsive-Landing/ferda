@@ -40,10 +40,12 @@ public:
     Eigen::MatrixXd P;
     Eigen::Matrix<double, 16, 1> GetNavigation(); // Defintion of state matrix: TODO (determine dimensions and document form)
     void UpdateNavigation();                      // Defintion updates: TODO (determine dimensions and document form)
+    Eigen::Vector3d GetAngularVelocity();
     std::tuple<double, double, double> ComputeAngularRollingAverage(std::vector<double> d_theta_now);
     Eigen::Vector3d x_e, v_e;
     Eigen::Quaterniond q;
     Eigen::Vector3d a_b, w_b;
+    Eigen::Vector3d w;
     Eigen::Matrix3d CreateRotationalMatrix(double phi, double theta, double psi);
     Eigen::Matrix3d skew(const Eigen::Vector3d& v);
     void kalmanUpdate(

@@ -25,7 +25,9 @@ public:
 
     Mode(Mode::Phase eInitialMode);
     bool Update(Navigation &navigation, Controller &controller, Igniter &igniter, IMU &imu);
-    std::string LaunchKMatrix;
+    std::string AngleKMatrix;
+    std::string HeightKMatrix;
+    std::string TranslationKMatrix;
     
     // Setters for current acceleration/deceleration (should be updated by hardware telemetry)
     void SetCurrentMaxAcceleration(double accel) { launchManager.SetCurrentMaxAcceleration(accel); }

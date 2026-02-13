@@ -240,11 +240,16 @@ public:
         should_send = true;
     }
 
+    void SetThrust(double thrust_N) {
+        std::lock_guard<std::mutex> lock(data_mutex);
+        thrust = thrust_N;
+        should_send = true;
+    }
+
     void Ignite(bool is_launch) {
         std::lock_guard<std::mutex> lock(data_mutex);
         if (is_launch) {
             motor_1_ignition = 1.0;
-            thrust = 1000.0;
         }
         should_send = true;
     }
