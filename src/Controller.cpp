@@ -38,6 +38,7 @@ void Controller::UpdateLaunch(Navigation &navigation, double current_time)
     // Use the TVC to stabilize the rocket for landing
 
     AttitudeControl(navigation);
+    HeightControl(navigation);
 }
 
 void Controller::AttitudeControl(Navigation &navigation)
@@ -90,6 +91,7 @@ void Controller::CalculateInput()
 
 void Controller::HeightControl(Navigation& navigation)
 {
+    // TODO: use value from constants file
     constexpr double g = 9.80665;
 
     Eigen::Matrix<double, 16, 1> x = navigation.GetNavigation();
@@ -116,10 +118,12 @@ void Controller::HeightControl(Navigation& navigation)
     double zddot_cmd = height_controller_gains * height_control_vector;
 
     //Placeholder mass. TODO: estimate mass over time
-    double mass = 100; // kg
+    double mass = 94; // kg
 
     // Convert to force
     double thrust_cmd = mass * (zddot_cmd + g);
+
+    std::cout << "Height Control: z_ref=" << z_ref << ", z=" << z << ", zdot_ref=" << zdot_ref << ", zdot=" << zdot << ", e_z=" << e_z << ", e_zdot=" << e_zdot << ", zddot_cmd=" << zddot_cmd << ", thrust_cmd=" << thrust_cmd << "\n";
 
     engine.SetThrust(thrust_cmd); // Newtons
 }
@@ -141,22 +145,31 @@ void Controller::ImportHeightParameters(std::string file_name)
     char separator = ',';
     std::string row, item;
     std::ifstream in(file_name);
-    std::getline(in, row);
 
     if (!in.is_open()) {
         throw std::runtime_error("Could not open file");
     }
 
     // Get the controller values of the k-matrix
-    for (int i = 0; i < 2; i++)
-    {
-        std::getline(in, row);
+    int rows_read = 0;
+    while (rows_read < 1 && std::getline(in, row)) {
+        row.erase(std::remove_if(row.begin(), row.end(), ::isspace), row.end());
+        if (row.empty()) continue;
         std::stringstream controllerValueStringStream(row);
-        for (int j = 0; j < 6; j++)
-        {
-            std::getline(controllerValueStringStream, item, separator);
-            height_controller_gains(i, j) = stod(item);
+        for (int j = 0; j < 3; j++) {
+            if (!std::getline(controllerValueStringStream, item, separator)) {
+                throw std::runtime_error("Not enough columns in row for height_controller_gains");
+            }
+            try {
+                height_controller_gains(rows_read, j) = std::stod(item);
+            } catch (const std::invalid_argument& e) {
+                throw std::runtime_error("Invalid number in CSV for height_controller_gains: '" + item + "'");
+            }
         }
+        rows_read++;
+    }
+    if (rows_read < 1) {
+        throw std::runtime_error("Not enough rows in height_controller_gains CSV");
     }
 
     in.close();
@@ -169,22 +182,31 @@ void Controller::ImportTranslationParameters(std::string file_name)
     char separator = ',';
     std::string row, item;
     std::ifstream in(file_name);
-    std::getline(in, row);
 
     if (!in.is_open()) {
         throw std::runtime_error("Could not open file");
     }
 
     // Get the controller values of the k-matrix
-    for (int i = 0; i < 1; i++)
-    {
-        std::getline(in, row);
+    int rows_read = 0;
+    while (rows_read < 1 && std::getline(in, row)) {
+        row.erase(std::remove_if(row.begin(), row.end(), ::isspace), row.end());
+        if (row.empty()) continue;
         std::stringstream controllerValueStringStream(row);
-        for (int j = 0; j < 3; j++)
-        {
-            std::getline(controllerValueStringStream, item, separator);
-            translation_controller_gains(i, j) = stod(item);
+        for (int j = 0; j < 6; j++) {
+            if (!std::getline(controllerValueStringStream, item, separator)) {
+                throw std::runtime_error("Not enough columns in row for translation_controller_gains");
+            }
+            try {
+                translation_controller_gains(rows_read, j) = std::stod(item);
+            } catch (const std::invalid_argument& e) {
+                throw std::runtime_error("Invalid number in CSV for translation_controller_gains: '" + item + "'");
+            }
         }
+        rows_read++;
+    }
+    if (rows_read < 1) {
+        throw std::runtime_error("Not enough rows in translation_controller_gains CSV");
     }
 
     in.close();
@@ -197,22 +219,31 @@ void Controller::ImportAngleParameters(std::string file_name)
     char separator = ',';
     std::string row, item;
     std::ifstream in(file_name);
-    std::getline(in, row);
 
     if (!in.is_open()) {
         throw std::runtime_error("Could not open file");
     }
 
     // Get the controller values of the k-matrix
-    for (int i = 0; i < 2; i++)
-    {
-        std::getline(in, row);
+    int rows_read = 0;
+    while (rows_read < 2 && std::getline(in, row)) {
+        row.erase(std::remove_if(row.begin(), row.end(), ::isspace), row.end());
+        if (row.empty()) continue;
         std::stringstream controllerValueStringStream(row);
-        for (int j = 0; j < 6; j++)
-        {
-            std::getline(controllerValueStringStream, item, separator);
-            angle_controller_gains(i, j) = stod(item);
+        for (int j = 0; j < 6; j++) {
+            if (!std::getline(controllerValueStringStream, item, separator)) {
+                throw std::runtime_error("Not enough columns in row for angle_controller_gains");
+            }
+            try {
+                angle_controller_gains(rows_read, j) = std::stod(item);
+            } catch (const std::invalid_argument& e) {
+                throw std::runtime_error("Invalid number in CSV for angle_controller_gains: '" + item + "'");
+            }
         }
+        rows_read++;
+    }
+    if (rows_read < 2) {
+        throw std::runtime_error("Not enough rows in angle_controller_gains CSV");
     }
 
     in.close();

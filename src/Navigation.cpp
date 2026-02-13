@@ -145,21 +145,20 @@ void Navigation::UpdateNavigation()
 
     // Update state estimates with available measurements
 
-    if (std::get<0>(magnetometer.MagnetometerAvailable()) > 0.5) {
+    if (std::get<0>(magnetometer.MagnetometerAvailable()) > 2) {
         magneticField = magnetometer.GetMagneticField();
         Eigen::Vector3d magneticFieldVector(std::get<0>(magneticField), std::get<1>(magneticField), std::get<2>(magneticField));
         magnetometerUpdate(magneticFieldVector, R);
         // std::cout << "Magnetometer Update: X=" << std::get<0>(magneticField) << ", Y=" << std::get<1>(magneticField) << ", Z=" << std::get<2>(magneticField) << "\n";
     }
 
-    if (std::get<0>(gps.GPSAvailable()) > 0.5) {
+    if (std::get<0>(gps.GPSAvailable()) > 2) {
         gpsPosition = gps.GetGPSPosition();
         Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
         gpsUpdate(gpsPositionVector);
-        std::cout << "GPS Update: X=" << std::get<0>(gpsPosition) << ", Y=" << std::get<1>(gpsPosition) << ", Z=" << std::get<2>(gpsPosition) << "\n";
     }
 
-    if (std::get<0>(camera.CameraAvailable()) > 0.5) {
+    if (std::get<0>(camera.CameraAvailable()) > 2) {
         cameraDirections = camera.GetUnitVectors();
         Eigen::VectorXd cameraDirectionsVector(9);
         cameraDirectionsVector << std::get<0>(cameraDirections), std::get<1>(cameraDirections), std::get<2>(cameraDirections),

@@ -6,7 +6,11 @@
 
 class LaunchManager
 {
+
 public:
+    enum class LaunchPhase { Takeoff, Ascend, Hover, Descend, Land };
+    enum class ChangeAltitudePhase { Accelerate, ConstantVelocity, Decelerate };
+
     LaunchManager();
 
     // Step the launch manager. Returns true when the manager requests handing off to top-level Land mode.
@@ -21,10 +25,6 @@ public:
     void SetCurrentMaxDeceleration(double d);
 
     void Reset();
-
-private:
-    enum class LaunchPhase { Takeoff, Ascend, Hover, Descend, LandSub };
-    enum class ChangeAltitudePhase { Accelerate, ConstantVelocity, Decelerate };
 
     LaunchPhase eLaunchPhase;
     ChangeAltitudePhase eAscendPhase;

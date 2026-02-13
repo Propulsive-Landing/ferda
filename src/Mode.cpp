@@ -81,7 +81,7 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         Telemetry::GetInstance().Log("Switching mode from calibration to test tvc");
         UploadKmatrices();
         //controller.ImportAngleParameters(AngleKMatrix);
-        //controller.ImportHeightParameters(HeightKMatrix);
+        controller.ImportHeightParameters(HeightKMatrix);
         //controller.ImportTranslationParameters(TranslationKMatrix);
         controller.Center();
         return Mode::TestTVC;
@@ -91,7 +91,7 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         Telemetry::GetInstance().Log("Switching mode from calibration to idle");
         UploadKmatrices();
         //controller.ImportAngleParameters(AngleKMatrix);
-        //controller.ImportHeightParameters(HeightKMatrix);
+        controller.ImportHeightParameters(HeightKMatrix);
         //controller.ImportTranslationParameters(TranslationKMatrix);
         controller.Center();
         return Mode::Idle;
@@ -173,10 +173,10 @@ Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, I
         igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAUNCH);
     }
 
-    bool handoffToLand = this->launchManager.Step(navigation, controller, igniter, currentTime);
-    if (handoffToLand)
+    bool handoffToSafe = this->launchManager.Step(navigation, controller, igniter, currentTime);
+    if (handoffToSafe)
     {
-        return Mode::Land;
+        return Mode::Safe;
     }
 
     return Mode::Launch;
