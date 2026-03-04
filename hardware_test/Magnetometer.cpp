@@ -1,0 +1,16 @@
+// Update magnetometer class for hardware implementation
+
+// hardware_simulation/Magnetometer.cpp
+#include "Magnetometer.hpp"
+
+Magnetometer::Magnetometer() {}
+
+std::tuple<double, double, double> Magnetometer::GetMagneticField()
+{
+    return std::make_tuple(0.0, 0.0, 0.0);
+}
+
+std::tuple<double> Magnetometer::MagnetometerAvailable()
+{
+    return 0.0;
+}
