@@ -100,10 +100,10 @@ void Navigation::UpdateNavigation()
     linearAcceleration = imu.GetBodyAcceleration();
     angularRate = imu.GetBodyAngularRate();
     
+    Eigen::Vector3d a_m(std::get<0>(linearAcceleration), std::get<1>(linearAcceleration), std::get<2>(linearAcceleration));
+    Eigen::Vector3d w_m(std::get<0>(angularRate), std::get<1>(angularRate), std::get<2>(angularRate));
+    
     //Logging for SIL testing
-    //Eigen::Vector3d a_m(std::get<0>(linearAcceleration), std::get<1>(linearAcceleration), std::get<2>(linearAcceleration));
-    //Eigen::Vector3d w_m(std::get<0>(angularRate), std::get<1>(angularRate), std::get<2>(angularRate));
-
     //dataFile << std::fixed << std::setprecision(6) 
     //         << x_e(0) << "," << x_e(1) << "," << x_e(2) << "," 
     //         << v_e(0) << "," << v_e(1) << "," << v_e(2) << "\n";
