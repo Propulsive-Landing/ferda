@@ -27,13 +27,24 @@ Navigation::Navigation(IMU &inputImu, Magnetometer &inputMagnetometer, GPS &inpu
          1e-5, 1e-5, 1e-5; // Gyroscope bias variances
 
     P = d.asDiagonal();
+    
+    //Logging for SIL testing
+    //dataFile.open("data.csv", std::ios::app);
 }
 
 void Navigation::reset()
 {
+    // Preserve bias estimates when resetting for launch
+    Eigen::Vector3d a_b_saved = stateMat.segment(10, 3);
+    Eigen::Vector3d w_b_saved = stateMat.segment(13, 3);
+    
     stateMat = Eigen::Matrix<double, 16, 1>::Zero();
     stateMat(2) = 0.28;
     stateMat(6) = 1;
+    
+    // Restore the bias estimates
+    stateMat.segment(10, 3) = a_b_saved;
+    stateMat.segment(13, 3) = w_b_saved;
 }
 
 Eigen::Matrix<double, 16, 1> Navigation::GetNavigation()
@@ -88,13 +99,14 @@ void Navigation::UpdateNavigation()
     // Create 2 tuples to hold the the linear acceleration and angular rate data from the imu
     linearAcceleration = imu.GetBodyAcceleration();
     angularRate = imu.GetBodyAngularRate();
+    
+    //Logging for SIL testing
+    //Eigen::Vector3d a_m(std::get<0>(linearAcceleration), std::get<1>(linearAcceleration), std::get<2>(linearAcceleration));
+    //Eigen::Vector3d w_m(std::get<0>(angularRate), std::get<1>(angularRate), std::get<2>(angularRate));
 
-    // std::cout << "Accel Z:" << std::to_string(std::get<2>(linearAcceleration)) << " gyroX: " << std::to_string(std::get<0>(angularRate)) << "\n";
-    // Convert the linear acceleration tuple to a Vector so we can muliply the Eigen matrix R by another Eigen type which in this case is a vector
-    Eigen::Vector3d a_m(std::get<0>(linearAcceleration), std::get<1>(linearAcceleration), std::get<2>(linearAcceleration));
-    Eigen::Vector3d w_m(std::get<0>(angularRate), std::get<1>(angularRate), std::get<2>(angularRate));
-
-    writeDoubleToCSV(x_e(0), x_e(1), x_e(2), v_e(0), v_e(1), v_e(2), 6);
+    //dataFile << std::fixed << std::setprecision(6) 
+    //         << x_e(0) << "," << x_e(1) << "," << x_e(2) << "," 
+    //         << v_e(0) << "," << v_e(1) << "," << v_e(2) << "\n";
 
     // Nominal State Calculation //
     x_e += v_e * loopTime + 0.5 * (R * (a_m - a_b) + g) * loopTime * loopTime;
@@ -135,40 +147,51 @@ void Navigation::UpdateNavigation()
 
     double sigma_a_n = 0.0316;
     double sigma_w_n = 0.00224;
+    double sigma_a_w = 0;
+    double sigma_w_w = 0;
 
     Eigen::MatrixXd Qi = Eigen::MatrixXd::Zero(12,12);
     Qi.block<3,3>(0,0) = sigma_a_n*sigma_a_n * loopTime*loopTime * Eigen::Matrix3d::Identity();
     Qi.block<3,3>(3,3) = sigma_w_n*sigma_w_n * loopTime*loopTime * Eigen::Matrix3d::Identity();
+    Qi.block<3,3>(6,6) = sigma_a_w*sigma_a_w * loopTime*loopTime * Eigen::Matrix3d::Identity();
+    Qi.block<3,3>(9,9) = sigma_w_w*sigma_w_w * loopTime*loopTime * Eigen::Matrix3d::Identity();
 
     // Compute Covariance Matrix //
     P = Fx * P * Fx.transpose() + Fi * Qi * Fi.transpose();
 
     // Update state estimates with available measurements
 
-    if (std::get<0>(magnetometer.MagnetometerAvailable()) > 2) {
+    if (std::get<0>(magnetometer.MagnetometerAvailable()) > 0.5) {
         magneticField = magnetometer.GetMagneticField();
         Eigen::Vector3d magneticFieldVector(std::get<0>(magneticField), std::get<1>(magneticField), std::get<2>(magneticField));
         magnetometerUpdate(magneticFieldVector, R);
-        // std::cout << "Magnetometer Update: X=" << std::get<0>(magneticField) << ", Y=" << std::get<1>(magneticField) << ", Z=" << std::get<2>(magneticField) << "\n";
     }
 
-    if (std::get<0>(gps.GPSAvailable()) > 2) {
+    if (std::get<0>(gps.GPSAvailable()) > 0.5) {
         gpsPosition = gps.GetGPSPosition();
         Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
         gpsUpdate(gpsPositionVector);
     }
 
-    if (std::get<0>(camera.CameraAvailable()) > 2) {
+    if (std::get<0>(camera.CameraAvailable()) > 0.5 && x_e(2) > 2.0) {
         cameraDirections = camera.GetUnitVectors();
         Eigen::VectorXd cameraDirectionsVector(9);
         cameraDirectionsVector << std::get<0>(cameraDirections), std::get<1>(cameraDirections), std::get<2>(cameraDirections),
                                   std::get<3>(cameraDirections), std::get<4>(cameraDirections), std::get<5>(cameraDirections),
                                   std::get<6>(cameraDirections), std::get<7>(cameraDirections), std::get<8>(cameraDirections);
         cameraUpdate(cameraDirectionsVector, R);
-        //std::cout << "Camera Update: X=" << std::get<0>(cameraDirections) << ", Y=" << std::get<1>(cameraDirections) << ", Z=" << std::get<2>(cameraDirections) << "\n";
     }
 
-    // Repack states into stateMat //
+    Eigen::Vector3d angularRateVector = Eigen::Vector3d(std::get<0>(angularRate), std::get<1>(angularRate), std::get<2>(angularRate));
+    w = angularRateVector;
+
+    // Apply pad updates when on the pad (idle mode)
+    if (onPad) {
+        padUpdatePosition();
+        padUpdateAngularVelocity(w);
+    }
+
+    // Repack states into stateMat
     stateMat.segment(0, 3) = x_e;
     stateMat.segment(3, 3) = v_e;
     stateMat(6) = q.w();
@@ -177,8 +200,7 @@ void Navigation::UpdateNavigation()
     stateMat(9) = q.z();
     stateMat.segment(10, 3) = a_b;
     stateMat.segment(13, 3) = w_b;
-    Eigen::Vector3d angularRateVector = Eigen::Vector3d(std::get<0>(angularRate), std::get<1>(angularRate), std::get<2>(angularRate));
-    w = angularRateVector - w_b;
+
 }
 
 void Navigation::magnetometerUpdate(const Eigen::Vector3d& magneticField, const Eigen::Matrix3d& R)
@@ -194,6 +216,28 @@ void Navigation::gpsUpdate(const Eigen::Vector3d& gpsPosition)
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
     H.block<3,3>(0,0) = Eigen::Matrix3d::Identity();
     kalmanUpdate(H, (1) * (1) * Eigen::Matrix3d::Identity(), gpsPosition, x_e);
+}
+
+void Navigation::padUpdatePosition()
+{
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
+    H.block<3,3>(0,0) = Eigen::Matrix3d::Identity();
+    Eigen::Vector3d initialPosition = Eigen::Vector3d(0, 0, 0.28); // [TODO] Get actual pad position
+    kalmanUpdate(H, (1e-3) * (1e-3) * Eigen::Matrix3d::Identity(), initialPosition, x_e);
+}
+
+void Navigation::padUpdateAngularVelocity(const Eigen::Vector3d& w)
+{
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
+    H.block<3,3>(0,12) = Eigen::Matrix3d::Identity();
+    Eigen::Vector3d initialAngularVelocity = Eigen::Vector3d(0, 0, 0);
+    // TODO: replace with sigma_w_n from constants file
+    kalmanUpdate(H, (0.00224) * (0.00224) * Eigen::Matrix3d::Identity(), w, initialAngularVelocity);
+}
+
+void Navigation::SetOnPad(bool isOnPad)
+{
+    onPad = isOnPad;
 }
 
 void Navigation::cameraUpdate(const Eigen::VectorXd& cameraDirectionsVector, const Eigen::Matrix3d& R)
@@ -215,9 +259,9 @@ void Navigation::cameraUpdate(const Eigen::VectorXd& cameraDirectionsVector, con
             -R.transpose() * (Eigen::Matrix3d::Identity() - u*u.transpose()) / d;
 
         H.block<3,3>(3*i, 6) =
-            -skew(R.transpose() * u);
+            skew(R.transpose() * u);
     }
-    kalmanUpdate(H, (1e-2) * (1e-2) * Eigen::MatrixXd::Identity(3*N, 3*N), cameraDirectionsVector, y_pred);
+    kalmanUpdate(H, (1e-3) * (1e-3) * Eigen::MatrixXd::Identity(3*N, 3*N), cameraDirectionsVector, y_pred);
 }
 
 void Navigation::kalmanUpdate(

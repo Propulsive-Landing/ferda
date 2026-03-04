@@ -4,6 +4,7 @@
 #include <deque>
 #include <vector>
 #include <tuple>
+#include <fstream>
 #include "IMU.hpp"
 #include "Magnetometer.hpp"
 #include "Camera.hpp"
@@ -32,6 +33,8 @@ private:
     std::tuple<double> magnetometerAvailable;
     std::tuple<double> gpsAvailable;
     std::tuple<double> cameraAvailable;
+    std::ofstream dataFile;
+    bool onPad = true; // Flag to indicate if rocket is on the pad (idle mode)
 
 public:
     double loopTime = 0.005;
@@ -40,6 +43,9 @@ public:
     Eigen::MatrixXd P;
     Eigen::Matrix<double, 16, 1> GetNavigation(); // Defintion of state matrix: TODO (determine dimensions and document form)
     void UpdateNavigation();                      // Defintion updates: TODO (determine dimensions and document form)
+    void padUpdatePosition();
+    void padUpdateAngularVelocity(const Eigen::Vector3d& w);
+    void SetOnPad(bool isOnPad); // Set whether rocket is on the pad
     Eigen::Vector3d GetAngularVelocity();
     std::tuple<double, double, double> ComputeAngularRollingAverage(std::vector<double> d_theta_now);
     Eigen::Vector3d x_e, v_e;

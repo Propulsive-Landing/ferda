@@ -80,9 +80,9 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
     {
         Telemetry::GetInstance().Log("Switching mode from calibration to test tvc");
         UploadKmatrices();
-        //controller.ImportAngleParameters(AngleKMatrix);
+        controller.ImportAngleParameters(AngleKMatrix);
         controller.ImportHeightParameters(HeightKMatrix);
-        //controller.ImportTranslationParameters(TranslationKMatrix);
+        controller.ImportTranslationParameters(TranslationKMatrix);
         controller.Center();
         return Mode::TestTVC;
     }
@@ -90,9 +90,9 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
     {
         Telemetry::GetInstance().Log("Switching mode from calibration to idle");
         UploadKmatrices();
-        //controller.ImportAngleParameters(AngleKMatrix);
+        controller.ImportAngleParameters(AngleKMatrix);
         controller.ImportHeightParameters(HeightKMatrix);
-        //controller.ImportTranslationParameters(TranslationKMatrix);
+        controller.ImportTranslationParameters(TranslationKMatrix);
         controller.Center();
         return Mode::Idle;
     }
@@ -131,6 +131,8 @@ Mode::Phase Mode::UpdateTestTVC(Navigation &navigation, Controller &controller, 
 
 Mode::Phase Mode::UpdateIdle(Navigation &navigation, Controller &controller, IMU &imu, double currentTime)
 {
+    // Enable pad updates while on the pad
+    navigation.SetOnPad(true);
 
     navigation.UpdateNavigation();
 
@@ -144,6 +146,7 @@ Mode::Phase Mode::UpdateIdle(Navigation &navigation, Controller &controller, IMU
     else if (command == RF::Command::Ignite)
     {
         Telemetry::GetInstance().Log("Switching mode from idle to launch");
+        navigation.SetOnPad(false); // Disable pad updates during flight
         navigation.reset();
         return Mode::Launch;
     }

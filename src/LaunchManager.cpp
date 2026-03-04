@@ -48,6 +48,7 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
     switch (eLaunchPhase)
     {
     case LaunchPhase::Takeoff:
+        controller.refAccelerationZ = 0.0;
         controller.refVelocityZ = slowReferenceVelocity;
         if (controller.refPositionZ > takeoffAltitudeThreshold)
         {
@@ -62,6 +63,7 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
         switch (eAscendPhase)
         {
         case ChangeAltitudePhase::Accelerate:
+            controller.refAccelerationZ = currentMaxAcceleration;
             controller.refVelocityZ += currentMaxAcceleration * controller.loopTime;
             {
                 double accelDecelerationDistance = (controller.refVelocityZ * controller.refVelocityZ) / (2.0 * currentMaxDeceleration);
@@ -81,6 +83,7 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
             break;
 
         case ChangeAltitudePhase::ConstantVelocity:
+            controller.refAccelerationZ = 0.0;
             controller.refVelocityZ = fastReferenceVelocity;
             {
                 double decelerationDistance = (controller.refVelocityZ * controller.refVelocityZ) / (2.0 * currentMaxDeceleration);
@@ -93,6 +96,7 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
             break;
 
         case ChangeAltitudePhase::Decelerate:
+            controller.refAccelerationZ = -currentMaxDeceleration;
             controller.refVelocityZ -= currentMaxDeceleration * controller.loopTime;
             if (controller.refVelocityZ <= 0.0)
             {
@@ -116,6 +120,7 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
         break;
 
     case LaunchPhase::Hover:
+        controller.refAccelerationZ = 0.0;
         controller.refVelocityZ = 0.0;
         if ((currentTime - launchPhaseStartTime) >= hoverDurationSeconds)
         {
@@ -130,6 +135,7 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
         switch (eDescendPhase)
         {
         case ChangeAltitudePhase::Accelerate:
+            controller.refAccelerationZ = -currentMaxAcceleration;
             controller.refVelocityZ -= currentMaxAcceleration * controller.loopTime;
             {
                 double descendAccelDecelerationDistance = (std::abs(controller.refVelocityZ) * std::abs(controller.refVelocityZ)) / (2.0 * currentMaxDeceleration);
@@ -149,6 +155,7 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
             break;
 
         case ChangeAltitudePhase::ConstantVelocity:
+            controller.refAccelerationZ = 0.0;
             controller.refVelocityZ = -fastReferenceVelocity;
             {
                 double descendDecelerationDistance = (fastReferenceVelocity * fastReferenceVelocity) / (2.0 * currentMaxDeceleration);
@@ -161,6 +168,7 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
             break;
 
         case ChangeAltitudePhase::Decelerate:
+            controller.refAccelerationZ = currentMaxDeceleration;
             controller.refVelocityZ += currentMaxDeceleration * controller.loopTime;
             if (controller.refVelocityZ >= -slowReferenceVelocity)
             {
@@ -182,6 +190,7 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
         break;
 
     case LaunchPhase::Land:
+        controller.refAccelerationZ = 0.0;
         controller.refVelocityZ = -slowReferenceVelocity;
         
         // TODO: Revisit landing condition
