@@ -1,8 +1,9 @@
 #pragma once
 
 #include <tuple>
+#include "IMU.hpp"
 
-class Magnetometer
+class Magnetometer ::public IMU
 {
 public:
     Magnetometer();

@@ -31,13 +31,12 @@ namespace MissionConstants
     const double kFSWCalibrationTime = 0.05;
     const double originalOffsetAngle = 5 * kDeg2Rad;
     const Eigen::Vector3d kEarthMagField = Eigen::Vector3d(-0.089, 0.378, -0.921).normalized(); // Unit vector pointing in the direction of Earth's magnetic field
-    const Eigen::Vector3d kSensorCameraPosition = Eigen::Vector3d(0.2, 0.2, -1); // Position of the camera in the body frame (in meters)
+    const Eigen::Vector3d kSensorCameraPosition = Eigen::Vector3d(0.2, 0.2, -1);                // Position of the camera in the body frame (in meters)
     inline const Eigen::Matrix<double, 3, 3> kMarkerData =
-        (Eigen::Matrix<double, 3, 3>() <<
-            -2.5, -2.5, 5.0,
-            4.3301, -4.3301, 0.0,
-            0.5,  0.5,  0.5
-        ).finished();
+        (Eigen::Matrix<double, 3, 3>() << -2.5, -2.5, 5.0,
+         4.3301, -4.3301, 0.0,
+         0.5, 0.5, 0.5)
+            .finished();
 
     // Controller constants, TODO: USER EDIT PRE-FLIGHT
     const double kMaximumTvcAngle = 7.5 * kDeg2Rad;
@@ -70,6 +69,22 @@ namespace MissionConstants
 
     // Time after launch until active stabalization begins.
     const float timeAtOffset = 0.0;
+
+    // IMU constants
+    const int IMU_i2c_addr = 0x28;
+    const int POWER_MODE 0x3E;
+    const int POWER_NORMAL 0x00;
+    const int OPERATION_MODE 0x3D;
+    const int AMG 0x07;
+    const int REG_ACC_X 0x08;
+    const int REG_ACC_Y 0x0A;
+    const int REG_ACC_Z 0x0C;
+    const int REG_GYRO_X 0x14;
+    const int REG_GYRO_Y 0x16;
+    const int REG_GYRO_Z 0x18;
+    const int REG_MAG_X 0x0E;
+    const int REG_MAG_Y 0x10;
+    const int REG_MAG_Z 0x12;
 
 } // MissionConstants
 
