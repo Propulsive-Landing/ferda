@@ -2,7 +2,7 @@
 
 #include <tuple>
 
-#include <wiringPiI.h>
+#include <wiringPi.h>
 #include <wiringPiI2C.h>
 
 class IMU

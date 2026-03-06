@@ -29,8 +29,8 @@ private:
     Eigen::Vector2d setpoint_angles_prev = Eigen::Vector2d::Zero(); // Previous setpoint angles for derivative term
 
 public:
-    TVC tvc;
-    Engine engine;
+    TVC &tvc;
+    Engine &engine;
     Eigen::Vector2d input;
     double loopTime = 0.005;
     double refPositionX = 0.0;      // reference position in x (meters)

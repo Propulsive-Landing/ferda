@@ -3,7 +3,6 @@
 // hardware_simulation/Magnetometer.cpp
 #include "Magnetometer.hpp"
 
-Magnetometer::Magnetometer() {}
 
 std::tuple<double, double, double> Magnetometer::GetMagneticField()
 {

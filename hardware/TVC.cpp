@@ -2,7 +2,7 @@
 
 #include <Eigen/Dense>
 
-#include <pigpio.h>
+#include <PiPCA9685/PCA9685.h>
 #include <math.h>
 #include <algorithm>
 #include <MissionConstants.hpp>
@@ -18,7 +18,9 @@ void TVC::SetTVCX(double angle_rad)
     servoAngle += 90 + MissionConstants::kTvcXCenterAngleDeg;
 
     double dPulseWidth = 1000 + (servoAngle * 1000 / 180.0);
-    gpioServo(23, round(dPulseWidth));
+    //gpioServo(23, round(dPulseWidth));
+    
+
 }
 
 void TVC::SetTVCY(double angle_rad)
@@ -30,5 +32,5 @@ void TVC::SetTVCY(double angle_rad)
     servoAngle += 90 + MissionConstants::kTvcYCenterAngleDeg;
 
     double dPulseWidth = 1000 + (servoAngle * 1000 / 180.0);
-    gpioServo(24, round(dPulseWidth));
+    //gpioServo(24, round(dPulseWidth));
 }

@@ -20,23 +20,23 @@
 #include <tuple>
 
 #ifdef NDEBUG
-#include <pigpio.h>
+#include <wiringPi.h>
 #endif
 
 int main()
 {
 #ifdef NDEBUG
-    if (gpioInitialise() < 0)
+    if (wiringPiSetupGpio() < 0)
         throw std::runtime_error("failed to initialize gpio");
+    // ADD NEW PIN SETUPS BECAUSE WE DON'T NEED THE ONES BELOW
+    // pinMode(5, OUTPUT);
+    // pinMode(6, OUTPUT);
 
-    gpioSetMode(5, PI_OUTPUT);
-    gpioSetMode(6, PI_OUTPUT);
+    // pinMode(23, OUTPUT);
+    // pinMode(24, OUTPUT);
 
-    gpioSetMode(23, PI_OUTPUT);
-    gpioSetMode(24, PI_OUTPUT);
-
-    gpioWrite(5, 1);
-    gpioWrite(6, 1);
+    // gpioWrite(5, 1);
+    // gpioWrite(6, 1);
 
 #endif
 
@@ -49,17 +49,23 @@ int main()
     Engine engine;
 
 
-    Navigation navigation(imu, magnetometer, gps, camera, tvc);
-    Controller controller(tvc, engine);
+    // Navigation navigation(imu, magnetometer, gps, camera, tvc);
+    // Controller controller(tvc, engine);
 
-    Telemetry::GetInstance().Log("Starting program...");
+    // Telemetry::GetInstance().Log("Starting program...");
 
     // TODO we need to set controller iteration gains or there is a segmentation fault.
 
-    Mode mode(Mode::Calibration);
+    // Mode mode(Mode::Calibration);
 
-    while (mode.Update(navigation, controller, igniter, imu))
+    // while (mode.Update(navigation, controller, igniter, imu))
+    // {
+    // }
+    while(1)
     {
+        std::tuple<double,double,double> test = imu.GetBodyAcceleration(); 
+        std::cout << std::get<0>(test) << ", " << std::get<1>(test) << "," << std::get<2>(test);
+        std::cout << "\n";
     }
 
     // #ifdef NDEBUG
