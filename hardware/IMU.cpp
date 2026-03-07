@@ -23,6 +23,8 @@ IMU::IMU()
     delay(50); // allow sensor to start
     wiringPiI2CWriteReg8(fd, MissionConstants::OPERATION_MODE, MissionConstants::AMG);
     delay(50); // allow sensor to start
+    wiringPiI2CWriteReg8(fd, MissionConstants::UNIT_SEL, MissionConstants::RAD);
+    delay(50); // allow sensor to start
 }
 int16_t IMU::read16LE(int fd, int reg)
 {
@@ -48,5 +50,5 @@ std::tuple<double, double, double> IMU::GetBodyAngularRate()
     double nAnglVelY = (double)read16LE(fd, MissionConstants::REG_GYRO_Y);
     double nAnglVelZ = (double)read16LE(fd, MissionConstants::REG_GYRO_Z);
 
-    return std::make_tuple(nAnglVelX / 16.0f, nAnglVelY / 16.0f, nAnglVelZ / 16.0f); // deg/s
+    return std::make_tuple(nAnglVelX / 900.0f, nAnglVelY / 900.0f, nAnglVelZ / 900.0f); // deg/s
 }

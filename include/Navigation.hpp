@@ -38,6 +38,7 @@ private:
 
 public:
     double loopTime = 0.005;
+    int count = 0;
     Navigation(IMU &imu, Magnetometer &magnetometer, GPS &gps, Camera &camera, TVC &tvc);
     void reset();
     Eigen::MatrixXd P;
@@ -66,5 +67,7 @@ public:
     std::tuple<double> MagnetometerAvailable();
     std::tuple<double> GPSAvailable();
     std::tuple<double> CameraAvailable();
+    Eigen::Vector3d getAB();
+    Eigen::Vector3d getWB();
     std::tuple<double, double, double, double, double, double, double, double, double> GetUnitVectors();
 };

@@ -29,7 +29,7 @@ void Telemetry::HardwareSaveFrame(Navigation& navigation, Controller& controller
     // Write data to file
     
 
-    for(int i = 0; i < 12; ++i){
+    for(int i = 0; i < 16; ++i){
         HardwareSaved << std::to_string(navigation.GetNavigation()(i))<< ", ";
     }
     HardwareSaved << std::to_string(controller.GetCurrentTVCCommand()[0]) << ", ";
@@ -38,12 +38,17 @@ void Telemetry::HardwareSaveFrame(Navigation& navigation, Controller& controller
 
     std::tuple<double, double, double> linAc = navigation.GetLinearAcceleration();
     std::tuple<double, double, double> angAc = navigation.GetAngularAcceleration();
+    std::tuple<double, double, double> mag = navigation.GetMagneticField();
+
     SensorSaved << std::to_string(std::get<0>(linAc))<< ", ";
     SensorSaved << std::to_string(std::get<1>(linAc))<< ", ";
     SensorSaved << std::to_string(std::get<2>(linAc))<< ", ";
     SensorSaved << std::to_string(std::get<0>(angAc))<< ", ";
     SensorSaved << std::to_string(std::get<1>(angAc))<< ", ";
-    SensorSaved << std::to_string(std::get<2>(angAc));
+    SensorSaved << std::to_string(std::get<2>(angAc))<< ",";
+    SensorSaved << std::to_string(std::get<0>(mag))<< ", ";
+    SensorSaved << std::to_string(std::get<1>(mag))<< ", ";
+    SensorSaved << std::to_string(std::get<2>(mag));
 
     HardwareSaved<<"\n" << std::flush;
     SensorSaved<<"\n" << std::flush;
@@ -143,8 +148,8 @@ Telemetry::Telemetry()
     SensorSaved.open ("../logs/sensors"+str+".txt");
 
 
-    HardwareSaved << "Date, x, y, z, vx, vy, vz, phi, theta, psi, p, q, r, ux, uy, K_Matrix_Index \n";
-    SensorSaved << "Date, accelX, accelY, accelZ, gyroX, gryoY, gyroZ \n";
+    HardwareSaved << "Date, x, y, z, vx, vy, vz, q1, q2, q3, q4, ab1, ab2, ab3, wb1, wb2, wb3, ux, uy, K_Matrix_Index \n";
+    SensorSaved << "Date, accelX, accelY, accelZ, gyroX, gryoY, gyroZ, magx, magy, magz \n";
 
 
 

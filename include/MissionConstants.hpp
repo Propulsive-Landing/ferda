@@ -87,6 +87,9 @@ namespace MissionConstants
     const int REG_MAG_Y = 0x10;
     const int REG_MAG_Z = 0x12;
 
+    const int UNIT_SEL = 0X3B;
+    const int RAD = 0x02;
+
 } // MissionConstants
 
 #endif

@@ -21,8 +21,8 @@ Navigation::Navigation(IMU &inputImu, Magnetometer &inputMagnetometer, GPS &inpu
     
     Eigen::VectorXd d(15);
     d << 1e-5, 1e-5, 1e-5, // Position variances
-         0, 0, 0, // Velocity variances
-         0, 0, 0, // Attitude variances
+         10e-3, 10e-3, 10e-3, // Velocity variances
+         0.1, 0.1, 0.1, // Attitude variances
          1e-2, 1e-2, 1e-2, // Accelerometer bias variances
          1e-5, 1e-5, 1e-5; // Gyroscope bias variances
 
@@ -160,11 +160,13 @@ void Navigation::UpdateNavigation()
     P = Fx * P * Fx.transpose() + Fi * Qi * Fi.transpose();
 
     // Update state estimates with available measurements
-
-    if (std::get<0>(magnetometer.MagnetometerAvailable()) > 0.5) {
+    count +=1;
+    if (count == 10)
+    {
         magneticField = magnetometer.GetMagneticField();
         Eigen::Vector3d magneticFieldVector(std::get<0>(magneticField), std::get<1>(magneticField), std::get<2>(magneticField));
         magnetometerUpdate(magneticFieldVector, R);
+        count = 0;
     }
 
     if (std::get<0>(gps.GPSAvailable()) > 0.5) {
@@ -200,7 +202,7 @@ void Navigation::UpdateNavigation()
     stateMat(9) = q.z();
     stateMat.segment(10, 3) = a_b;
     stateMat.segment(13, 3) = w_b;
-
+   
 }
 
 void Navigation::magnetometerUpdate(const Eigen::Vector3d& magneticField, const Eigen::Matrix3d& R)
@@ -298,6 +300,13 @@ std::tuple<double, double, double> Navigation::GetAngularAcceleration()
 {
     return angularRate;
 }
+
+std::tuple<double, double, double> Navigation::GetMagneticField()
+{
+    return magneticField;
+}
+
+
 
 Eigen::Matrix3d Navigation::skew(const Eigen::Vector3d& v) {
     Eigen::Matrix3d S;

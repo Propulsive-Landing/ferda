@@ -7,5 +7,4 @@ class Magnetometer : public IMU
 {
 public:
     std::tuple<double, double, double> GetMagneticField();
-    std::tuple<double> MagnetometerAvailable();
 };
