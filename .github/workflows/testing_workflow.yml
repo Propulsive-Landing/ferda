@@ -17,15 +17,6 @@ jobs:
         sudo apt update
         sudo apt install -y libgtest-dev libeigen3-dev libi2c-dev cmake
 
-    - name: Build Debug Mode
-      run: |
-        cmake -DCMAKE_BUILD_TYPE=Debug -B build-debug .
-        cmake --build build-debug
-
-    - name: Run Debug Binary for 10 seconds
-      run: |
-        timeout 10s ./build-debug/Ferda < /dev/null || echo "Exited after timeout"
-
     - name: Install WiringPi from source
       run: |
         sudo apt update
@@ -45,6 +36,15 @@ jobs:
         cd PiPCA9685-main
         xargs -a apt_dependencies.txt sudo apt-get install -y
         sudo cmake --workflow --preset install
+
+    - name: Build Debug Mode
+      run: |
+        cmake -DCMAKE_BUILD_TYPE=Debug -B build-debug .
+        cmake --build build-debug
+
+    - name: Run Debug Binary for 10 seconds
+      run: |
+        timeout 10s ./build-debug/Ferda < /dev/null || echo "Exited after timeout"
 
     - name: Build Release Mode
       run: |
