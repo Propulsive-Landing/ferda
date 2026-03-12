@@ -1,6 +1,7 @@
 #pragma once
 
 #include <tuple>
+#include <cstdint>
 
 #ifdef NDEBUG
 #include <wiringPi.h>
