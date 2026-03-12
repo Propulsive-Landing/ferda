@@ -15,7 +15,8 @@ private:
     RF();
     ~RF();
 
-    int SerialFd; // Not used in testing class
+    int SerialFd;                 // Not used in testing class
+    bool terminal_switch = false; // Used to determine how to communicate with Flight Computer (If XBEE fails, switch to terminal)
 
 public:
     enum Command
