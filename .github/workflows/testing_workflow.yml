@@ -23,6 +23,7 @@ jobs:
         sudo apt install -y build-essential unzip
         wget https://github.com/WiringPi/WiringPi/archive/master.zip
         unzip master.zip
+        rm master.zip
         cd WiringPi-master/wiringPi
         make
         sudo make install
@@ -32,7 +33,7 @@ jobs:
         sudo apt update
         sudo apt install -y build-essential unzip
         wget https://github.com/barulicm/PiPCA9685/archive/master.zip
-        unzip -y master.zip
+        unzip master.zip
         cd PiPCA9685-main
         xargs -a apt_dependencies.txt sudo apt-get install -y
         sudo cmake --workflow --preset install

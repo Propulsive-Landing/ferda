@@ -8,8 +8,3 @@ std::tuple<double, double, double> Magnetometer::GetMagneticField()
 {
     return UDPClient::GetInstance().GetMagneticField();
 }
-
-std::tuple<double> Magnetometer::MagnetometerAvailable()
-{
-    return UDPClient::GetInstance().GetMagnetometerAvailable();
-}

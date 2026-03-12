@@ -48,32 +48,18 @@ int main()
     Igniter igniter;
     Engine engine;
 
-
     Navigation navigation(imu, magnetometer, gps, camera, tvc);
     Controller controller(tvc, engine);
 
     Telemetry::GetInstance().Log("Starting program...");
 
-   // TODO we need to set controller iteration gains or there is a segmentation fault.
+    // TODO we need to set controller iteration gains or there is a segmentation fault.
 
     Mode mode(Mode::Calibration);
 
     while (mode.Update(navigation, controller, igniter, imu))
     {
     }
-
-    // while(1)
-    // {
-    //     std::cout << "Accel" << "\n";
-    //     std::tuple<double,double,double> test = imu.GetBodyAcceleration(); 
-    //     std::cout << std::get<0>(test) << ", " << std::get<1>(test) << "," << std::get<2>(test);
-    //     std::cout << "\n";
-
-    //     std::cout << "Gyro" << "\n";
-    //     std::tuple<double,double,double> test2 = imu.GetBodyAngularRate(); 
-    //     std::cout << std::get<0>(test2) << ", " << std::get<1>(test2) << "," << std::get<2>(test2);
-    //     std::cout << "\n";
-    // }
 
     // #ifdef NDEBUG
     //     gpioTerminate();
