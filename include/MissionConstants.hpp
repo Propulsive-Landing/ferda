@@ -11,6 +11,7 @@
 
 #define __MISSION_CONSTANTS__
 
+// TODO: add more namespaces to sub types like navigation and controller, etc
 namespace MissionConstants
 {
     // YAML::Node LoadConstants(std::string filepath) {
@@ -89,6 +90,16 @@ namespace MissionConstants
 
     const int UNIT_SEL = 0X3B;
     const int RAD = 0x02;
+
+    // RF consants
+    inline const char* RF_Port = "/dev/ttyS0";
+
+    // GPS constants
+    const int MAX_SIZE = 256; 
+    inline const char* GPS_Port = "/dev/ttyS0";
+
+    
+
 
 } // MissionConstants
 

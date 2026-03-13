@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <termios.h>
 
+#include "MissionConstants.hpp"
 #include "RF.hpp"
 #include "Telemetry.hpp"
 
@@ -27,7 +28,7 @@ RF::RF()
     RFSent.open("../logs/RFSent" + str + ".txt");
 
     // OPEN SERIAL PORT FOR HARDWARE
-    SerialFd = open("/dev/ttyS0", O_RDWR);
+    SerialFd = open(MissionConstants::RF_Port, O_RDWR);
     // SerialPort = fopen("./virtual_rf.txt", "w+");
 
     int flags = fcntl(SerialFd, F_GETFL, 0);
@@ -37,7 +38,6 @@ RF::RF()
     if (SerialFd < 0)
     {
         std::cout << "Switching to terminal controls" << std::flush;
-        Telemetry::GetInstance().Log("Switching to terminal controls");
         terminal_switch = true;
     }
 }
