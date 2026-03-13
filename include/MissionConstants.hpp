@@ -92,15 +92,42 @@ namespace MissionConstants
     const int RAD = 0x02;
 
     // RF consants
-    inline const char* RF_Port = "/dev/ttyS0";
+    inline const char *RF_Port = "/dev/ttyS0";
 
     // GPS constants
-    const int MAX_SIZE = 256; 
-    inline const char* GPS_Port = "/dev/ttyS0";
+    const int MAX_SIZE = 256;
+    inline const char *GPS_Port = "/dev/ttyS0";
+    namespace NMEA
+    {
+        const int MESSAGE_TYPE_STARTING_STRING_INDEX = 3;
+        const int MESSAGE_TYPE_IDX = 0; // 0 index BASED
+        const int TIME_IDX = 1;         // 0 index BASED
+        namespace RMC
+        {
+            const std::string RMC = "RMC"; // for latutude, longitude, speed (knots), time
+            const int NUM_VALUES = 13;
+            const int STAUS_IDX = 2;               // Starting from 0 indexed
+            const char BAD_STATUS_CHARACTER = 'V'; // Since GGA can have 2 validity indicators and 1 invalid inidactor, it's
+                                                   // easier if all NMEA ouputs check for invalidty
+            const int LATITUDE_IDX = 3;            // 0 index based
+            const int LONGITUDE_IDX = 5;           // 0 index based
+            const int SPEED_IDX = 7;               // 0 based also in knots
+            inline float time;
+        };
+        namespace GGA
+        {
 
-    
+            const std::string GGA = "GGA"; // for altitude, time
+            const int NUM_VALUES = 15;
+            const int STAUS_IDX = 7;         // Starting from 1 indexed
+            const int BAD_STATUS_NUMBER = 0; // Since there are 2 valid indicators and 1 invalid, it's easier to check
+                                             // for invalid
+            const int ALTITUDE_INDEX = 9;    // 0 based
 
+            inline float time;
+        };
+    };
 
-} // MissionConstants
+}; // MissionConstants
 
 #endif

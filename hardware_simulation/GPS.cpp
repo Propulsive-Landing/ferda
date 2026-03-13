@@ -9,7 +9,7 @@ std::tuple<double, double, double> GPS::GetGPSPosition()
     return UDPClient::GetInstance().GetGPSPosition();
 }
 
-std::tuple<double> GPS::GPSAvailable()
+bool GPS::GPSAvailable()
 {
     return UDPClient::GetInstance().GetGPSAvailable();
 }

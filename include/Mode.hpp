@@ -6,6 +6,7 @@
 #include "Controller.hpp"
 #include "Igniter.hpp"
 #include "LaunchManager.hpp"
+#include "GPS.hpp"
 
 class Mode
 {
@@ -24,11 +25,11 @@ public:
     // LaunchManager encapsulates the launch sub-mode state machine
 
     Mode(Mode::Phase eInitialMode);
-    bool Update(Navigation &navigation, Controller &controller, Igniter &igniter, IMU &imu);
+    bool Update(Navigation &navigation, Controller &controller, GPS &gps, Igniter &igniter, IMU &imu);
     std::string AngleKMatrix;
     std::string HeightKMatrix;
     std::string TranslationKMatrix;
-    
+
     // Setters for current acceleration/deceleration (should be updated by hardware telemetry)
     void SetCurrentMaxAcceleration(double accel) { launchManager.SetCurrentMaxAcceleration(accel); }
     void SetCurrentMaxDeceleration(double decel) { launchManager.SetCurrentMaxDeceleration(decel); }

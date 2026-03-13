@@ -4,30 +4,29 @@
 
 #include "Mode.hpp"
 #include "Navigation.hpp"
+#include "GPS.hpp"
 
-class Telemetry {
-    private:
-        Telemetry();
-        ~Telemetry();
+class Telemetry
+{
+private:
+    Telemetry();
+    ~Telemetry();
 
+    void HardwareSaveFrame(Navigation &navigation, Controller &controller, GPS &gps);
+    void RfSendFrame(Navigation &navigation, Controller &controller);
 
-        void HardwareSaveFrame(Navigation& navigation, Controller& controller);
-        void RfSendFrame(Navigation& navigation, Controller& controller);
+public:
+    std::ofstream Logs;
+    std::ofstream HardwareSaved;
+    std::ofstream SensorSaved;
 
-    public:
-        std::ofstream Logs;
-        std::ofstream HardwareSaved;
-        std::ofstream SensorSaved;
+    void RunTelemetry(Navigation &navigation, Controller &controller, GPS &gps, float HardwareSaveDelta, float RFSaveDelta);
+    void Log(std::string message);
 
+    static Telemetry &GetInstance()
+    {
+        static Telemetry telem;
 
-        void RunTelemetry(Navigation& navigation, Controller& controller, float HardwareSaveDelta, float RFSaveDelta);
-        void Log(std::string message);
-
-        static Telemetry& GetInstance()
-        {
-            static Telemetry telem;
-
-            return telem;
-        }
-
+        return telem;
+    }
 };

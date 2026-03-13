@@ -193,7 +193,7 @@ Mode::Phase Mode::UpdateSafeMode(Navigation &navigation, Controller &controller,
     return Mode::Terminate;
 }
 
-bool Mode::Update(Navigation &navigation, Controller &controller, Igniter &igniter, IMU &imu)
+bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igniter &igniter, IMU &imu)
 {
 
     // Track total elapsed time and delta time
@@ -216,19 +216,19 @@ bool Mode::Update(Navigation &navigation, Controller &controller, Igniter &ignit
     switch (this->eCurrentMode)
     {
     case Calibration:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, 0.05, 0.08);
         this->eCurrentMode = UpdateCalibration(navigation, controller, currentTime);
         break;
     case TestTVC:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, 0.05, 0.08);
         this->eCurrentMode = UpdateTestTVC(navigation, controller, currentTime);
         break;
     case Idle:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, 0.05, 0.08);
         this->eCurrentMode = UpdateIdle(navigation, controller, imu, currentTime);
         break;
     case Launch:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, 0.01, 0.08);
         this->eCurrentMode = UpdateLaunch(navigation, controller, igniter, currentTime);
         break;
     case Safe:

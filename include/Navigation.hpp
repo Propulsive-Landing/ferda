@@ -27,9 +27,9 @@ private:
     std::tuple<double, double, double> magneticField;
     std::tuple<double, double, double> gpsPosition;
     std::tuple<double, double, double, double, double, double, double, double, double> cameraDirections;
-    void magnetometerUpdate(const Eigen::Vector3d& magneticField, const Eigen::Matrix3d& R);
-    void gpsUpdate(const Eigen::Vector3d& gpsPosition);
-    void cameraUpdate(const Eigen::VectorXd& cameraDirectionsVector, const Eigen::Matrix3d& R);
+    void magnetometerUpdate(const Eigen::Vector3d &magneticField, const Eigen::Matrix3d &R);
+    void gpsUpdate(const Eigen::Vector3d &gpsPosition);
+    void cameraUpdate(const Eigen::VectorXd &cameraDirectionsVector, const Eigen::Matrix3d &R);
     std::tuple<double> magnetometerAvailable;
     std::tuple<double> gpsAvailable;
     std::tuple<double> cameraAvailable;
@@ -38,14 +38,15 @@ private:
 
 public:
     double loopTime = 0.005;
-    int count = 0;
+    int magnometer_count = 0; // Used because magneomter has fixed update rate so we scale
+    int gps_count = 0;        // Used because gps as fixed update rate so we scale
     Navigation(IMU &imu, Magnetometer &magnetometer, GPS &gps, Camera &camera, TVC &tvc);
     void reset();
     Eigen::MatrixXd P;
     Eigen::Matrix<double, 16, 1> GetNavigation(); // Defintion of state matrix: TODO (determine dimensions and document form)
     void UpdateNavigation();                      // Defintion updates: TODO (determine dimensions and document form)
     void padUpdatePosition();
-    void padUpdateAngularVelocity(const Eigen::Vector3d& w);
+    void padUpdateAngularVelocity(const Eigen::Vector3d &w);
     void SetOnPad(bool isOnPad); // Set whether rocket is on the pad
     Eigen::Vector3d GetAngularVelocity();
     std::tuple<double, double, double> ComputeAngularRollingAverage(std::vector<double> d_theta_now);
@@ -54,12 +55,12 @@ public:
     Eigen::Vector3d a_b, w_b;
     Eigen::Vector3d w;
     Eigen::Matrix3d CreateRotationalMatrix(double phi, double theta, double psi);
-    Eigen::Matrix3d skew(const Eigen::Vector3d& v);
+    Eigen::Matrix3d skew(const Eigen::Vector3d &v);
     void kalmanUpdate(
-        const Eigen::MatrixXd& H,
-        const Eigen::MatrixXd& V,
-        const Eigen::VectorXd& y,
-        const Eigen::VectorXd& y_pred);
+        const Eigen::MatrixXd &H,
+        const Eigen::MatrixXd &V,
+        const Eigen::VectorXd &y,
+        const Eigen::VectorXd &y_pred);
     std::tuple<double, double, double> GetLinearAcceleration();
     std::tuple<double, double, double> GetAngularAcceleration();
     std::tuple<double, double, double> GetMagneticField();

@@ -14,6 +14,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <unistd.h>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -42,6 +43,9 @@ int main()
 
     IMU imu;
     GPS gps;
+    sleep(2); // Allow gps to wake up
+    std::string settings = std::string("$PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n");
+    gps.write_settings(settings);
     Magnetometer magnetometer;
     Camera camera;
     TVC tvc;
@@ -57,7 +61,7 @@ int main()
 
     Mode mode(Mode::Calibration);
 
-    while (mode.Update(navigation, controller, igniter, imu))
+    while (mode.Update(navigation, controller, gps, igniter, imu))
     {
     }
 
