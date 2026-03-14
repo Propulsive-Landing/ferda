@@ -172,17 +172,19 @@ void Navigation::UpdateNavigation()
         magnometer_count = 0;
     }
     gps_count += 1;
-    if (gps_count == 20) // 100 HZ
-    {
+    // if (gps_count == 100) // 10 HZ
+    // {
         gps.read_data();
+        std::cout<< "here" << "\n";
         if (gps.GPSAvailable())
         {
             gpsPosition = gps.GetGPSPosition();
             Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
             gpsUpdate(gpsPositionVector);
-            gps_count = 0;
+            gps.set_valid(false);
         }
-    }
+        gps_count = 0;
+   // }
 
     if (std::get<0>(camera.CameraAvailable()) > 0.5 && x_e(2) > 2.0)
     {
@@ -227,7 +229,7 @@ void Navigation::gpsUpdate(const Eigen::Vector3d &gpsPosition)
 {
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
     H.block<3, 3>(0, 0) = Eigen::Matrix3d::Identity();
-    kalmanUpdate(H, (1) * (1) * Eigen::Matrix3d::Identity(), gpsPosition, x_e);
+    kalmanUpdate(H, (3) * (3) * Eigen::Matrix3d::Identity(), gpsPosition, x_e);
 }
 
 void Navigation::padUpdatePosition()

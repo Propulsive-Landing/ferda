@@ -37,7 +37,7 @@ RF::RF()
     // If RF through XBEE fails, switch to terminal
     if (SerialFd < 0)
     {
-        std::cout << "Switching to terminal controls" << std::flush;
+        std::cout << "Switching to terminal controls" << "\n";
         terminal_switch = true;
     }
 }
