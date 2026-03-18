@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include <iostream>
 #include <Eigen/Dense>
 
@@ -96,25 +97,29 @@ namespace MissionConstants
 
     // GPS constants
     const int MAX_SIZE = 256;
-    inline const char *GPS_Port = "/dev/ttyUSB0";
+    // inline const char *GPS_Port = "/dev/ttyUSB0";
+
+    inline const char *GPS_Port = "/dev/cu.usbserial-110";
+
     namespace NMEA
     {
         const int MESSAGE_TYPE_STARTING_STRING_INDEX = 3;
+        const std::unordered_set<std::string> NMEA_MESSAGE_TYPE_SET = {std::string("RMC"), std::string("GGA")};
         const int MESSAGE_TYPE_IDX = 0; // 0 index BASED
         const int TIME_IDX = 1;         // 0 index BASED
         namespace RMC
         {
             const std::string RMC = "RMC"; // for latutude, longitude, speed (knots), time
             const int NUM_VALUES = 13;
-            const int STATUS_IDX = 2;               // Starting from 0 indexed
+            const int STATUS_IDX = 2;              // Starting from 0 indexed
             const char BAD_STATUS_CHARACTER = 'V'; // Since GGA can have 2 validity indicators and 1 invalid inidactor, it's
                                                    // easier if all NMEA ouputs check for invalidty
             const int LATITUDE_IDX = 3;            // 0 index based
-            const int LATITUDE_DIRECTION_IDX = 4; 
-            const int LONGITUDE_IDX = 5;           // 0 index based
+            const int LATITUDE_DIRECTION_IDX = 4;
+            const int LONGITUDE_IDX = 5; // 0 index based
             const int LONGITUDE_DIRECTION_IDX = 6;
             const int COURSE_IDX = 8;
-            const int SPEED_IDX = 7;               // 0 based also in knots
+            const int SPEED_IDX = 7; // 0 based also in knots
             inline float time;
         };
         namespace GGA
@@ -122,7 +127,7 @@ namespace MissionConstants
 
             const std::string GGA = "GGA"; // for altitude, time
             const int NUM_VALUES = 15;
-            const int STATUS_IDX = 7;         // Starting from 1 indexed
+            const int STATUS_IDX = 7;        // Starting from 1 indexed
             const int BAD_STATUS_NUMBER = 0; // Since there are 2 valid indicators and 1 invalid, it's easier to check
                                              // for invalid
             const int ALTITUDE_INDEX = 9;    // 0 based

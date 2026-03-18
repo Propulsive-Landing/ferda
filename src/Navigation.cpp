@@ -2,6 +2,8 @@
 #include <cmath>
 #include <deque>
 #include <vector>
+#include <map>
+#include <string>
 #include <iostream>
 #include <chrono>
 #include <iomanip>
@@ -12,7 +14,6 @@
 
 Navigation::Navigation(IMU &inputImu, Magnetometer &inputMagnetometer, GPS &inputGps, Camera &inputCamera, TVC &inputTvc) : imu(inputImu), magnetometer(inputMagnetometer), gps(inputGps), camera(inputCamera), tvc(inputTvc)
 {
-    std::cout << std::setprecision(4) << std::fixed;
     stateMat = Eigen::Matrix<double, 16, 1>::Zero();
     // Set z position to rocket com
     stateMat(2) = 0.28;
@@ -172,19 +173,34 @@ void Navigation::UpdateNavigation()
         magnometer_count = 0;
     }
     gps_count += 1;
-    // if (gps_count == 100) // 10 HZ
-    // {
+    if (gps_count == 200) // 1 HZ
+    {
+        // static auto last_time = std::chrono::high_resolution_clock::now();
+        // auto time_now = std::chrono::high_resolution_clock::now();
+        // unsigned int nanoseconds_since_start = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - last_time).count();
+        // double change_time = nanoseconds_since_start / 1000000000.0;
+        // last_time = time_now;
+        // std::cout << change_time << "\n";
+        // std::cout << "here" << "\n";
         gps.read_data();
-        std::cout<< "here" << "\n";
+        std::map<std::string, std::vector<std::string>> hist = gps.retrieve_all_NMEA_sentences();
+        gps.reset_acculumated_messages();
+        gps.set_valid(true);
+        for (const auto &sentence_info : hist)
+        {
+            gps.parse_NMEA_type(sentence_info.first, sentence_info.second);
+        }
+
         if (gps.GPSAvailable())
         {
+            gps.convert_coordinate_frame();
             gpsPosition = gps.GetGPSPosition();
             Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
             gpsUpdate(gpsPositionVector);
             gps.set_valid(false);
         }
         gps_count = 0;
-   // }
+    }
 
     if (std::get<0>(camera.CameraAvailable()) > 0.5 && x_e(2) > 2.0)
     {

@@ -20,11 +20,9 @@
 #include <string>
 #include <tuple>
 
-
 #ifdef NDEBUG
 #include <wiringPi.h>
 #endif
-
 
 int main()
 {
@@ -42,31 +40,17 @@ int main()
     // gpioWrite(6, 1);
 
 #endif
-
+    std::cout << std::setprecision(8) << std::fixed;
     IMU imu;
     GPS gps;
     sleep(2); // Allow gps to wake up
     std::string settings = std::string("$PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n");
     gps.write_settings(settings);
-    while(1)
-    {
-        bool break_outer_loop = false;
-        gps.read_data();
-        std::vector<std::string> messages = gps.get_acculumated_messages();
-        for(auto msg: messages)
-        {
-            if (msg.find("PMTK001"))
-            {
-                std::cout << msg << "\n";
-                break_outer_loop = true;
-                break;
-            }
-        }
-        if (break_outer_loop)
-            break;
-    }
-   // sleep(1); // Allow gps to wake up
-   // gps.write_settings("$PMTK220,100*2F\r\n");
+    gps.wait_for_confirmation(std::string("314"));
+    // settings = std::string("$PMTK220,100*2F\r\n");
+    // gps.write_settings(settings);
+    // gps.wait_for_confirmation(std::string("220"));
+    gps.reset_acculumated_messages();
 
     Magnetometer magnetometer;
     Camera camera;

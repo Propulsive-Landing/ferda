@@ -4,6 +4,7 @@
 #include <string>
 #include <termios.h>
 #include <fstream>
+#include <map>
 #include "MissionConstants.hpp"
 
 class GPS
@@ -11,11 +12,14 @@ class GPS
 private:
     struct GPS_Info
     {
-        float latitude;
-        float longitude;
-        float altitude;
-        float course;
-        float speed;
+        double latitude = -1;
+        double longitude = -1;
+        double E = -1;
+        double N = -1;
+        double U = -1;
+        double altitude = -1;
+        double course = -1;
+        double speed = -1;
     };
     GPS_Info gps_info;
 
@@ -34,11 +38,13 @@ private:
     char buffer[MissionConstants::MAX_SIZE];
 
 public:
-  
     GPS();
     ~GPS();
     std::string get_message();
     std::vector<std::string> get_acculumated_messages();
+    void reset_acculumated_messages();
+    void wait_for_confirmation(const std::string &NMEA_code);
+    std::map<std::string, std::vector<std::string>> retrieve_all_NMEA_sentences();
     std::string determine_NMEA_type(const std::vector<std::string> &nmea_message_parts);
     void parse_NMEA_type(const std::string nmea_message_type, const std::vector<std::string> &nmea_message_parts);
     std::vector<std::string> break_message_down(const std::string &message);
@@ -49,6 +55,7 @@ public:
     float convert_latitude(const std::string &latitude, const char &latitude_direction);
     float convert_longitude(const std::string &longitude, const char &longitude_direction);
     float convert_speed_to_meter_per_seconds(const std::string &speed);
+    void convert_coordinate_frame();
     std::tuple<double, double, double> GetGPSPosition();
     bool GPSAvailable();
     void set_valid(bool state);

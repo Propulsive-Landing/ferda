@@ -22,8 +22,22 @@ void Telemetry::HardwareSaveFrame(Navigation &navigation, Controller &controller
     auto time_now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(time_now);
 
-    HardwareSaved << std::put_time(std::localtime(&in_time_t), "%c") << ", ";
-    SensorSaved << std::put_time(std::localtime(&in_time_t), "%c") << ", ";
+    auto now = std::chrono::system_clock::now();
+
+    auto seconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - seconds).count();
+
+    std::time_t tt = std::chrono::system_clock::to_time_t(seconds);
+
+    std::tm tm;
+    localtime_r(&tt, &tm); // thread-safe on Linux
+
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%d-%m-%Y %H:%M:%S")
+        << "." << std::setw(3) << std::setfill('0') << ms;
+
+    HardwareSaved << oss.str() << ", ";
+    SensorSaved << oss.str() << ", ";
 
     // Navigation state, U, k matrix current index
     // Write data to file
@@ -154,7 +168,7 @@ Telemetry::Telemetry()
     HardwareSaved.open("../logs/data" + str + ".txt");
     SensorSaved.open("../logs/sensors" + str + ".txt");
 
-    HardwareSaved << "Date, x, y, z, vx, vy, vz, q1, q2, q3, q4, ab1, ab2, ab3, wb1, wb2, wb3, longitude, latitude, altitude, ux, uy, K_Matrix_Index \n";
+    HardwareSaved << "Date, x, y, z, vx, vy, vz, q1, q2, q3, q4, ab1, ab2, ab3, wb1, wb2, wb3, E, N, U, ux, uy, K_Matrix_Index \n";
     SensorSaved << "Date, accelX, accelY, accelZ, gyroX, gryoY, gyroZ, magx, magy, magz \n";
 
     // TODO Write headers to data file where needed
