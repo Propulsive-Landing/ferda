@@ -4,15 +4,16 @@
 #include "GPS.hpp"
 #include <fcntl.h>
 #include <unistd.h>
+#include <algorithm>
+#include <set>
 #include <chrono>
 #include <iomanip>
 #include <cmath>
 #include "MissionConstants.hpp"
 
-
 GPS::GPS()
 {
-    fd = open(MissionConstants::GPS_Port, O_RDWR);
+    fd = open(MissionConstants::GPS_Port, O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0)
     {
         std::cerr << "Error opening port" << "\n";
@@ -32,6 +33,9 @@ GPS::GPS()
     gps_info.latitude = -1;
     gps_info.longitude = -1;
     gps_info.altitude = -1;
+    gps_info.E = -1;
+    gps_info.N = -1;
+    gps_info.U = -1;
     gps_info.course = -1;
     gps_info.speed = -1;
 
@@ -49,8 +53,6 @@ GPS::~GPS()
         std::cerr << "Error closing port" << "\n";
         exit(-1);
     }
-    std::cout << " Here";
-    
 }
 
 std::string GPS::get_message()
@@ -61,6 +63,11 @@ std::string GPS::get_message()
 std::vector<std::string> GPS::get_acculumated_messages()
 {
     return acculumated_messages;
+}
+
+void GPS::reset_acculumated_messages()
+{
+    acculumated_messages.clear();
 }
 
 void GPS::write_settings(const std::string &settings)
@@ -75,6 +82,38 @@ void GPS::write_settings(const std::string &settings)
         exit(-1);
     }
     std::cout << "Wrote " << settings << "to GPS" << "\n";
+}
+
+void GPS::wait_for_confirmation(const std::string &NMEA_code)
+{
+    std::string msg_to_look_for = std::string("$PMTK001,") + NMEA_code + std::string(",3");
+    int count = 0;
+    
+    while (1 && count != 200)
+    {
+        bool break_outer_loop = false;
+        read_data();
+        std::vector<std::string> messages = get_acculumated_messages();
+        for (auto msg : messages)
+        {
+            if (msg.find(msg_to_look_for) != std::string::npos)
+            {
+                std::cout << msg << "\n";
+                break_outer_loop = true;
+                break;
+            }
+        }
+        ++count;
+        if (break_outer_loop)
+            break;
+    }
+    if(count == 200)
+    {
+        std::cout << "Trying to write setting again" << "\n";
+        std::string settings = std::string("$PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n");
+        write_settings(settings);
+        wait_for_confirmation(std::string("314"));
+    }
 }
 
 std::vector<std::string> GPS::break_message_down(const std::string &message)
@@ -105,10 +144,10 @@ float GPS::convert_latitude(const std::string &latitude, const char &latitude_di
 {
     std::string latitude_dd = latitude.substr(0, 2);
     std::string latitude_mmmmmm = latitude.substr(2, 7);
-    float result =  stof(latitude_dd) + (stof(latitude_mmmmmm) / 60.0);
+    float result = stof(latitude_dd) + (stof(latitude_mmmmmm) / 60.0);
     if (latitude_direction == 'S')
     {
-        result =  result * -1;
+        result = result * -1;
     }
     return result;
 }
@@ -116,7 +155,7 @@ float GPS::convert_longitude(const std::string &longitude, const char &longitude
 {
     std::string longitude_ddd = longitude.substr(0, 3);
     std::string longitude_mmmmmm = longitude.substr(3, 7);
-    float result =  stof(longitude_ddd) + (stof(longitude_mmmmmm) / 60.0);
+    float result = stof(longitude_ddd) + (stof(longitude_mmmmmm) / 60.0);
     if (longitude_direction == 'W')
     {
         result = result * -1;
@@ -137,7 +176,7 @@ std::string GPS::determine_NMEA_type(const std::vector<std::string> &nmea_messag
 
 void GPS::parse_NMEA_type(const std::string nmea_message_type, const std::vector<std::string> &nmea_message_parts)
 {
-    if (nmea_message_type == MissionConstants::NMEA::RMC::RMC)
+    if (valid && nmea_message_type == MissionConstants::NMEA::RMC::RMC)
     {
         std::cout << "Got RMC output type " << "\n";
         std::string status = nmea_message_parts[MissionConstants::NMEA::RMC::STATUS_IDX];
@@ -149,11 +188,10 @@ void GPS::parse_NMEA_type(const std::string nmea_message_type, const std::vector
         }
         else
         {
-            valid=true;
             parse_RMC(nmea_message_parts);
         }
     }
-    else if (nmea_message_type == MissionConstants::NMEA::GGA::GGA)
+    else if (valid && nmea_message_type == MissionConstants::NMEA::GGA::GGA)
     {
         std::cout << "Got GGA output type " << "\n";
         std::string status = nmea_message_parts[MissionConstants::NMEA::GGA::STATUS_IDX];
@@ -165,7 +203,6 @@ void GPS::parse_NMEA_type(const std::string nmea_message_type, const std::vector
         }
         else
         {
-            valid=true;
             parse_GGA(nmea_message_parts);
         }
     }
@@ -182,8 +219,6 @@ void GPS::parse_RMC(const std::vector<std::string> &nmea_message_parts)
     float course = stof(nmea_message_parts[MissionConstants::NMEA::RMC::COURSE_IDX]);
     float speed = convert_speed_to_meter_per_seconds(nmea_message_parts[MissionConstants::NMEA::RMC::SPEED_IDX]);
 
-    // ADRESS ISSUE OF ENSURING TIMES MATCH UP FOR THE DIFFERENT NEMA SENTENCE TYPES
-
     // Sanity check:
     std::cout << "Time: " << time << "\n";
     std::cout << "Latitude: " << latitude << "\n";
@@ -192,8 +227,10 @@ void GPS::parse_RMC(const std::vector<std::string> &nmea_message_parts)
     std::cout << "Speed: " << speed << "\n";
     std::cout << "\n";
 
-    gps_info.latitude = latitude * MissionConstants::kDeg2Rad;;
-    gps_info.longitude = longitude * MissionConstants::kDeg2Rad;;
+    gps_info.latitude = latitude * MissionConstants::kDeg2Rad;
+
+    gps_info.longitude = longitude * MissionConstants::kDeg2Rad;
+
     gps_info.speed = speed;
     gps_info.course = course;
 }
@@ -202,8 +239,6 @@ void GPS::parse_GGA(const std::vector<std::string> &nmea_message_parts)
 {
     float time = stof(nmea_message_parts[MissionConstants::NMEA::TIME_IDX]);
     float altitude = stof(nmea_message_parts[MissionConstants::NMEA::GGA::ALTITUDE_INDEX]);
-
-    // ADRESS ISSUE OF ENSURING TIMES MATCH UP FOR THE DIFFERENT NEMA SENTENCE TYPES
 
     // Sanity check:
     std::cout << "Time: " << time << "\n";
@@ -215,31 +250,81 @@ void GPS::parse_GGA(const std::vector<std::string> &nmea_message_parts)
 
 std::tuple<double, double, double> GPS::GetGPSPosition()
 {
-    float lat_init = 41.808956  * MissionConstants::kDeg2Rad;
-    float long_init = 72.255743 * MissionConstants::kDeg2Rad;
-    float alttiude_init = 0;
-    float dphi = gps_info.latitude - lat_init;
-    float dlambda = gps_info.longitude  - long_init;
-    float dh = gps_info.altitude - alttiude_init;
-
-    float earth_radius = 6378137;
-    float RN = earth_radius;
-    float RM = earth_radius;
-
-    float E = (RN + alttiude_init)*std::cos(lat_init)*dlambda;
-    float N = (RM + alttiude_init) * dphi;
-    float U = dh; 
-
-    // std::cout << std::cos(lat_init)*dlambda<< "\n";
-    // std::cout << gps_info.latitude << ", " << gps_info.longitude << "\n";
-    // std::cout << E << ", " << N << "\n";
-    return std::make_tuple(E, N, 0);
+    return std::make_tuple(gps_info.E, gps_info.N, gps_info.U);
 }
 
-// void GPS::read_data()
-// {
+void GPS::convert_coordinate_frame()
+{
+    static double lat_init = gps_info.latitude;
+    static double long_init = gps_info.longitude;
+    static double altitude_init = gps_info.altitude;
 
-// }
+    double dphi = gps_info.latitude - lat_init;
+    double dlambda = gps_info.longitude - long_init;
+    double dh = gps_info.altitude - altitude_init;
+
+    double earth_radius = 6378137;
+    double RN = earth_radius;
+    double RM = earth_radius;
+
+    float E = (RN + altitude_init) * std::cos(lat_init) * dlambda;
+    float N = (RM + altitude_init) * dphi;
+    float U = dh;
+
+    gps_info.E = E;
+    gps_info.N = N;
+    gps_info.U = U;
+
+    std::cout << std::cos(lat_init) * dlambda << "\n";
+    std::cout << "Latitude init: " << lat_init << "\n";
+
+    std::cout << "Longitude init: " << long_init << "\n";
+
+    std::cout << "Altitude init: " << altitude_init << "\n";
+
+    std::cout << "DPHI: " << dphi << "\n";
+
+    std::cout << gps_info.latitude << ", " << gps_info.longitude << "\n";
+    std::cout << E << ", " << N << "\n";
+}
+
+std::map<std::string, std::vector<std::string>> GPS::retrieve_all_NMEA_sentences()
+{
+    std::map<int, std::vector<std::string>> rmc_history;
+    std::map<int, std::vector<std::string>> gga_history;
+
+    std::map<std::string, std::vector<std::string>> history;
+
+    std::vector<int> intersection_results;
+    std::set<int> rmc_times;
+    std::set<int> gga_times;
+
+    for (auto &message : acculumated_messages)
+    {
+        std::vector<std::string> nmea_message_parts = break_message_down(message);
+        std::string NMEA_type = determine_NMEA_type(nmea_message_parts);
+        int time = stof(nmea_message_parts[MissionConstants::NMEA::TIME_IDX]);
+        if (NMEA_type == MissionConstants::NMEA::RMC::RMC)
+        {
+            rmc_history[time] = nmea_message_parts;
+            rmc_times.insert(time);
+        }
+        else if (NMEA_type == MissionConstants::NMEA::GGA::GGA)
+        {
+            gga_history[time] = nmea_message_parts;
+            gga_times.insert(time);
+        }
+    }
+    std::set_intersection(rmc_times.begin(), rmc_times.end(),
+                          gga_times.begin(), gga_times.end(),
+                          back_inserter(intersection_results));
+
+    int max_common_element = intersection_results[intersection_results.size() - 1];
+
+    history[MissionConstants::NMEA::RMC::RMC] = rmc_history[max_common_element];
+    history[MissionConstants::NMEA::GGA::GGA] = gga_history[max_common_element];
+    return history;
+}
 
 void GPS::read_data()
 {
@@ -252,7 +337,7 @@ void GPS::read_data()
     std::time_t tt = std::chrono::system_clock::to_time_t(seconds);
 
     std::tm tm;
-    localtime_r(&tt, &tm);  // thread-safe on Linux
+    localtime_r(&tt, &tm); // thread-safe on Linux
 
     std::ostringstream oss;
     oss << std::put_time(&tm, "%d-%m-%Y %H:%M:%S")
@@ -261,7 +346,7 @@ void GPS::read_data()
     // It seems to only send 3 bytes at at time; Might have to do with frequency but probably not
     // Either way, this code fully reads the message and it will only break if buffer exceeds the max size of buffer
     int bytes_received = read(fd, buffer, sizeof(buffer));
-    std::cout << "Received " << bytes_received << "\n";
+    // std::cout << "Received " << bytes_received << "\n";
     for (int i = 0; i < bytes_received; ++i)
     {
         char character = buffer[i];
@@ -275,14 +360,10 @@ void GPS::read_data()
             if (message.find('$') != std::string::npos)
             {
                 // Print message for sanity check
-                //std::cout << message;
+                // std::cout << message;
                 acculumated_messages.push_back(message);
-                 this->GPSReceived << oss.str() << ", " << message << std::flush;
+                this->GPSReceived << oss.str() << ", " << message << std::flush;
                 message.clear();
-                // TODO THIS HAS TO BE SEPARATE
-                // std::vector<std::string> nmea_message_parts = break_message_down(message);
-                // std::string NMEA_type = determine_NMEA_type(nmea_message_parts);
-                // parse_NMEA_type(NMEA_type, nmea_message_parts);
             }
         }
     }

@@ -97,9 +97,9 @@ namespace MissionConstants
 
     // GPS constants
     const int MAX_SIZE = 256;
-    // inline const char *GPS_Port = "/dev/ttyUSB0";
+    inline const char *GPS_Port = "/dev/ttyUSB0";
 
-    inline const char *GPS_Port = "/dev/cu.usbserial-110";
+    //inline const char *GPS_Port = "/dev/cu.usbserial-110";
 
     namespace NMEA
     {

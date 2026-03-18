@@ -12,14 +12,14 @@ class GPS
 private:
     struct GPS_Info
     {
-        double latitude = -1;
-        double longitude = -1;
-        double E = -1;
-        double N = -1;
-        double U = -1;
-        double altitude = -1;
-        double course = -1;
-        double speed = -1;
+        double latitude;
+        double longitude;
+        double E;
+        double N;
+        double U;
+        double altitude;
+        double course;
+        double speed;
     };
     GPS_Info gps_info;
 
