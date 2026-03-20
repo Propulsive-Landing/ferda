@@ -1,6 +1,7 @@
 #include "IMU.hpp"
 #include "Magnetometer.hpp"
 #include "GPS.hpp"
+#include "Lidar.hpp"
 #include "Camera.hpp"
 #include "TVC.hpp"
 
@@ -42,6 +43,7 @@ int main()
 
     IMU imu;
     GPS gps;
+    Lidar lidar;
     Magnetometer magnetometer;
     Camera camera;
     TVC tvc;
@@ -49,7 +51,7 @@ int main()
     Engine engine;
 
 
-    Navigation navigation(imu, magnetometer, gps, camera, tvc);
+    Navigation navigation(imu, magnetometer, gps, lidar, camera, tvc);
     Controller controller(tvc, engine);
 
     Telemetry::GetInstance().Log("Starting program...");

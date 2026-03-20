@@ -16,7 +16,6 @@ LaunchManager::LaunchManager()
     descendTransitionAltitude = 2.0;
     currentMaxAcceleration = 2.0;
     currentMaxDeceleration = 2.0;
-    groundHeight = 0.2800;
 }
 
 void LaunchManager::SetCurrentMaxAcceleration(double a)
@@ -194,7 +193,7 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
         controller.refVelocityZ = -slowReferenceVelocity;
         
         // TODO: Revisit landing condition
-        if (currentAltitude <= groundHeight + 0.1 && currentVelocityZ >= -0.1)
+        if (currentAltitude <= 0.1 && currentVelocityZ >= -0.1)
         {
             Telemetry::GetInstance().Log("LAND complete (ground contact). Transitioning to Safe mode.");
             controller.Center();
@@ -208,6 +207,7 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
 
     // Call controller update
     controller.UpdateLaunch(navigation, 0.0);
+    navigation.UpdateMassFractionEstimate(controller.GetCurrentThrustCommand());
 
     return false;
 }

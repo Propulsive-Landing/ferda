@@ -29,6 +29,13 @@ namespace MissionConstants
     const double kNavThetaDotSmooth = 0.05;
     const double kFswLoopTime = .005;
     const double kFSWCalibrationTime = 0.05;
+    const double kVehicleWetMassKg = 94.0;
+    const double kVehicleDryMassKg = 66.0;
+    const double kThrottleToMassFlowScale = -5.6e-4; // kg/(N*s)
+    const Eigen::Vector3d kVehicleWetCenterOfMassBodyM = Eigen::Vector3d(0.0, 0.0, 0.5);
+    const Eigen::Vector3d kVehicleDryCenterOfMassBodyM = Eigen::Vector3d(0.0, 0.0, -0.5);
+    const Eigen::Vector3d kVehicleWetMomentOfInertiaBodyKgm2 = Eigen::Vector3d(30.0, 30.0, 0.44);
+    const Eigen::Vector3d kVehicleDryMomentOfInertiaBodyKgm2 = Eigen::Vector3d(20.0, 20.0, 0.34);
     const double originalOffsetAngle = 5 * kDeg2Rad;
     const Eigen::Vector3d kEarthMagField = Eigen::Vector3d(-0.089, 0.378, -0.921).normalized(); // Unit vector pointing in the direction of Earth's magnetic field
     const Eigen::Vector3d kSensorCameraPosition = Eigen::Vector3d(0.2, 0.2, -1); // Position of the camera in the body frame (in meters)
@@ -42,6 +49,11 @@ namespace MissionConstants
     // Controller constants, TODO: USER EDIT PRE-FLIGHT
     const double kMaximumTvcAngle = 7.5 * kDeg2Rad;
     const double kMaximumTvcAngleDeg = 7.5;
+    const double kEngineMinThrust = 461.0; // N
+    const double kEngineMaxThrust = 1107; // N
+    const Eigen::Vector3d kEngineThrustLocationBodyM = Eigen::Vector3d(0.0, 0.0, -1.13);
+    const double kControllerMinMomentArmM = 0.01;
+    const double kControllerMinThrustForScalingN = 1.0;
 
     const double kControlIntegralPeriod = 0.25;
     const double kDeg2PulseWidth = ((double)1000.0) / ((double)90.0);

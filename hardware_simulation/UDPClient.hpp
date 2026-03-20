@@ -34,12 +34,14 @@
  */
 
 #include <iostream>
+#include <chrono>
 #include <cstring>
 #include <thread>
 #include <mutex>
 #include <atomic>
 #include <array>
 #include <tuple>
+#include <cstdint>
 
 #ifdef _WIN32
     #include <winsock2.h>
@@ -71,8 +73,10 @@ private:
     std::array<double, 3> angular_rate{0};
     std::array<double, 3> magnetic_field{0};
     std::array<double, 3> gps_position{0};
-    std::array<double, 12> camera_vectors{0};
-    std::array<double, 3> available_sensors{0};
+    std::array<double, 2> gps_velocity{0};
+    std::array<double, 9> camera_vectors{0};
+    std::array<double, 1> lidar_data{0};
+    std::array<double, 4> available_sensors{0};
 
     // Shared variables for actuator data sending
 
@@ -89,14 +93,16 @@ private:
         while (running) {
             int recv_len = recvfrom(socket_fd, buffer, sizeof(buffer), 0, nullptr, nullptr);
 
-            if (recv_len == sizeof(double) * 24) {
+            if (recv_len == sizeof(double) * 28) {
                 std::lock_guard<std::mutex> lock(data_mutex);
                 memcpy(acceleration.data(), buffer, sizeof(double) * 3);
                 memcpy(angular_rate.data(), buffer + sizeof(double) * 3, sizeof(double) * 3);
                 memcpy(magnetic_field.data(), buffer + sizeof(double) * 6, sizeof(double) * 3);
                 memcpy(gps_position.data(), buffer + sizeof(double) * 9, sizeof(double) * 3);
-                memcpy(camera_vectors.data(), buffer + sizeof(double) * 12, sizeof(double) * 12);
-                memcpy(available_sensors.data(), buffer + sizeof(double) * 21, sizeof(double) * 3);
+                memcpy(gps_velocity.data(), buffer + sizeof(double) * 12, sizeof(double) * 2);
+                memcpy(camera_vectors.data(), buffer + sizeof(double) * 14, sizeof(double) * 9);
+                memcpy(lidar_data.data(), buffer + sizeof(double) * 23, sizeof(double) * 1);
+                memcpy(available_sensors.data(), buffer + sizeof(double) * 24, sizeof(double) * 4);
             }
         }
     }
@@ -204,6 +210,16 @@ public:
         return std::make_tuple(gps_position[0], gps_position[1], gps_position[2]);
     }
 
+    std::tuple<double, double> GetGPSVelocity() {
+        std::lock_guard<std::mutex> lock(data_mutex);
+        return std::make_tuple(gps_velocity[0], gps_velocity[1]);
+    }
+
+    std::tuple<double> GetLidarDistance() {
+        std::lock_guard<std::mutex> lock(data_mutex);
+        return std::make_tuple(lidar_data[0]);
+    }
+
     std::tuple<double, double, double, double, double, double, double, double, double> GetUnitVectors() {
         std::lock_guard<std::mutex> lock(data_mutex);
         return std::make_tuple(
@@ -226,6 +242,11 @@ public:
     std::tuple<double> GetCameraAvailable() {
         std::lock_guard<std::mutex> lock(data_mutex);
         return available_sensors[2];
+    }
+
+    std::tuple<double> GetLidarAvailable() {
+        std::lock_guard<std::mutex> lock(data_mutex);
+        return available_sensors[3];
     }
 
     void SetTVCX(double angle) {

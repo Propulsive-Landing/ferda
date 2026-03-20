@@ -27,6 +27,7 @@ private:
     Eigen::Vector2d translation_error_integral = Eigen::Vector2d::Zero();
     Eigen::Vector2d setpoint_angles = Eigen::Vector2d::Zero(); // [roll, pitch] from translation controller
     Eigen::Vector2d setpoint_angles_prev = Eigen::Vector2d::Zero(); // Previous setpoint angles for derivative term
+    double current_thrust_command_N = 0.0;
 
 public:
     TVC tvc;
@@ -48,7 +49,7 @@ public:
     void TranslationControl(Navigation &navigation);
     void UpdateSafe();
     void GetNextController_Gain_Time_Index(double startTime);
-    void CalculateInput();
+    void CalculateInput(Navigation &navigation);
     Eigen::Vector2d TvcMath(Eigen::Vector2d input);
     void Start(double current_time);
     void Center();
@@ -57,4 +58,5 @@ public:
     void ImportTranslationParameters(std::string file_name);
     int GetCurrentIterationIndex();
     Eigen::Matrix<double, 2, 1> GetCurrentTVCCommand();
+    double GetCurrentThrustCommand();
 };

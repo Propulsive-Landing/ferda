@@ -9,6 +9,7 @@
 #include "Magnetometer.hpp"
 #include "Camera.hpp"
 #include "GPS.hpp"
+#include "Lidar.hpp"
 #include "TVC.hpp"
 
 class Navigation
@@ -17,6 +18,7 @@ private:
     IMU &imu;
     Magnetometer &magnetometer;
     GPS &gps;
+    Lidar &lidar;
     Camera &camera;
     TVC &tvc;
     Eigen::Matrix<double, 16, 1> stateMat;
@@ -28,17 +30,22 @@ private:
     std::tuple<double, double, double> gpsPosition;
     std::tuple<double, double, double, double, double, double, double, double, double> cameraDirections;
     void magnetometerUpdate(const Eigen::Vector3d& magneticField, const Eigen::Matrix3d& R);
-    void gpsUpdate(const Eigen::Vector3d& gpsPosition);
+    void gpsUpdate(const Eigen::Vector3d& gpsPosition, const Eigen::Vector2d& gpsVelocity);
+    void lidarUpdate(double lidar, const Eigen::Matrix3d& R);
     void cameraUpdate(const Eigen::VectorXd& cameraDirectionsVector, const Eigen::Matrix3d& R);
     std::tuple<double> magnetometerAvailable;
     std::tuple<double> gpsAvailable;
     std::tuple<double> cameraAvailable;
     std::ofstream dataFile;
     bool onPad = true; // Flag to indicate if rocket is on the pad (idle mode)
+    double estimatedMassKg = 0.0;
+    double estimatedMassFraction = 1.0;
+    Eigen::Vector3d estimatedCenterOfMassBodyM = Eigen::Vector3d::Zero();
+    Eigen::Vector3d estimatedMomentOfInertiaBodyKgm2 = Eigen::Vector3d::Zero();
 
 public:
     double loopTime = 0.005;
-    Navigation(IMU &imu, Magnetometer &magnetometer, GPS &gps, Camera &camera, TVC &tvc);
+    Navigation(IMU &imu, Magnetometer &magnetometer, GPS &gps, Lidar &lidar, Camera &camera, TVC &tvc);
     void reset();
     Eigen::MatrixXd P;
     Eigen::Matrix<double, 16, 1> GetNavigation(); // Defintion of state matrix: TODO (determine dimensions and document form)
@@ -67,4 +74,10 @@ public:
     std::tuple<double> GPSAvailable();
     std::tuple<double> CameraAvailable();
     std::tuple<double, double, double, double, double, double, double, double, double> GetUnitVectors();
+    void UpdateMassFractionEstimate(double throttleCommandN);
+    void UpdateMassPropertyEstimates();
+    double GetEstimatedMassFraction();
+    double GetEstimatedMassKg();
+    Eigen::Vector3d GetEstimatedCenterOfMassBodyM();
+    Eigen::Vector3d GetEstimatedMomentOfInertiaBodyKgm2();
 };

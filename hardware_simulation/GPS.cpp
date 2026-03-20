@@ -9,6 +9,11 @@ std::tuple<double, double, double> GPS::GetGPSPosition()
     return UDPClient::GetInstance().GetGPSPosition();
 }
 
+std::tuple<double, double> GPS::GetGPSVelocity()
+{
+    return UDPClient::GetInstance().GetGPSVelocity();
+}
+
 std::tuple<double> GPS::GPSAvailable()
 {
     return UDPClient::GetInstance().GetGPSAvailable();
