@@ -255,6 +255,7 @@ std::map<std::string, std::vector<std::string>> GPS::retrieve_all_NMEA_sentences
 
     for (auto &message : acculumated_messages)
     {
+        std::cout << message;
         std::vector<std::string> nmea_message_parts = break_message_down(message);
         std::string NMEA_type = determine_NMEA_type(nmea_message_parts);
         int time = stof(nmea_message_parts[MissionConstants::NMEA::TIME_IDX]);
@@ -269,6 +270,7 @@ std::map<std::string, std::vector<std::string>> GPS::retrieve_all_NMEA_sentences
             gga_times.insert(time);
         }
     }
+    std::cout << "\n";
     std::set_intersection(rmc_times.begin(), rmc_times.end(),
                           gga_times.begin(), gga_times.end(),
                           back_inserter(intersection_results));
@@ -300,7 +302,7 @@ void GPS::read_data()
     // It seems to only send 3 bytes at at time; Might have to do with frequency but probably not
     // Either way, this code fully reads the message and it will only break if buffer exceeds the max size of buffer
     int bytes_received = read(fd, buffer, sizeof(buffer));
-    // std::cout << "Received " << bytes_received << "\n";
+    std::cout << "Received " << bytes_received << "\n";
     for (int i = 0; i < bytes_received; ++i)
     {
         char character = buffer[i];

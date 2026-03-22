@@ -96,7 +96,7 @@ namespace MissionConstants
     inline const char *RF_Port = "/dev/ttyS0";
 
     // GPS constants
-    const int MAX_SIZE = 256;
+    const int MAX_SIZE = 1000;
     inline const char *GPS_Port = "/dev/ttyUSB0";
 
     //inline const char *GPS_Port = "/dev/cu.usbserial-110";
@@ -104,7 +104,6 @@ namespace MissionConstants
     namespace NMEA
     {
         const int MESSAGE_TYPE_STARTING_STRING_INDEX = 3;
-        const std::unordered_set<std::string> NMEA_MESSAGE_TYPE_SET = {std::string("RMC"), std::string("GGA")};
         const int MESSAGE_TYPE_IDX = 0; // 0 index BASED
         const int TIME_IDX = 1;         // 0 index BASED
         namespace RMC

@@ -173,7 +173,7 @@ void Navigation::UpdateNavigation()
         magnometer_count = 0;
     }
     gps_count += 1;
-    if (gps_count == 200) // 1 HZ
+    if (gps_count == 20) // 1 HZ
     {
         // static auto last_time = std::chrono::high_resolution_clock::now();
         // auto time_now = std::chrono::high_resolution_clock::now();
