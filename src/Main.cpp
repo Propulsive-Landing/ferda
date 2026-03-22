@@ -44,15 +44,6 @@ int main()
     std::cout << std::setprecision(8) << std::fixed;
     IMU imu;
     GPS gps;
-    sleep(2); // Allow gps to wake up
-    std::string settings = std::string("$PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n");
-    gps.write_settings(settings);
-    gps.wait_for_confirmation(std::string("314"));
-    // settings = std::string("$PMTK220,100*2F\r\n");
-    // gps.write_settings(settings);
-    // gps.wait_for_confirmation(std::string("220"));
-    gps.reset_acculumated_messages();
-
     Magnetometer magnetometer;
     Camera camera;
     TVC tvc;

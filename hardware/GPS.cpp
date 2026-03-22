@@ -70,52 +70,6 @@ void GPS::reset_acculumated_messages()
     acculumated_messages.clear();
 }
 
-void GPS::write_settings(const std::string &settings)
-{
-    // Flush input buffer so that the chances of reading the our message is better
-    // Currentely, we don't do anything if this does not work since we only look for the certain NMEA types anyway
-    tcflush(fd, TCIFLUSH);
-    int status = write(fd, settings.c_str(), settings.size());
-    if (status < 0)
-    {
-        std::cerr << "Error writing to fd" << "\n";
-        exit(-1);
-    }
-    std::cout << "Wrote " << settings << "to GPS" << "\n";
-}
-
-void GPS::wait_for_confirmation(const std::string &NMEA_code)
-{
-    std::string msg_to_look_for = std::string("$PMTK001,") + NMEA_code + std::string(",3");
-    int count = 0;
-    
-    while (1 && count != 200)
-    {
-        bool break_outer_loop = false;
-        read_data();
-        std::vector<std::string> messages = get_acculumated_messages();
-        for (auto msg : messages)
-        {
-            if (msg.find(msg_to_look_for) != std::string::npos)
-            {
-                std::cout << msg << "\n";
-                break_outer_loop = true;
-                break;
-            }
-        }
-        ++count;
-        if (break_outer_loop)
-            break;
-    }
-    if(count == 200)
-    {
-        std::cout << "Trying to write setting again" << "\n";
-        std::string settings = std::string("$PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n");
-        write_settings(settings);
-        wait_for_confirmation(std::string("314"));
-    }
-}
-
 std::vector<std::string> GPS::break_message_down(const std::string &message)
 {
     // Break down NMEA output message into subparts because it is easer to find validity part of sentence

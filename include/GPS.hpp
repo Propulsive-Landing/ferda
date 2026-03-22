@@ -43,7 +43,6 @@ public:
     std::string get_message();
     std::vector<std::string> get_acculumated_messages();
     void reset_acculumated_messages();
-    void wait_for_confirmation(const std::string &NMEA_code);
     std::map<std::string, std::vector<std::string>> retrieve_all_NMEA_sentences();
     std::string determine_NMEA_type(const std::vector<std::string> &nmea_message_parts);
     void parse_NMEA_type(const std::string nmea_message_type, const std::vector<std::string> &nmea_message_parts);
@@ -51,7 +50,6 @@ public:
     void parse_RMC(const std::vector<std::string> &message);
     void parse_GGA(const std::vector<std::string> &message);
     void read_data();
-    void write_settings(const std::string &settings);
     float convert_latitude(const std::string &latitude, const char &latitude_direction);
     float convert_longitude(const std::string &longitude, const char &longitude_direction);
     float convert_speed_to_meter_per_seconds(const std::string &speed);

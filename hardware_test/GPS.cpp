@@ -33,6 +33,9 @@ GPS::GPS()
     gps_info.latitude = -1;
     gps_info.longitude = -1;
     gps_info.altitude = -1;
+    gps_info.E = -1;
+    gps_info.N = -1;
+    gps_info.U = -1;
     gps_info.course = -1;
     gps_info.speed = -1;
 
@@ -65,20 +68,6 @@ std::vector<std::string> GPS::get_acculumated_messages()
 void GPS::reset_acculumated_messages()
 {
     acculumated_messages.clear();
-}
-
-void GPS::write_settings(const std::string &settings)
-{
-    // Flush input buffer so that the chances of reading the our message is better
-    // Currentely, we don't do anything if this does not work since we only look for the certain NMEA types anyway
-    tcflush(fd, TCIFLUSH);
-    int status = write(fd, settings.c_str(), settings.size());
-    if (status < 0)
-    {
-        std::cerr << "Error writing to fd" << "\n";
-        exit(-1);
-    }
-    std::cout << "Wrote " << settings << "to GPS" << "\n";
 }
 
 std::vector<std::string> GPS::break_message_down(const std::string &message)
@@ -251,28 +240,6 @@ void GPS::convert_coordinate_frame()
 
     std::cout << gps_info.latitude << ", " << gps_info.longitude << "\n";
     std::cout << E << ", " << N << "\n";
-}
-
-void GPS::wait_for_confirmation(const std::string &NMEA_code)
-{
-    std::string msg_to_look_for = std::string("$PMTK001,") + NMEA_code + std::string(",3");
-    while (1)
-    {
-        bool break_outer_loop = false;
-        read_data();
-        std::vector<std::string> messages = get_acculumated_messages();
-        for (auto msg : messages)
-        {
-            if (msg.find(msg_to_look_for) != std::string::npos)
-            {
-                std::cout << msg << "\n";
-                break_outer_loop = true;
-                break;
-            }
-        }
-        if (break_outer_loop)
-            break;
-    }
 }
 
 std::map<std::string, std::vector<std::string>> GPS::retrieve_all_NMEA_sentences()
