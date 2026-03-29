@@ -169,7 +169,7 @@ void Navigation::UpdateNavigation()
 
     // Update state estimates with available measurements
 
-    if (std::get<0>(magnetometer.MagnetometerAvailable()) > 2 && false) {
+    if (std::get<0>(magnetometer.MagnetometerAvailable()) > 0.5) {
         magneticField = magnetometer.GetMagneticField();
         Eigen::Vector3d magneticFieldVector(std::get<0>(magneticField), std::get<1>(magneticField), std::get<2>(magneticField));
         magnetometerUpdate(magneticFieldVector, R);
@@ -177,7 +177,7 @@ void Navigation::UpdateNavigation()
 
     // Update GPS on fixed cadence (every kGPSUpdateCadence steps) when altitude > 2.0m
     ++gps_update_counter;
-    if (gps_update_counter >= kGPSUpdateCadence && false) {
+    if (gps_update_counter >= kGPSUpdateCadence) {
         gpsPosition = gps.GetGPSPosition();
         auto gpsVelocity = gps.GetGPSVelocity();
         //std::cout << "GPS Update: Position = (" << std::get<0>(gpsPosition) << ", " 
@@ -188,7 +188,7 @@ void Navigation::UpdateNavigation()
         gps_update_counter = 0; // Reset counter
     }
 
-    if (std::get<0>(camera.CameraAvailable()) > 0.5 && x_e(2) > 1.0 && false) {
+    if (std::get<0>(camera.CameraAvailable()) > 0.5 && x_e(2) > 1.0) {
         cameraDirections = camera.GetUnitVectors();
         Eigen::VectorXd cameraDirectionsVector(9);
         cameraDirectionsVector << std::get<0>(cameraDirections), std::get<1>(cameraDirections), std::get<2>(cameraDirections),
@@ -197,7 +197,7 @@ void Navigation::UpdateNavigation()
         cameraUpdate(cameraDirectionsVector, R);
     }
 
-    if (std::get<0>(lidar.LidarAvailable()) > 2 && x_e(2) < 4.0 && false) {
+    if (std::get<0>(lidar.LidarAvailable()) > 0.5 && x_e(2) < 4.0) {
         double lidarDistance = std::get<0>(lidar.GetLidarDistance());
         lidarUpdate(lidarDistance, R);
     }
@@ -228,7 +228,7 @@ void Navigation::magnetometerUpdate(const Eigen::Vector3d& magneticField, const 
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
     H.block<3,3>(0,6) = skew(R.transpose() * MissionConstants::kEarthMagField);
     Eigen::Vector3d y_pred = R.transpose() * MissionConstants::kEarthMagField;
-    kalmanUpdate(H, (1e-2) * (1e-2) * Eigen::Matrix3d::Identity(), magneticField, y_pred);
+    kalmanUpdate(H, (1) * (1) * Eigen::Matrix3d::Identity(), magneticField, y_pred);
 }
 
 void Navigation::gpsUpdate(const Eigen::Vector3d& gpsPosition, const Eigen::Vector2d& gpsVelocity)
@@ -246,7 +246,7 @@ void Navigation::gpsUpdate(const Eigen::Vector3d& gpsPosition, const Eigen::Vect
     y_pred << x_e(0) + sensor_r_gps_orig(0), x_e(1) + sensor_r_gps_orig(1), x_e(2) + sensor_r_gps_orig(2), v_e(0), v_e(1);
 
     Eigen::MatrixXd V = Eigen::MatrixXd::Zero(5, 5);
-    V.block<3,3>(0,0) = (0.1) * (0.1) * Eigen::Matrix3d::Identity();
+    V.block<3,3>(0,0) = (3) * (3) * Eigen::Matrix3d::Identity();
     V.block<2,2>(3,3) = (0.1) * (0.1) * Eigen::Matrix2d::Identity();
 
     //std::cout << "GPS Difference" << (gpsPosition(0) - y_pred(0)) << ", " 
@@ -259,7 +259,7 @@ void Navigation::gpsUpdate(const Eigen::Vector3d& gpsPosition, const Eigen::Vect
 void Navigation::lidarUpdate(double lidar, const Eigen::Matrix3d& R)
 {
     const Eigen::Vector3d sensor_lidar_dir_orig(0.0, 0.0, -1.0);
-    const Eigen::Vector3d sensor_r_lidar_orig(-0.2, 0.0, -0.5);
+    const Eigen::Vector3d sensor_r_lidar_orig(0.2, 0.0, -0.5);
 
     Eigen::VectorXd y = Eigen::VectorXd::Zero(1);
     y(0) = lidar;
@@ -272,13 +272,13 @@ void Navigation::lidarUpdate(double lidar, const Eigen::Matrix3d& R)
     }
 
     Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(1);
-    y_pred(0) = -sensor_loc(2) / pointing_dir(2);
+    y_pred(0) = sensor_loc(2);
 
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(1, 15);
     H(0,2) = -1.0 / pointing_dir(2);
 
     Eigen::MatrixXd V = Eigen::MatrixXd::Zero(1, 1);
-    V(0,0) = (0.005) * (0.005);
+    V(0,0) = 10 * (0.005) * (0.005);
 
     kalmanUpdate(H, V, y, y_pred);
 }

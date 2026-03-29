@@ -37,7 +37,7 @@ namespace MissionConstants
     const Eigen::Vector3d kVehicleWetMomentOfInertiaBodyKgm2 = Eigen::Vector3d(30.0, 30.0, 0.44);
     const Eigen::Vector3d kVehicleDryMomentOfInertiaBodyKgm2 = Eigen::Vector3d(20.0, 20.0, 0.34);
     const double originalOffsetAngle = 5 * kDeg2Rad;
-    const Eigen::Vector3d kEarthMagField = Eigen::Vector3d(-0.089, 0.378, -0.921).normalized(); // Unit vector pointing in the direction of Earth's magnetic field
+    const Eigen::Vector3d kEarthMagField = Eigen::Vector3d(-4.8415717072661559, 20.116087207173326, -46.952237491806379);
     const Eigen::Vector3d kSensorCameraPosition = Eigen::Vector3d(0.2, 0.0, -1); // Position of the camera in the body frame (in meters)
     const Eigen::Vector3d kSensorCameraOrientationRad = Eigen::Vector3d(0.0, 2.3561944901923448, 0.0); // XYZ Euler orientation from camera frame to body frame
     const Eigen::Vector3d kSensorGPSPosition = Eigen::Vector3d(0.0, 0.0, 1.0); // Position of the GPS sensor (antenna) in the body frame (in meters)
