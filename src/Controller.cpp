@@ -149,8 +149,7 @@ Eigen::Matrix<double, 16, 1> x = navigation.GetNavigation();
 
 void Controller::HeightControl(Navigation& navigation)
 {
-    // TODO: use value from constants file
-    constexpr double g = 9.81;
+    const double g = MissionConstants::kGravity; // m/s^2
 
     Eigen::Matrix<double, 16, 1> x = navigation.GetNavigation();
 

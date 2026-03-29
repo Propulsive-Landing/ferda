@@ -20,14 +20,14 @@ Navigation::Navigation(IMU &inputImu, Magnetometer &inputMagnetometer, GPS &inpu
     stateMat(6) = 1;
     
     Eigen::VectorXd d(15);
-    d << 1e-5, 1e-5, 1e-5, // Position variances
-         1e-6, 1e-6, 1e-6, // Velocity variances
-         1e-4, 1e-4, 1e-4, // Attitude variances
-         1e-2, 1e-2, 1e-2, // Accelerometer bias variances
-         1e-5, 1e-5, 1e-5; // Gyroscope bias variances
+        d << MissionConstants::kNavInitialPositionVariance, MissionConstants::kNavInitialPositionVariance, MissionConstants::kNavInitialPositionVariance, // Position variances
+            MissionConstants::kNavInitialVelocityVariance, MissionConstants::kNavInitialVelocityVariance, MissionConstants::kNavInitialVelocityVariance, // Velocity variances
+            MissionConstants::kNavInitialAttitudeVariance, MissionConstants::kNavInitialAttitudeVariance, MissionConstants::kNavInitialAttitudeVariance, // Attitude variances
+            MissionConstants::kNavInitialAccelBiasVariance, MissionConstants::kNavInitialAccelBiasVariance, MissionConstants::kNavInitialAccelBiasVariance, // Accelerometer bias variances
+            MissionConstants::kNavInitialGyroBiasVariance, MissionConstants::kNavInitialGyroBiasVariance, MissionConstants::kNavInitialGyroBiasVariance; // Gyroscope bias variances
 
     P = d.asDiagonal();
-    estimatedMassKg = MissionConstants::kVehicleWetMassKg;
+    estimatedMassKg = MissionConstants::kStructuresWetMassKg;
     estimatedMassFraction = 1.0;
     UpdateMassPropertyEstimates();
     
@@ -48,8 +48,12 @@ void Navigation::reset()
     stateMat.segment(10, 3) = a_b_saved;
     stateMat.segment(13, 3) = w_b_saved;
 
-    estimatedMassKg = MissionConstants::kVehicleWetMassKg;
+    estimatedMassKg = MissionConstants::kStructuresWetMassKg;
     estimatedMassFraction = 1.0;
+    gps_update_counter = 0;
+    lidar_update_counter = 0;
+    magnetometer_update_counter = 0;
+    last_camera_frame_id = -1.0;
     UpdateMassPropertyEstimates();
 }
 
@@ -100,7 +104,8 @@ void Navigation::UpdateNavigation()
     w_b = stateMat.segment(13, 3);
 
     Eigen::Matrix3d R = q.toRotationMatrix();
-    Eigen::Vector3d g(0, 0, -9.81);
+    const double g = MissionConstants::kGravity; // m/s^2
+    Eigen::Vector3d g_vec(0, 0, -g);
 
     // Create 2 tuples to hold the the linear acceleration and angular rate data from the imu
     linearAcceleration = imu.GetBodyAcceleration();
@@ -117,8 +122,8 @@ void Navigation::UpdateNavigation()
     //         << v_e(0) << "," << v_e(1) << "," << v_e(2) << "\n";
 
     // Nominal State Calculation //
-    x_e += v_e * loopTime + 0.5 * (R * (a_m - a_b) + g) * loopTime * loopTime;
-    v_e += (R * (a_m - a_b) + g) * loopTime;
+    x_e += v_e * loopTime + 0.5 * (R * (a_m - a_b) + g_vec) * loopTime * loopTime;
+    v_e += (R * (a_m - a_b) + g_vec) * loopTime;
 
     // Small-angle quaternion
     Eigen::Vector3d theta = (w_m - w_b) * loopTime;
@@ -153,10 +158,10 @@ void Navigation::UpdateNavigation()
     Fi.block<3,3>(9,6) = Eigen::Matrix3d::Identity();
     Fi.block<3,3>(12,9) = Eigen::Matrix3d::Identity();
 
-    double sigma_a_n = 0.0316;
-    double sigma_w_n = 0.00224;
-    double sigma_a_w = 0;
-    double sigma_w_w = 0;
+    const double sigma_a_n = MissionConstants::kNavAccelWhiteNoiseSigma;
+    const double sigma_w_n = MissionConstants::kNavGyroWhiteNoiseSigma;
+    const double sigma_a_w = MissionConstants::kNavAccelBiasRandomWalkSigma;
+    const double sigma_w_w = MissionConstants::kNavGyroBiasRandomWalkSigma;
 
     Eigen::MatrixXd Qi = Eigen::MatrixXd::Zero(12,12);
     Qi.block<3,3>(0,0) = sigma_a_n*sigma_a_n * loopTime*loopTime * Eigen::Matrix3d::Identity();
@@ -169,10 +174,13 @@ void Navigation::UpdateNavigation()
 
     // Update state estimates with available measurements
 
-    if (std::get<0>(magnetometer.MagnetometerAvailable()) > 0.5) {
+    // Update magnetometer on fixed cadence
+    ++magnetometer_update_counter;
+    if (magnetometer_update_counter >= kMagnetometerUpdateCadence) {
         magneticField = magnetometer.GetMagneticField();
         Eigen::Vector3d magneticFieldVector(std::get<0>(magneticField), std::get<1>(magneticField), std::get<2>(magneticField));
         magnetometerUpdate(magneticFieldVector, R);
+        magnetometer_update_counter = 0; // Reset counter
     }
 
     // Update GPS on fixed cadence (every kGPSUpdateCadence steps) when altitude > 2.0m
@@ -188,18 +196,25 @@ void Navigation::UpdateNavigation()
         gps_update_counter = 0; // Reset counter
     }
 
-    if (std::get<0>(camera.CameraAvailable()) > 0.5 && x_e(2) > 1.0) {
+    const double camera_frame_id = camera.GetFrameId();
+    if (x_e(2) > 1.0 && camera_frame_id >= 0.0 && camera_frame_id != last_camera_frame_id) {
         cameraDirections = camera.GetUnitVectors();
         Eigen::VectorXd cameraDirectionsVector(9);
         cameraDirectionsVector << std::get<0>(cameraDirections), std::get<1>(cameraDirections), std::get<2>(cameraDirections),
                                   std::get<3>(cameraDirections), std::get<4>(cameraDirections), std::get<5>(cameraDirections),
                                   std::get<6>(cameraDirections), std::get<7>(cameraDirections), std::get<8>(cameraDirections);
         cameraUpdate(cameraDirectionsVector, R);
+        last_camera_frame_id = camera_frame_id;
     }
 
-    if (std::get<0>(lidar.LidarAvailable()) > 0.5 && x_e(2) < 4.0) {
-        double lidarDistance = std::get<0>(lidar.GetLidarDistance());
-        lidarUpdate(lidarDistance, R);
+    // Update lidar on fixed cadence near ground.
+    ++lidar_update_counter;
+    if (lidar_update_counter >= kLidarUpdateCadence) {
+        if (x_e(2) < 4.0) {
+            double lidarDistance = std::get<0>(lidar.GetLidarDistance());
+            lidarUpdate(lidarDistance, R);
+        }
+        lidar_update_counter = 0; // Reset counter
     }
 
     Eigen::Vector3d angularRateVector = Eigen::Vector3d(std::get<0>(angularRate), std::get<1>(angularRate), std::get<2>(angularRate));
@@ -228,7 +243,12 @@ void Navigation::magnetometerUpdate(const Eigen::Vector3d& magneticField, const 
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
     H.block<3,3>(0,6) = skew(R.transpose() * MissionConstants::kEarthMagField);
     Eigen::Vector3d y_pred = R.transpose() * MissionConstants::kEarthMagField;
-    kalmanUpdate(H, (1) * (1) * Eigen::Matrix3d::Identity(), magneticField, y_pred);
+    
+    const double mag_noise = MissionConstants::kSensorMagnetometerNoise;
+    Eigen::MatrixXd V = MissionConstants::kNavMagnetometerNoiseFactor *
+                        mag_noise * mag_noise * Eigen::Matrix3d::Identity();
+    
+    kalmanUpdate(H, V, magneticField, y_pred);
 }
 
 void Navigation::gpsUpdate(const Eigen::Vector3d& gpsPosition, const Eigen::Vector2d& gpsVelocity)
@@ -246,8 +266,12 @@ void Navigation::gpsUpdate(const Eigen::Vector3d& gpsPosition, const Eigen::Vect
     y_pred << x_e(0) + sensor_r_gps_orig(0), x_e(1) + sensor_r_gps_orig(1), x_e(2) + sensor_r_gps_orig(2), v_e(0), v_e(1);
 
     Eigen::MatrixXd V = Eigen::MatrixXd::Zero(5, 5);
-    V.block<3,3>(0,0) = (3) * (3) * Eigen::Matrix3d::Identity();
-    V.block<2,2>(3,3) = (0.1) * (0.1) * Eigen::Matrix2d::Identity();
+    V.block<3,3>(0,0) = MissionConstants::kNavGPSPositionNoiseFactor *
+                        MissionConstants::kSensorGPSPositionNoiseM * MissionConstants::kSensorGPSPositionNoiseM *
+                        Eigen::Matrix3d::Identity();
+    V.block<2,2>(3,3) = MissionConstants::kNavGPSVelocityNoiseFactor *
+                        MissionConstants::kSensorGPSVelocityNoiseMps * MissionConstants::kSensorGPSVelocityNoiseMps *
+                        Eigen::Matrix2d::Identity();
 
     //std::cout << "GPS Difference" << (gpsPosition(0) - y_pred(0)) << ", " 
     //          << (gpsPosition(1) - y_pred(1)) << ", " 
@@ -259,7 +283,7 @@ void Navigation::gpsUpdate(const Eigen::Vector3d& gpsPosition, const Eigen::Vect
 void Navigation::lidarUpdate(double lidar, const Eigen::Matrix3d& R)
 {
     const Eigen::Vector3d sensor_lidar_dir_orig(0.0, 0.0, -1.0);
-    const Eigen::Vector3d sensor_r_lidar_orig(0.2, 0.0, -0.5);
+    const Eigen::Vector3d sensor_r_lidar_orig(0.2, 0.0, 0.5);
 
     Eigen::VectorXd y = Eigen::VectorXd::Zero(1);
     y(0) = lidar;
@@ -278,7 +302,9 @@ void Navigation::lidarUpdate(double lidar, const Eigen::Matrix3d& R)
     H(0,2) = -1.0 / pointing_dir(2);
 
     Eigen::MatrixXd V = Eigen::MatrixXd::Zero(1, 1);
-    V(0,0) = 10 * (0.005) * (0.005);
+    V(0,0) = MissionConstants::kNavLidarNoiseFactor *
+             MissionConstants::kSensorLidarNoiseM *
+             MissionConstants::kSensorLidarNoiseM;
 
     kalmanUpdate(H, V, y, y_pred);
 }
@@ -289,7 +315,8 @@ void Navigation::padUpdateVelocity()
     H.block<3,3>(0,3) = Eigen::Matrix3d::Identity();
     Eigen::Vector3d initialVelocity = Eigen::Vector3d(0, 0, 0);
     // Zero-velocity update: measurement is zero, prediction is current estimated velocity.
-    kalmanUpdate(H, (1e-3) * (1e-3) * Eigen::Matrix3d::Identity(), initialVelocity, v_e);
+    const double pad_velocity_sigma = MissionConstants::kNavPadVelocityNoiseMps;
+    kalmanUpdate(H, pad_velocity_sigma * pad_velocity_sigma * Eigen::Matrix3d::Identity(), initialVelocity, v_e);
 }
 
 void Navigation::padUpdateAngularVelocity(const Eigen::Vector3d& angularVelocity)
@@ -297,8 +324,8 @@ void Navigation::padUpdateAngularVelocity(const Eigen::Vector3d& angularVelocity
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
     H.block<3,3>(0,12) = Eigen::Matrix3d::Identity();
     Eigen::Vector3d initialAngularVelocity = Eigen::Vector3d(0, 0, 0);
-    // TODO: replace with sigma_w_n from constants file
-    kalmanUpdate(H, (0.00224) * (0.00224) * Eigen::Matrix3d::Identity(), angularVelocity, initialAngularVelocity);
+    const double pad_angular_velocity_sigma = MissionConstants::kNavPadAngularVelocityNoiseRadps;
+    kalmanUpdate(H, pad_angular_velocity_sigma * pad_angular_velocity_sigma * Eigen::Matrix3d::Identity(), angularVelocity, initialAngularVelocity);
 }
 
 void Navigation::SetOnPad(bool isOnPad)
@@ -403,8 +430,8 @@ std::tuple<double, double, double> Navigation::GetAngularAcceleration()
 
 void Navigation::UpdateMassFractionEstimate(double throttleCommandN)
 {
-    const double wetMassKg = MissionConstants::kVehicleWetMassKg;
-    const double dryMassKg = MissionConstants::kVehicleDryMassKg;
+    const double wetMassKg = MissionConstants::kStructuresWetMassKg;
+    const double dryMassKg = MissionConstants::kStructuresDryMassKg;
     const double propellantMassKg = wetMassKg - dryMassKg;
 
     if (propellantMassKg <= 0.0)
@@ -434,10 +461,10 @@ void Navigation::UpdateMassFractionEstimate(double throttleCommandN)
 void Navigation::UpdateMassPropertyEstimates()
 {
     const double alpha = std::clamp(estimatedMassFraction, 0.0, 1.0);
-    estimatedCenterOfMassBodyM = MissionConstants::kVehicleDryCenterOfMassBodyM +
-                                 alpha * (MissionConstants::kVehicleWetCenterOfMassBodyM - MissionConstants::kVehicleDryCenterOfMassBodyM);
-    estimatedMomentOfInertiaBodyKgm2 = MissionConstants::kVehicleDryMomentOfInertiaBodyKgm2 +
-                                       alpha * (MissionConstants::kVehicleWetMomentOfInertiaBodyKgm2 - MissionConstants::kVehicleDryMomentOfInertiaBodyKgm2);
+    estimatedCenterOfMassBodyM = MissionConstants::kStructuresDryCenterOfMassBodyM +
+                                 alpha * (MissionConstants::kStructuresWetCenterOfMassBodyM - MissionConstants::kStructuresDryCenterOfMassBodyM);
+    estimatedMomentOfInertiaBodyKgm2 = MissionConstants::kStructuresDryMomentOfInertiaBodyKgm2 +
+                                       alpha * (MissionConstants::kStructuresWetMomentOfInertiaBodyKgm2 - MissionConstants::kStructuresDryMomentOfInertiaBodyKgm2);
 }
 
 double Navigation::GetEstimatedMassFraction()

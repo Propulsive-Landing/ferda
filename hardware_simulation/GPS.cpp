@@ -13,8 +13,3 @@ std::tuple<double, double> GPS::GetGPSVelocity()
 {
     return UDPClient::GetInstance().GetGPSVelocity();
 }
-
-std::tuple<double> GPS::GPSAvailable()
-{
-    return UDPClient::GetInstance().GetGPSAvailable();
-}

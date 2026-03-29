@@ -8,7 +8,7 @@ std::tuple<double, double, double, double, double, double, double, double, doubl
 {
     return UDPClient::GetInstance().GetUnitVectors();
 }
-std::tuple<double> Camera::CameraAvailable()
+double Camera::GetFrameId()
 {
-    return UDPClient::GetInstance().GetCameraAvailable();
+    return UDPClient::GetInstance().GetCameraFrameId();
 }

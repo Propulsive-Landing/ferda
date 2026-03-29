@@ -9,7 +9,7 @@ std::tuple<double, double, double, double, double, double, double, double, doubl
 {
     return std::make_tuple(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 }
-std::tuple<double> Camera::CameraAvailable()
+double Camera::GetFrameId()
 {
-    return 0.0;
+    return -1.0;
 }

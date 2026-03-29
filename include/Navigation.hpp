@@ -33,9 +33,6 @@ private:
     void gpsUpdate(const Eigen::Vector3d& gpsPosition, const Eigen::Vector2d& gpsVelocity);
     void lidarUpdate(double lidar, const Eigen::Matrix3d& R);
     void cameraUpdate(const Eigen::VectorXd& cameraDirectionsVector, const Eigen::Matrix3d& R);
-    std::tuple<double> magnetometerAvailable;
-    std::tuple<double> gpsAvailable;
-    std::tuple<double> cameraAvailable;
     std::ofstream dataFile;
     bool onPad = true; // Flag to indicate if rocket is on the pad (idle mode)
     double estimatedMassKg = 0.0;
@@ -44,6 +41,11 @@ private:
     Eigen::Vector3d estimatedMomentOfInertiaBodyKgm2 = Eigen::Vector3d::Zero();
     int gps_update_counter = 0;
     static constexpr int kGPSUpdateCadence = 20; // Update GPS every N nav steps
+    int lidar_update_counter = 0;
+    static constexpr int kLidarUpdateCadence = 4; // Update lidar every N nav steps
+    int magnetometer_update_counter = 0;
+    static constexpr int kMagnetometerUpdateCadence = 2; // Update magnetometer every N nav steps
+    double last_camera_frame_id = -1.0;
 
 public:
     double loopTime = 0.005;
@@ -72,9 +74,6 @@ public:
     std::tuple<double, double, double> GetAngularAcceleration();
     std::tuple<double, double, double> GetMagneticField();
     std::tuple<double, double, double> GetGPSPosition();
-    std::tuple<double> MagnetometerAvailable();
-    std::tuple<double> GPSAvailable();
-    std::tuple<double> CameraAvailable();
     std::tuple<double, double, double, double, double, double, double, double, double> GetUnitVectors();
     void UpdateMassFractionEstimate(double throttleCommandN);
     void UpdateMassPropertyEstimates();

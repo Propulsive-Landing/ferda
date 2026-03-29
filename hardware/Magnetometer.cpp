@@ -9,8 +9,3 @@ std::tuple<double, double, double> Magnetometer::GetMagneticField()
 {
     return std::make_tuple(0.0, 0.0, 0.0);
 }
-
-std::tuple<double> Magnetometer::MagnetometerAvailable()
-{
-    return 0.0;
-}
