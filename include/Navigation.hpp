@@ -42,6 +42,8 @@ private:
     double estimatedMassFraction = 1.0;
     Eigen::Vector3d estimatedCenterOfMassBodyM = Eigen::Vector3d::Zero();
     Eigen::Vector3d estimatedMomentOfInertiaBodyKgm2 = Eigen::Vector3d::Zero();
+    int gps_update_counter = 0;
+    static constexpr int kGPSUpdateCadence = 20; // Update GPS every N nav steps
 
 public:
     double loopTime = 0.005;
@@ -50,8 +52,8 @@ public:
     Eigen::MatrixXd P;
     Eigen::Matrix<double, 16, 1> GetNavigation(); // Defintion of state matrix: TODO (determine dimensions and document form)
     void UpdateNavigation();                      // Defintion updates: TODO (determine dimensions and document form)
-    void padUpdatePosition();
-    void padUpdateAngularVelocity(const Eigen::Vector3d& w);
+    void padUpdateVelocity();
+    void padUpdateAngularVelocity(const Eigen::Vector3d& angularVelocity);
     void SetOnPad(bool isOnPad); // Set whether rocket is on the pad
     Eigen::Vector3d GetAngularVelocity();
     std::tuple<double, double, double> ComputeAngularRollingAverage(std::vector<double> d_theta_now);

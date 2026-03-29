@@ -42,6 +42,10 @@
 #include <array>
 #include <tuple>
 #include <cstdint>
+#include <limits>
+#include <cmath>
+#include <iomanip>
+#include <Eigen/Dense>
 
 #ifdef _WIN32
     #include <winsock2.h>
@@ -55,7 +59,7 @@
 
 class UDPClient {
 private:
-    UDPClient() : running(false), socket_fd(-1) {
+    UDPClient() : socket_fd(-1), running(false) {
         Initialize();
     }
     ~UDPClient() { Cleanup(); }
@@ -77,6 +81,7 @@ private:
     std::array<double, 9> camera_vectors{0};
     std::array<double, 1> lidar_data{0};
     std::array<double, 4> available_sensors{0};
+    double simulation_time_k{0.0};
 
     // Shared variables for actuator data sending
 
@@ -86,39 +91,110 @@ private:
     double motor_angle_y{0};
     double motor_1_ignition{0};
     double thrust{0};
+    std::array<double, 3> nav_position_e{0};
+    std::array<double, 3> nav_velocity_e{0};
 
     void ReadThread() {
-        
+        constexpr int kRxDoubles = 29; // [t_k, accel(3), gyro(3), mag(3), gps_pos(3), gps_vel(2), camera(9), lidar(1), avail(4)]
+        constexpr int kRxBytes = static_cast<int>(sizeof(double) * kRxDoubles);
+        constexpr int kStatsPrintEvery = 200;
+
         char buffer[256];
+        std::uint64_t packet_count = 0;
+        std::uint64_t bad_size_count = 0;
+        std::uint64_t duplicate_or_reordered_count = 0;
+        std::uint64_t estimated_dropped_count = 0;
+        double last_t_k = std::numeric_limits<double>::quiet_NaN();
+        double dt_avg = 0.0;
+
         while (running) {
             int recv_len = recvfrom(socket_fd, buffer, sizeof(buffer), 0, nullptr, nullptr);
 
-            if (recv_len == sizeof(double) * 28) {
-                std::lock_guard<std::mutex> lock(data_mutex);
-                memcpy(acceleration.data(), buffer, sizeof(double) * 3);
-                memcpy(angular_rate.data(), buffer + sizeof(double) * 3, sizeof(double) * 3);
-                memcpy(magnetic_field.data(), buffer + sizeof(double) * 6, sizeof(double) * 3);
-                memcpy(gps_position.data(), buffer + sizeof(double) * 9, sizeof(double) * 3);
-                memcpy(gps_velocity.data(), buffer + sizeof(double) * 12, sizeof(double) * 2);
-                memcpy(camera_vectors.data(), buffer + sizeof(double) * 14, sizeof(double) * 9);
-                memcpy(lidar_data.data(), buffer + sizeof(double) * 23, sizeof(double) * 1);
-                memcpy(available_sensors.data(), buffer + sizeof(double) * 24, sizeof(double) * 4);
+            if (recv_len != kRxBytes) {
+                ++bad_size_count;
+                if (bad_size_count <= 5 || (bad_size_count % 100) == 0) {
+                    std::cout << "UDP RX warning: expected " << kRxBytes
+                              << " bytes, got " << recv_len
+                              << " (bad_size_count=" << bad_size_count << ")" << std::endl;
+                }
+                continue;
             }
+
+            double t_k = 0.0;
+            memcpy(&t_k, buffer, sizeof(double));
+
+            ++packet_count;
+            if (!std::isnan(last_t_k)) {
+                const double dt_k = t_k - last_t_k;
+                if (dt_k <= 0.0) {
+                    ++duplicate_or_reordered_count;
+                } else {
+                    if (dt_avg <= 0.0) {
+                        dt_avg = dt_k;
+                    } else {
+                        dt_avg = 0.98 * dt_avg + 0.02 * dt_k;
+                    }
+
+                    if (dt_avg > 0.0) {
+                        const int inferred_steps = static_cast<int>(std::llround(dt_k / dt_avg));
+                        if (inferred_steps > 1) {
+                            estimated_dropped_count += static_cast<std::uint64_t>(inferred_steps - 1);
+                        }
+                    }
+                }
+            }
+            last_t_k = t_k;
+
+            {
+                std::lock_guard<std::mutex> lock(data_mutex);
+                simulation_time_k = t_k;
+                memcpy(acceleration.data(), buffer + sizeof(double) * 1, sizeof(double) * 3);
+                memcpy(angular_rate.data(), buffer + sizeof(double) * 4, sizeof(double) * 3);
+                memcpy(magnetic_field.data(), buffer + sizeof(double) * 7, sizeof(double) * 3);
+                memcpy(gps_position.data(), buffer + sizeof(double) * 10, sizeof(double) * 3);
+                memcpy(gps_velocity.data(), buffer + sizeof(double) * 13, sizeof(double) * 2);
+                memcpy(camera_vectors.data(), buffer + sizeof(double) * 15, sizeof(double) * 9);
+                memcpy(lidar_data.data(), buffer + sizeof(double) * 24, sizeof(double) * 1);
+                memcpy(available_sensors.data(), buffer + sizeof(double) * 25, sizeof(double) * 4);
+            }
+
+            
+            if ((packet_count % kStatsPrintEvery) == 0) {
+                const std::uint64_t total_with_est_drops = packet_count + estimated_dropped_count;
+                const double drop_pct = (total_with_est_drops > 0)
+                    ? (100.0 * static_cast<double>(estimated_dropped_count) / static_cast<double>(total_with_est_drops))
+                    : 0.0;
+                std::cout << std::fixed << std::setprecision(6)
+                          << "UDP RX stats: packets=" << packet_count
+                          << ", est_dropped=" << estimated_dropped_count
+                          << " (" << std::setprecision(2) << drop_pct << "%)"
+                          << std::setprecision(6)
+                          << ", dup_or_reordered=" << duplicate_or_reordered_count
+                          << ", bad_size=" << bad_size_count
+                          << ", last_t_k=" << t_k
+                          << ", dt_avg=" << dt_avg
+                          << std::endl;
+            }
+            
         }
     }
 
     void WriteThread() {
-        char buffer[32];
+        constexpr int kTxDoubles = 11; // [t_k, tvc_x, tvc_y, ignition, thrust, nav_x, nav_y, nav_z, nav_vx, nav_vy, nav_vz]
+        char buffer[sizeof(double) * kTxDoubles];
         while (running) {
            std::this_thread::sleep_for(std::chrono::milliseconds(5)); // Adjust as needed
             
             if (should_send) {
                 std::lock_guard<std::mutex> lock(data_mutex);
 
-                memcpy(buffer, &motor_angle_x, sizeof(double));
-                memcpy(buffer + sizeof(double), &motor_angle_y, sizeof(double));
-                memcpy(buffer + sizeof(double) * 2, &motor_1_ignition, sizeof(double));
-                memcpy(buffer + sizeof(double) * 3, &thrust, sizeof(double));
+                memcpy(buffer, &simulation_time_k, sizeof(double));
+                memcpy(buffer + sizeof(double), &motor_angle_x, sizeof(double));
+                memcpy(buffer + sizeof(double) * 2, &motor_angle_y, sizeof(double));
+                memcpy(buffer + sizeof(double) * 3, &motor_1_ignition, sizeof(double));
+                memcpy(buffer + sizeof(double) * 4, &thrust, sizeof(double));
+                memcpy(buffer + sizeof(double) * 5, nav_position_e.data(), sizeof(double) * 3);
+                memcpy(buffer + sizeof(double) * 8, nav_velocity_e.data(), sizeof(double) * 3);
             }
             if (should_send) {
                 sendto(socket_fd, buffer, sizeof(buffer), 0, 
@@ -264,6 +340,17 @@ public:
     void SetThrust(double thrust_N) {
         std::lock_guard<std::mutex> lock(data_mutex);
         thrust = thrust_N;
+        should_send = true;
+    }
+
+    void SetNavigationState(const Eigen::Vector3d &position_e, const Eigen::Vector3d &velocity_e) {
+        std::lock_guard<std::mutex> lock(data_mutex);
+        nav_position_e[0] = position_e(0);
+        nav_position_e[1] = position_e(1);
+        nav_position_e[2] = position_e(2);
+        nav_velocity_e[0] = velocity_e(0);
+        nav_velocity_e[1] = velocity_e(1);
+        nav_velocity_e[2] = velocity_e(2);
         should_send = true;
     }
 

@@ -162,9 +162,13 @@ void Controller::HeightControl(Navigation& navigation)
     double z_ref    = refPositionZ;
     double zdot_ref = refVelocityZ;
 
+    //std::cout << z_ref << ", " << zdot_ref << "\n";
+
     // Errors
     double e_z    = z_ref - z;
     double e_zdot = zdot_ref - zdot;
+
+    //std::cout << zdot_ref << ", " << e_zdot << "\n";
 
     // Integral update
     height_error_integral += e_z * loopTime;
@@ -190,7 +194,7 @@ void Controller::HeightControl(Navigation& navigation)
     }
 
     current_thrust_command_N = thrust_cmd;
-    engine.SetThrust(thrust_cmd); // Newtons
+    engine.SetThrust(thrust_cmd, x.segment<3>(0), x.segment<3>(3)); // Newtons + navigation state
 }
 
 void Controller::Center()

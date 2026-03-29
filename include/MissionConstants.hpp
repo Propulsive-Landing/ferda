@@ -38,12 +38,17 @@ namespace MissionConstants
     const Eigen::Vector3d kVehicleDryMomentOfInertiaBodyKgm2 = Eigen::Vector3d(20.0, 20.0, 0.34);
     const double originalOffsetAngle = 5 * kDeg2Rad;
     const Eigen::Vector3d kEarthMagField = Eigen::Vector3d(-0.089, 0.378, -0.921).normalized(); // Unit vector pointing in the direction of Earth's magnetic field
-    const Eigen::Vector3d kSensorCameraPosition = Eigen::Vector3d(0.2, 0.2, -1); // Position of the camera in the body frame (in meters)
+    const Eigen::Vector3d kSensorCameraPosition = Eigen::Vector3d(0.2, 0.0, -1); // Position of the camera in the body frame (in meters)
+    const Eigen::Vector3d kSensorCameraOrientationRad = Eigen::Vector3d(0.0, 2.3561944901923448, 0.0); // XYZ Euler orientation from camera frame to body frame
+    const Eigen::Vector3d kSensorGPSPosition = Eigen::Vector3d(0.0, 0.0, 1.0); // Position of the GPS sensor (antenna) in the body frame (in meters)
+    const Eigen::Vector3d kStructuresGroundOffset = Eigen::Vector3d(0.0, 0.0, -1.0); // Offset from marker data frame to ground frame
+    const double kSensorCameraNoise = 1e-3;
+    const double kNavCameraNoiseFactor = 1.5;
     inline const Eigen::Matrix<double, 3, 3> kMarkerData =
         (Eigen::Matrix<double, 3, 3>() <<
-            -2.5, -2.5, 5.0,
-            4.3301, -4.3301, 0.0,
-            0.5,  0.5,  0.5
+            2.0, 2.0, 5.0,
+            1.7320508075688774, -1.7320508075688774, 0.0,
+            0.0,  0.0,  0.0
         ).finished();
 
     // Controller constants, TODO: USER EDIT PRE-FLIGHT

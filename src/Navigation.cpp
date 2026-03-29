@@ -1,4 +1,5 @@
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
 #include <cmath>
 #include <algorithm>
 #include <deque>
@@ -20,8 +21,8 @@ Navigation::Navigation(IMU &inputImu, Magnetometer &inputMagnetometer, GPS &inpu
     
     Eigen::VectorXd d(15);
     d << 1e-5, 1e-5, 1e-5, // Position variances
-         0, 0, 0, // Velocity variances
-         0, 0, 0, // Attitude variances
+         1e-6, 1e-6, 1e-6, // Velocity variances
+         1e-4, 1e-4, 1e-4, // Attitude variances
          1e-2, 1e-2, 1e-2, // Accelerometer bias variances
          1e-5, 1e-5, 1e-5; // Gyroscope bias variances
 
@@ -31,7 +32,7 @@ Navigation::Navigation(IMU &inputImu, Magnetometer &inputMagnetometer, GPS &inpu
     UpdateMassPropertyEstimates();
     
     //Logging for SIL testing
-    dataFile.open("data.csv", std::ios::app);
+    //dataFile.open("data.csv", std::ios::app);
 }
 
 void Navigation::reset()
@@ -107,9 +108,9 @@ void Navigation::UpdateNavigation()
     
     Eigen::Vector3d a_m(std::get<0>(linearAcceleration), std::get<1>(linearAcceleration), std::get<2>(linearAcceleration));
     Eigen::Vector3d w_m(std::get<0>(angularRate), std::get<1>(angularRate), std::get<2>(angularRate));
-    
-    //std::cout << "a_m: " << a_m.transpose() << " w_m: " << w_m.transpose() << std::endl;
-    
+        
+    //std::cout << a_b.transpose() << ", " << w_b.transpose() << "\n";
+
     //Logging for SIL testing
     //dataFile << std::fixed << std::setprecision(6) 
     //         << x_e(0) << "," << x_e(1) << "," << x_e(2) << "," 
@@ -168,21 +169,26 @@ void Navigation::UpdateNavigation()
 
     // Update state estimates with available measurements
 
-    if (std::get<0>(magnetometer.MagnetometerAvailable()) > 0.5) {
+    if (std::get<0>(magnetometer.MagnetometerAvailable()) > 2 && false) {
         magneticField = magnetometer.GetMagneticField();
         Eigen::Vector3d magneticFieldVector(std::get<0>(magneticField), std::get<1>(magneticField), std::get<2>(magneticField));
         magnetometerUpdate(magneticFieldVector, R);
     }
 
-    if (std::get<0>(gps.GPSAvailable()) > 0.5 && x_e(2) > 2.0) {
+    // Update GPS on fixed cadence (every kGPSUpdateCadence steps) when altitude > 2.0m
+    ++gps_update_counter;
+    if (gps_update_counter >= kGPSUpdateCadence && false) {
         gpsPosition = gps.GetGPSPosition();
         auto gpsVelocity = gps.GetGPSVelocity();
+        //std::cout << "GPS Update: Position = (" << std::get<0>(gpsPosition) << ", " 
+        //         << std::get<1>(gpsPosition) << ", " << std::get<2>(gpsPosition) << ")\n";
         Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
         Eigen::Vector2d gpsVelocityVector(std::get<0>(gpsVelocity), std::get<1>(gpsVelocity));
         gpsUpdate(gpsPositionVector, gpsVelocityVector);
+        gps_update_counter = 0; // Reset counter
     }
 
-    if (std::get<0>(camera.CameraAvailable()) > 2 && x_e(2) > 2.0) {
+    if (std::get<0>(camera.CameraAvailable()) > 0.5 && x_e(2) > 1.0 && false) {
         cameraDirections = camera.GetUnitVectors();
         Eigen::VectorXd cameraDirectionsVector(9);
         cameraDirectionsVector << std::get<0>(cameraDirections), std::get<1>(cameraDirections), std::get<2>(cameraDirections),
@@ -191,7 +197,7 @@ void Navigation::UpdateNavigation()
         cameraUpdate(cameraDirectionsVector, R);
     }
 
-    if (std::get<0>(lidar.LidarAvailable()) > 0.5 && x_e(2) < 4.0) {
+    if (std::get<0>(lidar.LidarAvailable()) > 2 && x_e(2) < 4.0 && false) {
         double lidarDistance = std::get<0>(lidar.GetLidarDistance());
         lidarUpdate(lidarDistance, R);
     }
@@ -201,7 +207,7 @@ void Navigation::UpdateNavigation()
 
     // Apply pad updates when on the pad (idle mode)
     if (onPad) {
-        padUpdatePosition();
+        //padUpdateVelocity();
         padUpdateAngularVelocity(w);
     }
 
@@ -227,6 +233,8 @@ void Navigation::magnetometerUpdate(const Eigen::Vector3d& magneticField, const 
 
 void Navigation::gpsUpdate(const Eigen::Vector3d& gpsPosition, const Eigen::Vector2d& gpsVelocity)
 {
+    const Eigen::Vector3d sensor_r_gps_orig = MissionConstants::kSensorGPSPosition;
+    
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(5, 15);
     H.block<3,3>(0,0) = Eigen::Matrix3d::Identity();
     H.block<2,2>(3,3) = Eigen::Matrix2d::Identity();
@@ -235,11 +243,15 @@ void Navigation::gpsUpdate(const Eigen::Vector3d& gpsPosition, const Eigen::Vect
     y << gpsPosition(0), gpsPosition(1), gpsPosition(2), gpsVelocity(0), gpsVelocity(1);
 
     Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(5);
-    y_pred << x_e(0), x_e(1), x_e(2), v_e(0), v_e(1);
+    y_pred << x_e(0) + sensor_r_gps_orig(0), x_e(1) + sensor_r_gps_orig(1), x_e(2) + sensor_r_gps_orig(2), v_e(0), v_e(1);
 
     Eigen::MatrixXd V = Eigen::MatrixXd::Zero(5, 5);
     V.block<3,3>(0,0) = (0.1) * (0.1) * Eigen::Matrix3d::Identity();
     V.block<2,2>(3,3) = (0.1) * (0.1) * Eigen::Matrix2d::Identity();
+
+    //std::cout << "GPS Difference" << (gpsPosition(0) - y_pred(0)) << ", " 
+    //          << (gpsPosition(1) - y_pred(1)) << ", " 
+    //          << (gpsPosition(2) - y_pred(2)) << "\n";
 
     kalmanUpdate(H, V, y, y_pred);
 }
@@ -271,21 +283,22 @@ void Navigation::lidarUpdate(double lidar, const Eigen::Matrix3d& R)
     kalmanUpdate(H, V, y, y_pred);
 }
 
-void Navigation::padUpdatePosition()
+void Navigation::padUpdateVelocity()
 {
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
-    H.block<3,3>(0,0) = Eigen::Matrix3d::Identity();
-    Eigen::Vector3d initialPosition = Eigen::Vector3d(0, 0, 0);
-    kalmanUpdate(H, (1e-3) * (1e-3) * Eigen::Matrix3d::Identity(), initialPosition, x_e);
+    H.block<3,3>(0,3) = Eigen::Matrix3d::Identity();
+    Eigen::Vector3d initialVelocity = Eigen::Vector3d(0, 0, 0);
+    // Zero-velocity update: measurement is zero, prediction is current estimated velocity.
+    kalmanUpdate(H, (1e-3) * (1e-3) * Eigen::Matrix3d::Identity(), initialVelocity, v_e);
 }
 
-void Navigation::padUpdateAngularVelocity(const Eigen::Vector3d& w)
+void Navigation::padUpdateAngularVelocity(const Eigen::Vector3d& angularVelocity)
 {
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
     H.block<3,3>(0,12) = Eigen::Matrix3d::Identity();
     Eigen::Vector3d initialAngularVelocity = Eigen::Vector3d(0, 0, 0);
     // TODO: replace with sigma_w_n from constants file
-    kalmanUpdate(H, (0.00224) * (0.00224) * Eigen::Matrix3d::Identity(), w, initialAngularVelocity);
+    kalmanUpdate(H, (0.00224) * (0.00224) * Eigen::Matrix3d::Identity(), angularVelocity, initialAngularVelocity);
 }
 
 void Navigation::SetOnPad(bool isOnPad)
@@ -295,26 +308,62 @@ void Navigation::SetOnPad(bool isOnPad)
 
 void Navigation::cameraUpdate(const Eigen::VectorXd& cameraDirectionsVector, const Eigen::Matrix3d& R)
 {
-    int N = MissionConstants::kMarkerData.cols();
-    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3*N, 15);
-    Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(3*N);
+    const int N = MissionConstants::kMarkerData.cols();
 
+    const Eigen::Vector3d eul = MissionConstants::kSensorCameraOrientationRad;
+    const Eigen::Matrix3d DCM_bc =
+        (Eigen::AngleAxisd(eul.x(), Eigen::Vector3d::UnitX()).toRotationMatrix() *
+         Eigen::AngleAxisd(eul.y(), Eigen::Vector3d::UnitY()).toRotationMatrix() *
+         Eigen::AngleAxisd(eul.z(), Eigen::Vector3d::UnitZ()).toRotationMatrix());
+
+    std::vector<int> validIdx;
+    validIdx.reserve(N);
     for (int i = 0; i < N; ++i) {
-        Eigen::Vector3d delta =
-            R.transpose() * (MissionConstants::kMarkerData.col(i) - x_e) + MissionConstants::kSensorCameraPosition;
-
-        double d = delta.norm();
-        Eigen::Vector3d rho = delta / d;
-        Eigen::Vector3d u = (MissionConstants::kMarkerData.col(i) - x_e) / d;
-        y_pred.segment<3>(3*i) = rho;
-
-        H.block<3,3>(3*i, 0) =
-            -R.transpose() * (Eigen::Matrix3d::Identity() - u*u.transpose()) / d;
-
-        H.block<3,3>(3*i, 6) =
-            skew(R.transpose() * u);
+        if (cameraDirectionsVector.segment<3>(3 * i).norm() > 0.5) {
+            validIdx.push_back(i);
+        }
     }
-    kalmanUpdate(H, (1e-3) * (1e-3) * Eigen::MatrixXd::Identity(3*N, 3*N), cameraDirectionsVector, y_pred);
+
+    const int M = static_cast<int>(validIdx.size());
+    if (M == 0) {
+        return;
+    }
+
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3 * M, 15);
+    Eigen::VectorXd y = Eigen::VectorXd::Zero(3 * M);
+    Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(3 * M);
+
+    for (int k = 0; k < M; ++k) {
+        const int i = validIdx[k];
+        const Eigen::Vector3d delta =
+            R.transpose() * (MissionConstants::kMarkerData.col(i) + MissionConstants::kStructuresGroundOffset - x_e) -
+            MissionConstants::kSensorCameraPosition;
+
+        const double d = delta.norm();
+        if (d < 1e-9) {
+            continue;
+        }
+
+        const Eigen::Vector3d rho = delta / d;
+        const Eigen::Vector3d u = (R.transpose() * delta) / d;
+        const int row = 3 * k;
+
+        y.segment<3>(row) = DCM_bc * cameraDirectionsVector.segment<3>(3 * i);
+        y_pred.segment<3>(row) = rho;
+        H.block<3,3>(row, 0) =
+            -R.transpose() * (Eigen::Matrix3d::Identity() - u * u.transpose()) / d;
+        H.block<3,3>(row, 6) = skew(R.transpose() * u);
+    }
+
+    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(3 * M, 3 * M);
+    const double cameraNoise = MissionConstants::kNavCameraNoiseFactor *
+                               MissionConstants::kSensorCameraNoise *
+                               MissionConstants::kSensorCameraNoise;
+    for (int k = 0; k < M; ++k) {
+        V.block<3,3>(3 * k, 3 * k) = cameraNoise * Eigen::Matrix3d::Identity();
+    }
+
+    kalmanUpdate(H, V, y, y_pred);
 }
 
 void Navigation::kalmanUpdate(

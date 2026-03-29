@@ -1,0 +1,5 @@
+/home/harrison/src/ferda/build_sim/CMakeFiles/Ferda.dir
+/home/harrison/src/ferda/build_sim/CMakeFiles/edit_cache.dir
+/home/harrison/src/ferda/build_sim/CMakeFiles/rebuild_cache.dir
+/home/harrison/src/ferda/build_sim/_deps/json-build/CMakeFiles/edit_cache.dir
+/home/harrison/src/ferda/build_sim/_deps/json-build/CMakeFiles/rebuild_cache.dir

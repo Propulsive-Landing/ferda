@@ -1,6 +1,9 @@
 #include "LaunchManager.hpp"
 #include "Telemetry.hpp"
+#include "MissionConstants.hpp"
 #include <cmath>
+#include <algorithm>
+#include <limits>
 
 LaunchManager::LaunchManager()
 {
@@ -11,7 +14,7 @@ LaunchManager::LaunchManager()
     hoverDurationSeconds = 15.0;
     slowReferenceVelocity = 0.5;
     fastReferenceVelocity = 5.0;
-    hoverTargetAltitude = 50.0;
+    hoverTargetAltitude = 10.0;
     takeoffAltitudeThreshold = 1.0;
     descendTransitionAltitude = 2.0;
     currentMaxAcceleration = 2.0;
@@ -43,13 +46,20 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
     double currentAltitude = testState(2);
     double currentVelocityZ = testState(5);
 
+    const double currentMassKg = std::max(navigation.GetEstimatedMassKg(), 1e-3);
+    const double accelerationMargin = 0.75; // Use 75% of max acceleration/deceleration for safety margin
+    const double maxUpwardNetAcceleration = std::max((MissionConstants::kEngineMaxThrust / currentMassKg) - MissionConstants::kGravity, 0.0);
+    const double maxDownwardNetAcceleration = std::max(MissionConstants::kGravity - (MissionConstants::kEngineMinThrust / currentMassKg), 0.0);
+    currentMaxAcceleration = accelerationMargin * maxUpwardNetAcceleration;
+    currentMaxDeceleration = accelerationMargin * maxDownwardNetAcceleration;
+
     // Similar logic to previous Mode::UpdateLaunch but encapsulated here
     switch (eLaunchPhase)
     {
     case LaunchPhase::Takeoff:
         controller.refAccelerationZ = 0.0;
         controller.refVelocityZ = slowReferenceVelocity;
-        if (controller.refPositionZ > takeoffAltitudeThreshold)
+        if (currentAltitude > takeoffAltitudeThreshold)
         {
             eLaunchPhase = LaunchPhase::Ascend;
             launchPhaseStartTime = currentTime;
@@ -65,15 +75,17 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
             controller.refAccelerationZ = currentMaxAcceleration;
             controller.refVelocityZ += currentMaxAcceleration * controller.loopTime;
             {
-                double accelDecelerationDistance = (controller.refVelocityZ * controller.refVelocityZ) / (2.0 * currentMaxDeceleration);
-                if (controller.refPositionZ + accelDecelerationDistance >= hoverTargetAltitude)
+                double accelDecelerationDistance = (currentMaxDeceleration > 1e-6)
+                    ? (currentVelocityZ * currentVelocityZ) / (2.0 * currentMaxDeceleration)
+                    : std::numeric_limits<double>::infinity();                
+                    if (currentAltitude + accelDecelerationDistance >= hoverTargetAltitude)
                 {
                     eAscendPhase = ChangeAltitudePhase::Decelerate;
                     Telemetry::GetInstance().Log("  Ascend: ACCELERATE -> DECELERATE (skipping ConstantVelocity)");
                     break;
                 }
             }
-            if (controller.refVelocityZ >= fastReferenceVelocity)
+            if (currentVelocityZ >= fastReferenceVelocity)
             {
                 controller.refVelocityZ = fastReferenceVelocity;
                 eAscendPhase = ChangeAltitudePhase::ConstantVelocity;
@@ -85,8 +97,10 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
             controller.refAccelerationZ = 0.0;
             controller.refVelocityZ = fastReferenceVelocity;
             {
-                double decelerationDistance = (controller.refVelocityZ * controller.refVelocityZ) / (2.0 * currentMaxDeceleration);
-                if (controller.refPositionZ > hoverTargetAltitude - decelerationDistance)
+                double decelerationDistance = (currentMaxDeceleration > 1e-6)
+                    ? (currentVelocityZ * currentVelocityZ) / (2.0 * currentMaxDeceleration)
+                    : std::numeric_limits<double>::infinity();
+                if (currentAltitude > hoverTargetAltitude - decelerationDistance)
                 {
                     eAscendPhase = ChangeAltitudePhase::Decelerate;
                     Telemetry::GetInstance().Log("  Ascend: CONSTANT_VELOCITY -> DECELERATE");
@@ -97,7 +111,7 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
         case ChangeAltitudePhase::Decelerate:
             controller.refAccelerationZ = -currentMaxDeceleration;
             controller.refVelocityZ -= currentMaxDeceleration * controller.loopTime;
-            if (controller.refVelocityZ <= 0.0)
+            if (currentVelocityZ <= 0.0)
             {
                 controller.refVelocityZ = 0.0;
                 controller.refPositionZ = hoverTargetAltitude;
@@ -108,7 +122,7 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
             break;
         }
 
-        if (controller.refPositionZ >= hoverTargetAltitude)
+        if (currentAltitude >= hoverTargetAltitude)
         {
             eLaunchPhase = LaunchPhase::Hover;
             launchPhaseStartTime = currentTime;
@@ -137,15 +151,17 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
             controller.refAccelerationZ = -currentMaxAcceleration;
             controller.refVelocityZ -= currentMaxAcceleration * controller.loopTime;
             {
-                double descendAccelDecelerationDistance = (std::abs(controller.refVelocityZ) * std::abs(controller.refVelocityZ)) / (2.0 * currentMaxDeceleration);
-                if (controller.refPositionZ - descendAccelDecelerationDistance <= descendTransitionAltitude)
+                double descendAccelDecelerationDistance = (currentMaxDeceleration > 1e-6)
+                    ? (currentVelocityZ * currentVelocityZ) / (2.0 * currentMaxDeceleration)
+                    : std::numeric_limits<double>::infinity();
+                if (currentAltitude - descendAccelDecelerationDistance <= descendTransitionAltitude)
                 {
                     eDescendPhase = ChangeAltitudePhase::Decelerate;
                     Telemetry::GetInstance().Log("  Descend: ACCELERATE -> DECELERATE (skipping ConstantVelocity)");
                     break;
                 }
             }
-            if (controller.refVelocityZ <= -fastReferenceVelocity)
+            if (currentVelocityZ <= -fastReferenceVelocity)
             {
                 controller.refVelocityZ = -fastReferenceVelocity;
                 eDescendPhase = ChangeAltitudePhase::ConstantVelocity;
@@ -157,8 +173,10 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
             controller.refAccelerationZ = 0.0;
             controller.refVelocityZ = -fastReferenceVelocity;
             {
-                double descendDecelerationDistance = (fastReferenceVelocity * fastReferenceVelocity) / (2.0 * currentMaxDeceleration);
-                if (controller.refPositionZ < descendTransitionAltitude + descendDecelerationDistance)
+                double descendDecelerationDistance = (currentMaxDeceleration > 1e-6)
+                    ? (fastReferenceVelocity * fastReferenceVelocity) / (2.0 * currentMaxDeceleration)
+                    : std::numeric_limits<double>::infinity();
+                if (currentAltitude < descendTransitionAltitude + descendDecelerationDistance)
                 {
                     eDescendPhase = ChangeAltitudePhase::Decelerate;
                     Telemetry::GetInstance().Log("  Descend: CONSTANT_VELOCITY -> DECELERATE");
@@ -169,7 +187,7 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
         case ChangeAltitudePhase::Decelerate:
             controller.refAccelerationZ = currentMaxDeceleration;
             controller.refVelocityZ += currentMaxDeceleration * controller.loopTime;
-            if (controller.refVelocityZ >= -slowReferenceVelocity)
+            if (currentVelocityZ >= -slowReferenceVelocity)
             {
                 controller.refVelocityZ = -slowReferenceVelocity;
                 eLaunchPhase = LaunchPhase::Land;
@@ -179,7 +197,7 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
             break;
         }
 
-        if (controller.refPositionZ <= descendTransitionAltitude)
+        if (currentAltitude <= descendTransitionAltitude)
         {
             eLaunchPhase = LaunchPhase::Land;
             launchPhaseStartTime = currentTime;
