@@ -93,8 +93,8 @@ void Controller::CalculateInput(Navigation &navigation)
     const Eigen::Vector3d estimatedMoiBody = navigation.GetEstimatedMomentOfInertiaBodyKgm2();
     const Eigen::Vector3d estimatedComBody = navigation.GetEstimatedCenterOfMassBodyM();
     const double lateralMoi = 0.5 * (estimatedMoiBody(0) + estimatedMoiBody(1));
-    const double thrustForScaling = std::max(std::abs(current_thrust_command_N), MissionConstants::kControllerMinThrustForScalingN);
-    const double momentArm = std::max(std::abs(estimatedComBody(2) - MissionConstants::kEngineThrustLocationBodyM(2)), MissionConstants::kControllerMinMomentArmM);
+    const double thrustForScaling = std::max(std::abs(current_thrust_command_N), MissionConstants::kEngineMinThrust);
+    const double momentArm = std::abs(estimatedComBody(2) - MissionConstants::kEngineThrustLocationBodyM(2));
     const double controlScale = lateralMoi / (thrustForScaling * momentArm);
 
     input = -controlScale * angle_controller_gains * x_control;
@@ -161,21 +161,15 @@ void Controller::HeightControl(Navigation& navigation)
     double z_ref    = refPositionZ;
     double zdot_ref = refVelocityZ;
 
-    //std::cout << z_ref << ", " << zdot_ref << "\n";
-
     // Errors
     double e_z    = z_ref - z;
     double e_zdot = zdot_ref - zdot;
-
-    //std::cout << zdot_ref << ", " << e_zdot << "\n";
 
     // Integral update
     height_error_integral += e_z * loopTime;
 
     // Acceleration command
-    
     Eigen::Vector3d height_control_vector = Eigen::Vector3d(height_error_integral, e_z, e_zdot);
-    
     double zddot_cmd = height_controller_gains * height_control_vector + refAccelerationZ;
 
     // Use navigation's current vehicle mass estimate

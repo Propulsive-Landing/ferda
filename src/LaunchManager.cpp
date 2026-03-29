@@ -11,24 +11,15 @@ LaunchManager::LaunchManager()
     eAscendPhase = ChangeAltitudePhase::Accelerate;
     eDescendPhase = ChangeAltitudePhase::Accelerate;
     launchPhaseStartTime = 0.0;
-    hoverDurationSeconds = 15.0;
-    slowReferenceVelocity = 0.5;
-    fastReferenceVelocity = 5.0;
-    hoverTargetAltitude = 10.0;
-    takeoffAltitudeThreshold = 1.0;
-    descendTransitionAltitude = 2.0;
-    currentMaxAcceleration = 2.0;
-    currentMaxDeceleration = 2.0;
-}
-
-void LaunchManager::SetCurrentMaxAcceleration(double a)
-{
-    currentMaxAcceleration = a;
-}
-
-void LaunchManager::SetCurrentMaxDeceleration(double d)
-{
-    currentMaxDeceleration = d;
+    hoverDurationSeconds = MissionConstants::kGuidanceHoverDurationSeconds;
+    slowReferenceVelocity = MissionConstants::kGuidanceSlowReferenceVelocityMps;
+    fastReferenceVelocity = MissionConstants::kGuidanceFastReferenceVelocityMps;
+    hoverTargetAltitude = MissionConstants::kGuidanceHoverTargetAltitudeM;
+    takeoffAltitudeThreshold = MissionConstants::kGuidanceTakeoffAltitudeThresholdM;
+    descendTransitionAltitude = MissionConstants::kGuidanceDescendTransitionAltitudeM;
+    currentMaxAcceleration = 1.0; // Placeholder that prevents division by zero until first update
+    currentMaxDeceleration = 1.0;
+    accelerationMargin = MissionConstants::kGuidanceAccelerationMargin;
 }
 
 void LaunchManager::Reset()
@@ -47,7 +38,6 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
     double currentVelocityZ = testState(5);
 
     const double currentMassKg = std::max(navigation.GetEstimatedMassKg(), 1e-3);
-    const double accelerationMargin = 0.75; // Use 75% of max acceleration/deceleration for safety margin
     const double maxUpwardNetAcceleration = std::max((MissionConstants::kEngineMaxThrust / currentMassKg) - MissionConstants::kGravity, 0.0);
     const double maxDownwardNetAcceleration = std::max(MissionConstants::kGravity - (MissionConstants::kEngineMinThrust / currentMassKg), 0.0);
     currentMaxAcceleration = accelerationMargin * maxUpwardNetAcceleration;

@@ -32,9 +32,9 @@ namespace MissionConstants
     const Eigen::Vector3d kStructuresDryCenterOfMassBodyM = Eigen::Vector3d(0.0, 0.0, -0.5);
     const Eigen::Vector3d kStructuresWetMomentOfInertiaBodyKgm2 = Eigen::Vector3d(30.0, 30.0, 0.44);
     const Eigen::Vector3d kStructuresDryMomentOfInertiaBodyKgm2 = Eigen::Vector3d(20.0, 20.0, 0.34);
+    const Eigen::Vector3d kStructuresGroundOffset = Eigen::Vector3d(0.0, 0.0, -1.0); // Position of the ground relative to the rocket's origin (in meters)
     
     // Navigation constants
-    const Eigen::Vector3d kStructuresGroundOffset = Eigen::Vector3d(0.0, 0.0, -1.0); // Offset from marker data frame to ground frame
     const double kNavMagnetometerNoiseFactor = 1.0;
     const double kNavGPSPositionNoiseFactor = 1.0;
     const double kNavGPSVelocityNoiseFactor = 1.0;
@@ -69,6 +69,15 @@ namespace MissionConstants
     const Eigen::Vector3d kSensorGPSPosition = Eigen::Vector3d(0.0, 0.0, 1.0); // Position of the GPS sensor (antenna) in the body frame (in meters)
     const Eigen::Vector3d kSensorMagnetometerPosition = Eigen::Vector3d(0.0, 0.0, 0.0); // Position of magnetometer in the body frame (in meters)
 
+    // Guidance constants, TODO: USER EDIT PRE-FLIGHT
+    const double kGuidanceHoverDurationSeconds = 15.0;
+    const double kGuidanceSlowReferenceVelocityMps = 0.5;
+    const double kGuidanceFastReferenceVelocityMps = 5.0;
+    const double kGuidanceHoverTargetAltitudeM = 10.0;
+    const double kGuidanceTakeoffAltitudeThresholdM = 1.0;
+    const double kGuidanceDescendTransitionAltitudeM = 2.0;
+    const double kGuidanceAccelerationMargin = 0.75; // Use fraction of max acceleration/deceleration for safety margin
+
     // Throttle control constants, TODO: USER EDIT PRE-FLIGHT
     const double kMaximumTvcAngle = 7.5 * kDeg2Rad;
     const double kMaximumTvcAngleDeg = 7.5;
@@ -76,8 +85,6 @@ namespace MissionConstants
     const double kEngineMaxThrust = 1107; // N
     const double kThrottleToMassFlowScale = -5.6e-4; // kg/(N*s)
     const Eigen::Vector3d kEngineThrustLocationBodyM = Eigen::Vector3d(0.0, 0.0, -1.13);
-    const double kControllerMinMomentArmM = 0.01;
-    const double kControllerMinThrustForScalingN = 1.0;
 
     // TVC Constants, TODO: USER EDIT PRE-FLIGHT
     const double kDeg2PulseWidth = ((double)1000.0) / ((double)90.0);

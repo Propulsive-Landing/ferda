@@ -29,10 +29,6 @@ public:
     std::string HeightKMatrix;
     std::string TranslationKMatrix;
     
-    // Setters for current acceleration/deceleration (should be updated by hardware telemetry)
-    void SetCurrentMaxAcceleration(double accel) { launchManager.SetCurrentMaxAcceleration(accel); }
-    void SetCurrentMaxDeceleration(double decel) { launchManager.SetCurrentMaxDeceleration(decel); }
-
 private:
     Mode::Phase eCurrentMode;
 
