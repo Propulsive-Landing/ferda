@@ -317,8 +317,8 @@ void GPS::read_data()
                 // std::cout << message;
                 acculumated_messages.push_back(message);
                 this->GPSReceived << oss.str() << ", " << message << std::flush;
-                message.clear();
             }
+            message.clear();
         }
     }
 
