@@ -49,7 +49,10 @@ elseif(CMAKE_BUILD_TYPE STREQUAL Simulation)
         SIM_SERVER_IP="${SIM_SERVER_IP}"
     )
 else()
+    find_package(OpenCV REQUIRED)
+    target_include_directories(Ferda PRIVATE ${OpenCV_INCLUDE_DIRS})
     target_link_libraries(Ferda Eigen3::Eigen pigpio nlohmann_json::nlohmann_json)
+    target_link_libraries(Ferda ${OpenCV_LIBS})
 endif()
 
 

@@ -412,7 +412,9 @@ CMakeFiles/Ferda.dir/src/Navigation.cpp.o: \
  /usr/include/libintl.h /usr/include/c++/13/bits/codecvt.h \
  /usr/include/c++/13/bits/locale_facets_nonio.tcc \
  /usr/include/c++/13/bits/locale_conv.h \
- /usr/include/c++/13/bits/quoted_string.h \
+ /usr/include/c++/13/bits/quoted_string.h /usr/include/c++/13/numeric \
+ /usr/include/c++/13/bits/stl_numeric.h \
+ /usr/include/c++/13/pstl/glue_numeric_defs.h \
  /home/harrison/src/ferda/include/Navigation.hpp \
  /usr/include/c++/13/fstream \
  /usr/include/x86_64-linux-gnu/c++/13/bits/basic_file.h \
@@ -420,7 +422,8 @@ CMakeFiles/Ferda.dir/src/Navigation.cpp.o: \
  /usr/include/c++/13/bits/fstream.tcc \
  /home/harrison/src/ferda/include/IMU.hpp \
  /home/harrison/src/ferda/include/Magnetometer.hpp \
- /home/harrison/src/ferda/include/Camera.hpp \
+ /home/harrison/src/ferda/include/Camera.hpp /usr/include/c++/13/utility \
+ /usr/include/c++/13/bits/stl_relops.h \
  /home/harrison/src/ferda/include/GPS.hpp \
  /home/harrison/src/ferda/include/Lidar.hpp \
  /home/harrison/src/ferda/include/TVC.hpp \

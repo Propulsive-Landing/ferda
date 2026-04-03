@@ -28,11 +28,10 @@ private:
     std::tuple<double, double, double> angularRate;
     std::tuple<double, double, double> magneticField;
     std::tuple<double, double, double> gpsPosition;
-    std::tuple<double, double, double, double, double, double, double, double, double> cameraDirections;
     void magnetometerUpdate(const Eigen::Vector3d& magneticField, const Eigen::Matrix3d& R);
     void gpsUpdate(const Eigen::Vector3d& gpsPosition, const Eigen::Vector2d& gpsVelocity);
     void lidarUpdate(double lidar, const Eigen::Matrix3d& R);
-    void cameraUpdate(const Eigen::VectorXd& cameraDirectionsVector, const Eigen::Matrix3d& R);
+    void cameraUpdate(const std::vector<Eigen::Vector3d>& cameraDirections, const Eigen::Matrix3d& R);
     std::ofstream dataFile;
     bool onPad = true; // Flag to indicate if rocket is on the pad (idle mode)
     double estimatedMassKg = 0.0;
@@ -45,6 +44,8 @@ private:
     static constexpr int kLidarUpdateCadence = 4; // Update lidar every N nav steps
     int magnetometer_update_counter = 0;
     static constexpr int kMagnetometerUpdateCadence = 2; // Update magnetometer every N nav steps
+    double camera_capture_elapsed_s = 0.0;
+    static constexpr double kCameraCapturePeriodS = 0.1; // 10 Hz capture requests
     double last_camera_frame_id = -1.0;
 
 public:

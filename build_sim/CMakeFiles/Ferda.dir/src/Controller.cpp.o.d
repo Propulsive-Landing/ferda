@@ -413,7 +413,8 @@ CMakeFiles/Ferda.dir/src/Controller.cpp.o: \
  /usr/include/c++/13/deque /usr/include/c++/13/bits/stl_deque.h \
  /usr/include/c++/13/bits/deque.tcc \
  /home/harrison/src/ferda/include/Magnetometer.hpp \
- /home/harrison/src/ferda/include/Camera.hpp \
+ /home/harrison/src/ferda/include/Camera.hpp /usr/include/c++/13/utility \
+ /usr/include/c++/13/bits/stl_relops.h \
  /home/harrison/src/ferda/include/GPS.hpp \
  /home/harrison/src/ferda/include/Lidar.hpp \
  /home/harrison/src/ferda/include/Telemetry.hpp \
