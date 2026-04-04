@@ -1,4 +1,5 @@
 #include <tuple>
+#include <unistd.h>
 
 #include "IMU.hpp"
 
@@ -28,9 +29,19 @@ IMU::IMU()
 }
 int16_t IMU::read16LE(int fd, int reg)
 {
-    uint8_t l = wiringPiI2CReadReg8(fd, reg);
-    uint8_t h = wiringPiI2CReadReg8(fd, reg + 1);
-    return (int16_t)((h << 8) | l);
+    uint8_t buffer[2];
+    
+    // Write register address to set read position
+    if (write(fd, &reg, 1) != 1) {
+        return 0;
+    }
+    
+    // Read 2 consecutive bytes in a single atomic I2C transaction
+    if (read(fd, buffer, 2) != 2) {
+        return 0;
+    }
+    
+    return (int16_t)((buffer[1] << 8) | buffer[0]);
 }
 
 std::tuple<double, double, double> IMU::GetBodyAcceleration()
