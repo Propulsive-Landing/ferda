@@ -4,6 +4,10 @@
 
 GPS::GPS() {}
 
+GPS::~GPS() {}
+
+void GPS::Update() {}
+
 std::tuple<double, double, double> GPS::GetGPSPosition()
 {
     return UDPClient::GetInstance().GetGPSPosition();

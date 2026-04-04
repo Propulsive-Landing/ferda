@@ -28,6 +28,7 @@ private:
     std::tuple<double, double, double> angularRate;
     std::tuple<double, double, double> magneticField;
     std::tuple<double, double, double> gpsPosition;
+    std::tuple<double, double> gpsVelocity;
     std::tuple<double, double, double, double, double, double, double, double, double> cameraDirections;
     void magnetometerUpdate(const Eigen::Vector3d& magneticField, const Eigen::Matrix3d& R);
     void gpsUpdate(const Eigen::Vector3d& gpsPosition, const Eigen::Vector2d& gpsVelocity);
@@ -75,6 +76,7 @@ public:
     std::tuple<double, double, double> GetAngularAcceleration();
     std::tuple<double, double, double> GetMagneticField();
     std::tuple<double, double, double> GetGPSPosition();
+    std::tuple<double, double> GetGPSVelocity();
     bool GPSAvailable();
     std::tuple<double, double, double, double, double, double, double, double, double> GetUnitVectors();
     void UpdateMassFractionEstimate(double throttleCommandN);

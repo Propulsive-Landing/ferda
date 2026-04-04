@@ -40,9 +40,6 @@ private:
     // GPS only outputs 3 bytes at a time it seems
     char buffer[MissionConstants::MAX_SIZE];
 
-public:
-    GPS();
-    ~GPS();
     std::string get_message();
     std::vector<std::string> get_acculumated_messages();
     void reset_acculumated_messages();
@@ -58,8 +55,13 @@ public:
     float convert_speed_to_meter_per_seconds(const std::string &speed);
     void convert_speed_course_to_velocity();
     void convert_coordinate_frame();
+    void set_valid(bool state);
+
+public:
+    GPS();
+    ~GPS();
+    void Update();
     std::tuple<double, double, double> GetGPSPosition();
     std::tuple<double, double> GetGPSVelocity();
     bool GPSAvailable();
-    void set_valid(bool state);
 };

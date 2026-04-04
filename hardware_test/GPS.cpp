@@ -60,6 +60,30 @@ GPS::~GPS()
     }
 }
 
+void GPS::Update()
+{
+    read_data();
+    std::map<std::string, std::vector<std::string>> hist = retrieve_all_NMEA_sentences();
+    reset_acculumated_messages();
+
+    if (hist.empty())
+    {
+        set_valid(false);
+        return;
+    }
+
+    set_valid(true);
+    for (const auto &sentence_info : hist)
+    {
+        parse_NMEA_type(sentence_info.first, sentence_info.second);
+    }
+
+    if (GPSAvailable())
+    {
+        convert_coordinate_frame();
+    }
+}
+
 std::string GPS::get_message()
 {
     return message;

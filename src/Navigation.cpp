@@ -189,31 +189,15 @@ void Navigation::UpdateNavigation()
     ++gps_update_counter;
     if (gps_update_counter == kGPSUpdateCadence)
     {
-        gps.read_data();
-        std::map<std::string, std::vector<std::string>> hist = gps.retrieve_all_NMEA_sentences();
-        gps.reset_acculumated_messages();
-        if (hist.empty())
-        {
-            gps.set_valid(false);
-        }
-        else
-        {
-            gps.set_valid(true);
-            for (const auto &sentence_info : hist)
-            {
-                gps.parse_NMEA_type(sentence_info.first, sentence_info.second);
-            }
-        }
+        gps.Update();
 
         if (gps.GPSAvailable())
         {
-            gps.convert_coordinate_frame();
             gpsPosition = gps.GetGPSPosition();
             gpsVelocity = gps.GetGPSVelocity();
             Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
             Eigen::Vector2d gpsVelocityVector(std::get<0>(gpsVelocity), std::get<1>(gpsVelocity));
             gpsUpdate(gpsPositionVector, gpsVelocityVector);
-            gps.set_valid(false);
         }
         gps_update_counter = 0;
     }
