@@ -509,65 +509,6 @@ Eigen::Vector3d Navigation::GetEstimatedMomentOfInertiaBodyKgm2()
     return estimatedMomentOfInertiaBodyKgm2;
 }
 
-void Navigation::UpdateMassFractionEstimate(double throttleCommandN)
-{
-    const double wetMassKg = MissionConstants::kStructuresWetMassKg;
-    const double dryMassKg = MissionConstants::kStructuresDryMassKg;
-    const double propellantMassKg = wetMassKg - dryMassKg;
-
-    if (propellantMassKg <= 0.0)
-    {
-        estimatedMassKg = dryMassKg;
-        estimatedMassFraction = 0.0;
-        return;
-    }
-
-    const double commandedThrustN = std::max(0.0, throttleCommandN);
-    const double massFlowRateKgPerS = commandedThrustN * MissionConstants::kThrottleToMassFlowScale;
-
-    estimatedMassKg += massFlowRateKgPerS * loopTime;
-    if (estimatedMassKg < dryMassKg)
-    {
-        estimatedMassKg = dryMassKg;
-    }
-    else if (estimatedMassKg > wetMassKg)
-    {
-        estimatedMassKg = wetMassKg;
-    }
-
-    estimatedMassFraction = (estimatedMassKg - dryMassKg) / propellantMassKg;
-    UpdateMassPropertyEstimates();
-}
-
-void Navigation::UpdateMassPropertyEstimates()
-{
-    const double alpha = std::clamp(estimatedMassFraction, 0.0, 1.0);
-    estimatedCenterOfMassBodyM = MissionConstants::kStructuresDryCenterOfMassBodyM +
-                                 alpha * (MissionConstants::kStructuresWetCenterOfMassBodyM - MissionConstants::kStructuresDryCenterOfMassBodyM);
-    estimatedMomentOfInertiaBodyKgm2 = MissionConstants::kStructuresDryMomentOfInertiaBodyKgm2 +
-                                       alpha * (MissionConstants::kStructuresWetMomentOfInertiaBodyKgm2 - MissionConstants::kStructuresDryMomentOfInertiaBodyKgm2);
-}
-
-double Navigation::GetEstimatedMassFraction()
-{
-    return estimatedMassFraction;
-}
-
-double Navigation::GetEstimatedMassKg()
-{
-    return estimatedMassKg;
-}
-
-Eigen::Vector3d Navigation::GetEstimatedCenterOfMassBodyM()
-{
-    return estimatedCenterOfMassBodyM;
-}
-
-Eigen::Vector3d Navigation::GetEstimatedMomentOfInertiaBodyKgm2()
-{
-    return estimatedMomentOfInertiaBodyKgm2;
-}
-
 std::tuple<double, double, double> Navigation::GetMagneticField()
 {
     return magneticField;
