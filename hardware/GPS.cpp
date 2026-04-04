@@ -13,11 +13,23 @@
 
 GPS::GPS()
 {
+    // Set gps_info values to a default -1
+    gps_info.latitude = -1;
+    gps_info.longitude = -1;
+    gps_info.altitude = -1;
+    gps_info.E = -1;
+    gps_info.N = -1;
+    gps_info.U = -1;
+    gps_info.course = -1;
+    gps_info.speed = -1;
+
+    valid = false;
+
     fd = open(MissionConstants::GPS_Port, O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0)
     {
-        std::cerr << "Error opening port" << "\n";
-        exit(-1);
+        std::cerr << "Warning: GPS port unavailable, continuing without GPS" << "\n";
+        return;
     }
 
     auto t = std::time(nullptr);
@@ -29,29 +41,21 @@ GPS::GPS()
 
     GPSReceived.open("../logs/GPSReceived" + str + ".txt");
 
-    // Set gps_info values to a default -1
-    gps_info.latitude = -1;
-    gps_info.longitude = -1;
-    gps_info.altitude = -1;
-    gps_info.E = -1;
-    gps_info.N = -1;
-    gps_info.U = -1;
-    gps_info.course = -1;
-    gps_info.speed = -1;
-
     // Get rid of any garbage values o startup
     tcflush(fd, TCIFLUSH);
-    valid = false;
 }
 
 GPS::~GPS()
 {
     GPSReceived.close();
-    int status = close(fd);
-    if (status < 0)
+    if (fd >= 0)
     {
-        std::cerr << "Error closing port" << "\n";
-        exit(-1);
+        int status = close(fd);
+        if (status < 0)
+        {
+            std::cerr << "Error closing port" << "\n";
+            exit(-1);
+        }
     }
 }
 
@@ -284,6 +288,10 @@ std::map<std::string, std::vector<std::string>> GPS::retrieve_all_NMEA_sentences
 
 void GPS::read_data()
 {
+    if (fd < 0)
+    {
+        return;
+    }
 
     auto now = std::chrono::system_clock::now();
 
