@@ -13,23 +13,7 @@
 
 GPS::GPS()
 {
-    fd = open(MissionConstants::GPS_Port, O_RDWR | O_NOCTTY | O_SYNC);
-    if (fd < 0)
-    {
-        std::cerr << "Error opening port" << "\n";
-        exit(-1);
-    }
-
-    auto t = std::time(nullptr);
-    auto tm = *std::localtime(&t);
-
-    std::ostringstream oss;
-    oss << std::put_time(&tm, "%d-%m-%Y %H-%M-%S");
-    auto str = oss.str();
-
-    GPSReceived.open("../logs/GPSReceived" + str + ".txt");
-
-    // Set gps_info values to a default -1
+    // Set gps_info values to defaults
     gps_info.latitude = -1;
     gps_info.longitude = -1;
     gps_info.altitude = -1;
@@ -41,19 +25,39 @@ GPS::GPS()
     gps_info.E_velocity = -1;
     gps_info.N_velocity = -1;
 
+    valid = false;
+
+    fd = open(MissionConstants::GPS_Port, O_RDWR | O_NOCTTY | O_SYNC);
+    if (fd < 0)
+    {
+        std::cerr << "Warning: GPS port unavailable, continuing without GPS" << "\n";
+        return;
+    }
+
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%d-%m-%Y %H-%M-%S");
+    auto str = oss.str();
+
+    GPSReceived.open("../logs/GPSReceived" + str + ".txt");
+
     // Get rid of any garbage values o startup
     tcflush(fd, TCIFLUSH);
-    valid = false;
 }
 
 GPS::~GPS()
 {
     GPSReceived.close();
-    int status = close(fd);
-    if (status < 0)
+    if (fd >= 0)
     {
-        std::cerr << "Error closing port" << "\n";
-        exit(-1);
+        int status = close(fd);
+        if (status < 0)
+        {
+            std::cerr << "Error closing port" << "\n";
+            exit(-1);
+        }
     }
 }
 
@@ -330,6 +334,10 @@ std::map<std::string, std::vector<std::string>> GPS::retrieve_all_NMEA_sentences
 
 void GPS::read_data()
 {
+    if (fd < 0)
+    {
+        return;
+    }
 
     auto now = std::chrono::system_clock::now();
 
