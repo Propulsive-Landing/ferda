@@ -16,42 +16,44 @@ GPS::GPS()
     fd = open(MissionConstants::GPS_Port, O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0)
     {
-        std::cerr << "Error opening port" << "\n";
-        exit(-1);
+        std::cerr << "Error opening GPS port" << "\n";
+        found_gps = false;
     }
+    else
+    {
+        found_gps = true;
+        auto t = std::time(nullptr);
+        auto tm = *std::localtime(&t);
 
-    auto t = std::time(nullptr);
-    auto tm = *std::localtime(&t);
+        std::ostringstream oss;
+        oss << std::put_time(&tm, "%d-%m-%Y %H-%M-%S");
+        auto str = oss.str();
 
-    std::ostringstream oss;
-    oss << std::put_time(&tm, "%d-%m-%Y %H-%M-%S");
-    auto str = oss.str();
+        GPSReceived.open("../logs/GPSReceived" + str + ".txt");
 
-    GPSReceived.open("../logs/GPSReceived" + str + ".txt");
+        // Set gps_info values to a default -1
+        gps_info.latitude = -1;
+        gps_info.longitude = -1;
+        gps_info.altitude = -1;
+        gps_info.E = -1;
+        gps_info.N = -1;
+        gps_info.U = -1;
+        gps_info.course = -1;
+        gps_info.speed = -1;
 
-    // Set gps_info values to a default -1
-    gps_info.latitude = -1;
-    gps_info.longitude = -1;
-    gps_info.altitude = -1;
-    gps_info.E = -1;
-    gps_info.N = -1;
-    gps_info.U = -1;
-    gps_info.course = -1;
-    gps_info.speed = -1;
-
-    // Get rid of any garbage values o startup
-    tcflush(fd, TCIFLUSH);
-    valid = false;
+        // Get rid of any garbage values o startup
+        tcflush(fd, TCIFLUSH);
+        valid = false;
+    }
 }
 
 GPS::~GPS()
 {
     GPSReceived.close();
     int status = close(fd);
-    if (status < 0)
+    if (found_gps && status < 0)
     {
         std::cerr << "Error closing port" << "\n";
-        exit(-1);
     }
 }
 
@@ -228,18 +230,6 @@ void GPS::convert_coordinate_frame()
     gps_info.E = E;
     gps_info.N = N;
     gps_info.U = U;
-
-    std::cout << std::cos(lat_init) * dlambda << "\n";
-    std::cout << "Latitude init: " << lat_init << "\n";
-
-    std::cout << "Longitude init: " << long_init << "\n";
-
-    std::cout << "Altitude init: " << altitude_init << "\n";
-
-    std::cout << "DPHI: " << dphi << "\n";
-
-    std::cout << gps_info.latitude << ", " << gps_info.longitude << "\n";
-    std::cout << E << ", " << N << "\n";
 }
 
 std::map<std::string, std::vector<std::string>> GPS::retrieve_all_NMEA_sentences()
@@ -300,21 +290,16 @@ void GPS::read_data()
     // It seems to only send 3 bytes at at time; Might have to do with frequency but probably not
     // Either way, this code fully reads the message and it will only break if buffer exceeds the max size of buffer
     int bytes_received = read(fd, buffer, sizeof(buffer));
-    // std::cout << "Received " << bytes_received << "\n";
     for (int i = 0; i < bytes_received; ++i)
     {
         char character = buffer[i];
         message += character;
-        // this->GPSReceived << message << std::flush;
-        // return message;
 
         // If we are at the end of a NMEA message, let's first make sure that we recieved a full message by trying to find '$'
         if (character == '\n')
         {
             if (message.find('$') != std::string::npos)
             {
-                // Print message for sanity check
-                // std::cout << message;
                 acculumated_messages.push_back(message);
                 this->GPSReceived << oss.str() << ", " << message << std::flush;
             }
@@ -328,6 +313,11 @@ void GPS::read_data()
 bool GPS::GPSAvailable()
 {
     return valid;
+}
+
+bool GPS::GPSUsed()
+{
+    return found_gps;
 }
 
 void GPS::set_valid(const bool state)

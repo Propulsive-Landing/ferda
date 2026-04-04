@@ -34,6 +34,9 @@ private:
     // Used for validity checking
     bool valid;
 
+    // Boolean flag used to see if gps is used
+    bool found_gps;
+
     // GPS only outputs 3 bytes at a time it seems
     char buffer[MissionConstants::MAX_SIZE];
 
@@ -56,5 +59,6 @@ public:
     void convert_coordinate_frame();
     std::tuple<double, double, double> GetGPSPosition();
     bool GPSAvailable();
+    bool GPSUsed();
     void set_valid(bool state);
 };

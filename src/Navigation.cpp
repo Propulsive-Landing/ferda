@@ -173,7 +173,7 @@ void Navigation::UpdateNavigation()
         magnometer_count = 0;
     }
     gps_count += 1;
-    if (gps_count == 20) // 1 HZ
+    if (gps_count == 20 && gps.GPSUsed()) // 1 HZ
     {
         // static auto last_time = std::chrono::high_resolution_clock::now();
         // auto time_now = std::chrono::high_resolution_clock::now();
@@ -190,7 +190,6 @@ void Navigation::UpdateNavigation()
         {
             gps.parse_NMEA_type(sentence_info.first, sentence_info.second);
         }
-
         if (gps.GPSAvailable())
         {
             gps.convert_coordinate_frame();
