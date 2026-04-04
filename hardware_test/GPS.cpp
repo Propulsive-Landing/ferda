@@ -277,6 +277,11 @@ std::map<std::string, std::vector<std::string>> GPS::retrieve_all_NMEA_sentences
                           gga_times.begin(), gga_times.end(),
                           back_inserter(intersection_results));
 
+    if (intersection_results.empty())
+    {
+        return history;
+    }
+
     int max_common_element = intersection_results[intersection_results.size() - 1];
 
     history[MissionConstants::NMEA::RMC::RMC] = rmc_history[max_common_element];
@@ -308,6 +313,10 @@ void GPS::read_data()
     // It seems to only send 3 bytes at at time; Might have to do with frequency but probably not
     // Either way, this code fully reads the message and it will only break if buffer exceeds the max size of buffer
     int bytes_received = read(fd, buffer, sizeof(buffer));
+    if (bytes_received <= 0)
+    {
+        return;
+    }
     // std::cout << "Received " << bytes_received << "\n";
     for (int i = 0; i < bytes_received; ++i)
     {
@@ -330,7 +339,7 @@ void GPS::read_data()
         }
     }
 
-    memset(buffer, 0, bytes_received);
+    memset(buffer, 0, static_cast<size_t>(bytes_received));
 }
 
 bool GPS::GPSAvailable()

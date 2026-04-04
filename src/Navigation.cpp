@@ -185,10 +185,17 @@ void Navigation::UpdateNavigation()
         gps.read_data();
         std::map<std::string, std::vector<std::string>> hist = gps.retrieve_all_NMEA_sentences();
         gps.reset_acculumated_messages();
-        gps.set_valid(true);
-        for (const auto &sentence_info : hist)
+        if (hist.empty())
         {
-            gps.parse_NMEA_type(sentence_info.first, sentence_info.second);
+            gps.set_valid(false);
+        }
+        else
+        {
+            gps.set_valid(true);
+            for (const auto &sentence_info : hist)
+            {
+                gps.parse_NMEA_type(sentence_info.first, sentence_info.second);
+            }
         }
 
         if (gps.GPSAvailable())
