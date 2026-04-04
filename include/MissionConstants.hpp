@@ -50,7 +50,7 @@ namespace MissionConstants
     const double kNavPadAngularVelocityNoiseRadps = 0.00224;
     const double kNavInitialPositionVariance = 1e-5;
     const double kNavInitialVelocityVariance = 1e-6;
-    const double kNavInitialAttitudeVariance = 1e-4;
+    const double kNavInitialAttitudeVariance = 1e-2;
     const double kNavInitialAccelBiasVariance = 1e-2;
     const double kNavInitialGyroBiasVariance = 1e-5;
     inline const Eigen::Matrix<double, 3, 3> kMarkerData =
