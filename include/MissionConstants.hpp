@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include <iostream>
 #include <Eigen/Dense>
 
@@ -11,6 +12,7 @@
 
 #define __MISSION_CONSTANTS__
 
+// TODO: add more namespaces to sub types like navigation and controller, etc
 namespace MissionConstants
 {
     // YAML::Node LoadConstants(std::string filepath) {
@@ -107,6 +109,72 @@ namespace MissionConstants
     const int HARDWARE_SAVE_DELTA = 100;
     const int RF_SEND_DELTA = 300;
 
-} // MissionConstants
+    // Time after launch until active stabalization begins.
+    const float timeAtOffset = 0.0;
+
+    // IMU constants
+    const int IMU_i2c_addr = 0x28;
+    const int POWER_MODE = 0x3E;
+    const int POWER_NORMAL = 0x00;
+    const int OPERATION_MODE = 0x3D;
+    const int CONFIG = 0x00;
+    const int AMG = 0x07;
+    const int REG_ACC_X = 0x08;
+    const int REG_ACC_Y = 0x0A;
+    const int REG_ACC_Z = 0x0C;
+    const int REG_GYRO_X = 0x14;
+    const int REG_GYRO_Y = 0x16;
+    const int REG_GYRO_Z = 0x18;
+    const int REG_MAG_X = 0x0E;
+    const int REG_MAG_Y = 0x10;
+    const int REG_MAG_Z = 0x12;
+
+    const int UNIT_SEL = 0X3B;
+    const int RAD = 0x02;
+
+    // RF consants
+    inline const char *RF_Port = "/dev/ttyS0";
+
+    // GPS constants
+    const int MAX_SIZE = 1000;
+    inline const char *GPS_Port = "/dev/ttyUSB0";
+
+    //inline const char *GPS_Port = "/dev/cu.usbserial-110";
+
+    namespace NMEA
+    {
+        const int MESSAGE_TYPE_STARTING_STRING_INDEX = 3;
+        const int MESSAGE_TYPE_IDX = 0; // 0 index BASED
+        const int TIME_IDX = 1;         // 0 index BASED
+        namespace RMC
+        {
+            const std::string RMC = "RMC"; // for latutude, longitude, speed (knots), time
+            const int NUM_VALUES = 13;
+            const int STATUS_IDX = 2;              // Starting from 0 indexed
+            const char BAD_STATUS_CHARACTER = 'V'; // Since GGA can have 2 validity indicators and 1 invalid inidactor, it's
+                                                   // easier if all NMEA ouputs check for invalidty
+            const int LATITUDE_IDX = 3;            // 0 index based
+            const int LATITUDE_DIRECTION_IDX = 4;
+            const int LONGITUDE_IDX = 5; // 0 index based
+            const int LONGITUDE_DIRECTION_IDX = 6;
+            const int COURSE_IDX = 8;
+            const int SPEED_IDX = 7; // 0 based also in knots
+            inline float time;
+        };
+        namespace GGA
+        {
+
+            const std::string GGA = "GGA"; // for altitude, time
+            const int NUM_VALUES = 15;
+            const int STATUS_IDX = 7;        // Starting from 1 indexed
+            const int BAD_STATUS_NUMBER = 0; // Since there are 2 valid indicators and 1 invalid, it's easier to check
+                                             // for invalid
+            const int ALTITUDE_INDEX = 9;    // 0 based
+
+            inline float time;
+        };
+    };
+
+}; // MissionConstants
 
 #endif

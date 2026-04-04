@@ -4,77 +4,51 @@
 
 #include <fstream>
 #include <stdexcept>
-
 #include "MissionConstants.hpp"
-
-namespace
-{
-    std::string gyroPath = "/home/pi/gyroscope_device";
-    std::string accelPath = "/home/pi/accel_device";
-}
 
 IMU::IMU()
 {
-    std::fstream ifstream(accelPath + "/in_accel_x_raw");
-    if (!ifstream.is_open())
-        throw std::runtime_error("accelerometer is not present");
-    ifstream.close();
+    fd = wiringPiI2CSetup(MissionConstants::IMU_i2c_addr);
+    if (fd == -1)
+    {
+        std::cerr << "BNO055 not found!" << std::endl;
+        exit(-1);
+    }
+    // Set power mode
+    wiringPiI2CWriteReg8(fd, MissionConstants::POWER_MODE, MissionConstants::POWER_NORMAL);
+    delay(10);
 
-    ifstream = std::fstream(gyroPath + "/in_anglvel_x_raw");
-    if (!ifstream.is_open())
-        throw std::runtime_error("gyroscope is not present");
-    ifstream.close();
+    // Set operation mode to AMG to get raw accelerometer, gyroscope, and magnometer data
+    wiringPiI2CWriteReg8(fd, MissionConstants::OPERATION_MODE, MissionConstants::CONFIG);
+    delay(50); // allow sensor to start
+    wiringPiI2CWriteReg8(fd, MissionConstants::OPERATION_MODE, MissionConstants::AMG);
+    delay(50); // allow sensor to start
+    wiringPiI2CWriteReg8(fd, MissionConstants::UNIT_SEL, MissionConstants::RAD);
+    delay(50); // allow sensor to start
+}
+int16_t IMU::read16LE(int fd, int reg)
+{
+    uint8_t l = wiringPiI2CReadReg8(fd, reg);
+    uint8_t h = wiringPiI2CReadReg8(fd, reg + 1);
+    return (int16_t)((h << 8) | l);
 }
 
 std::tuple<double, double, double> IMU::GetBodyAcceleration()
 {
-    std::fstream ifstream(accelPath + "/in_accel_x_raw");
-    if (!ifstream.is_open())
-        throw std::runtime_error("accelerometer is not present");
-    int nAccelX;
-    ifstream >> nAccelX;
-    ifstream.close();
 
-    ifstream = std::fstream(accelPath + "/in_accel_y_raw");
-    if (!ifstream.is_open())
-        throw std::runtime_error("accelerometer is not present");
-    int nAccelY;
-    ifstream >> nAccelY;
-    ifstream.close();
+    double nAccelX = (double)read16LE(fd, MissionConstants::REG_ACC_X);
+    double nAccelY = (double)read16LE(fd, MissionConstants::REG_ACC_Y);
+    double nAccelZ = (double)read16LE(fd, MissionConstants::REG_ACC_Z);
 
-    ifstream = std::fstream(accelPath + "/in_accel_z_raw");
-    if (!ifstream.is_open())
-        throw std::runtime_error("accelerometer is not present");
-    int nAccelZ;
-    ifstream >> nAccelZ;
-    ifstream.close();
-
-    return std::make_tuple(nAccelX * 0.001794, nAccelY * -0.001794, nAccelZ * -0.001794);
+    return std::make_tuple(nAccelX / 100.0f, nAccelY / 100.0f, nAccelZ / 100.0f);
 }
 
 std::tuple<double, double, double> IMU::GetBodyAngularRate()
 {
 
-    std::fstream ifstream(gyroPath + "/in_anglvel_x_raw");
-    if (!ifstream.is_open())
-        throw std::runtime_error("accelerometer is not present");
-    int nAnglVelX;
-    ifstream >> nAnglVelX;
-    ifstream.close();
+    double nAnglVelX = (double)read16LE(fd, MissionConstants::REG_GYRO_X);
+    double nAnglVelY = (double)read16LE(fd, MissionConstants::REG_GYRO_Y);
+    double nAnglVelZ = (double)read16LE(fd, MissionConstants::REG_GYRO_Z);
 
-    ifstream = std::fstream(gyroPath + "/in_anglvel_y_raw");
-    if (!ifstream.is_open())
-        throw std::runtime_error("accelerometer is not present");
-    int nAnglVelY;
-    ifstream >> nAnglVelY;
-    ifstream.close();
-
-    ifstream = std::fstream(gyroPath + "/in_anglvel_z_raw");
-    if (!ifstream.is_open())
-        throw std::runtime_error("accelerometer is not present");
-    int nAnglVelZ;
-    ifstream >> nAnglVelZ;
-    ifstream.close();
-
-    return std::make_tuple(nAnglVelX * 0.000266, -nAnglVelY * 0.000266, -nAnglVelZ * 0.000266);
+    return std::make_tuple(nAnglVelX / 900.0f, nAnglVelY / 900.0f, nAnglVelZ / 900.0f); // deg/s
 }

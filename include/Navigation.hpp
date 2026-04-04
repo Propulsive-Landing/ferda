@@ -33,6 +33,7 @@ private:
     void gpsUpdate(const Eigen::Vector3d& gpsPosition, const Eigen::Vector2d& gpsVelocity);
     void lidarUpdate(double lidar, const Eigen::Matrix3d& R);
     void cameraUpdate(const Eigen::VectorXd& cameraDirectionsVector, const Eigen::Matrix3d& R);
+    bool gpsAvailable;
     std::ofstream dataFile;
     bool onPad = true; // Flag to indicate if rocket is on the pad (idle mode)
     double estimatedMassKg = 0.0;
@@ -64,16 +65,17 @@ public:
     Eigen::Vector3d a_b, w_b;
     Eigen::Vector3d w;
     Eigen::Matrix3d CreateRotationalMatrix(double phi, double theta, double psi);
-    Eigen::Matrix3d skew(const Eigen::Vector3d& v);
+    Eigen::Matrix3d skew(const Eigen::Vector3d &v);
     void kalmanUpdate(
-        const Eigen::MatrixXd& H,
-        const Eigen::MatrixXd& V,
-        const Eigen::VectorXd& y,
-        const Eigen::VectorXd& y_pred);
+        const Eigen::MatrixXd &H,
+        const Eigen::MatrixXd &V,
+        const Eigen::VectorXd &y,
+        const Eigen::VectorXd &y_pred);
     std::tuple<double, double, double> GetLinearAcceleration();
     std::tuple<double, double, double> GetAngularAcceleration();
     std::tuple<double, double, double> GetMagneticField();
     std::tuple<double, double, double> GetGPSPosition();
+    bool GPSAvailable();
     std::tuple<double, double, double, double, double, double, double, double, double> GetUnitVectors();
     void UpdateMassFractionEstimate(double throttleCommandN);
     void UpdateMassPropertyEstimates();

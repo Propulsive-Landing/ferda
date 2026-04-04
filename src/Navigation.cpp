@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <deque>
 #include <vector>
+#include <map>
+#include <string>
 #include <iostream>
 #include <chrono>
 #include <iomanip>
@@ -14,11 +16,10 @@
 
 Navigation::Navigation(IMU &inputImu, Magnetometer &inputMagnetometer, GPS &inputGps, Lidar &inputLidar, Camera &inputCamera, TVC &inputTvc) : imu(inputImu), magnetometer(inputMagnetometer), gps(inputGps), lidar(inputLidar), camera(inputCamera), tvc(inputTvc)
 {
-    std::cout << std::setprecision(4) << std::fixed;
     stateMat = Eigen::Matrix<double, 16, 1>::Zero();
     // Initializes Quaternion to [1,0,0,0] equivalent to 0 roll, 0 pitch, 0 yaw
     stateMat(6) = 1;
-    
+
     Eigen::VectorXd d(15);
         d << MissionConstants::kNavInitialPositionVariance, MissionConstants::kNavInitialPositionVariance, MissionConstants::kNavInitialPositionVariance, // Position variances
             MissionConstants::kNavInitialVelocityVariance, MissionConstants::kNavInitialVelocityVariance, MissionConstants::kNavInitialVelocityVariance, // Velocity variances
@@ -40,10 +41,10 @@ void Navigation::reset()
     // Preserve bias estimates when resetting for launch
     Eigen::Vector3d a_b_saved = stateMat.segment(10, 3);
     Eigen::Vector3d w_b_saved = stateMat.segment(13, 3);
-    
+
     stateMat = Eigen::Matrix<double, 16, 1>::Zero();
     stateMat(6) = 1;
-    
+
     // Restore the bias estimates
     stateMat.segment(10, 3) = a_b_saved;
     stateMat.segment(13, 3) = w_b_saved;
@@ -94,10 +95,10 @@ void Navigation::UpdateNavigation()
     x_e = stateMat.segment(0, 3);
     v_e = stateMat.segment(3, 3);
     q = Eigen::Quaterniond(
-        stateMat(6),   // w
-        stateMat(7),   // x
-        stateMat(8),   // y
-        stateMat(9)    // z
+        stateMat(6), // w
+        stateMat(7), // x
+        stateMat(8), // y
+        stateMat(9)  // z
     );
     q.normalize();
     a_b = stateMat.segment(10, 3);
@@ -110,7 +111,7 @@ void Navigation::UpdateNavigation()
     // Create 2 tuples to hold the the linear acceleration and angular rate data from the imu
     linearAcceleration = imu.GetBodyAcceleration();
     angularRate = imu.GetBodyAngularRate();
-    
+
     Eigen::Vector3d a_m(std::get<0>(linearAcceleration), std::get<1>(linearAcceleration), std::get<2>(linearAcceleration));
     Eigen::Vector3d w_m(std::get<0>(angularRate), std::get<1>(angularRate), std::get<2>(angularRate));
         
@@ -130,9 +131,12 @@ void Navigation::UpdateNavigation()
     double angle = theta.norm();
 
     Eigen::Quaterniond dq;
-    if (angle < 1e-12) {
+    if (angle < 1e-12)
+    {
         dq = Eigen::Quaterniond::Identity();
-    } else {
+    }
+    else
+    {
         dq = Eigen::AngleAxisd(angle, theta / angle);
     }
 
@@ -140,34 +144,34 @@ void Navigation::UpdateNavigation()
 
     // Covariance Calculation //
 
-    Eigen::MatrixXd Fx = Eigen::MatrixXd::Zero(15,15);
+    Eigen::MatrixXd Fx = Eigen::MatrixXd::Zero(15, 15);
 
-    Fx.block<3,3>(0,0) = Eigen::Matrix3d::Identity();
-    Fx.block<3,3>(0,3) = Eigen::Matrix3d::Identity() * loopTime;
-    Fx.block<3,3>(3,3) = Eigen::Matrix3d::Identity();
-    Fx.block<3,3>(3,6) = -R * skew(a_m - a_b) * loopTime;
-    Fx.block<3,3>(3,9) = -R * loopTime;
-    Fx.block<3,3>(6,6) = dq.toRotationMatrix().transpose();
-    Fx.block<3,3>(6,12) = -Eigen::Matrix3d::Identity() * loopTime;
-    Fx.block<3,3>(9,9) = Eigen::Matrix3d::Identity();
-    Fx.block<3,3>(12,12) = Eigen::Matrix3d::Identity();
+    Fx.block<3, 3>(0, 0) = Eigen::Matrix3d::Identity();
+    Fx.block<3, 3>(0, 3) = Eigen::Matrix3d::Identity() * loopTime;
+    Fx.block<3, 3>(3, 3) = Eigen::Matrix3d::Identity();
+    Fx.block<3, 3>(3, 6) = -R * skew(a_m - a_b) * loopTime;
+    Fx.block<3, 3>(3, 9) = -R * loopTime;
+    Fx.block<3, 3>(6, 6) = dq.toRotationMatrix().transpose();
+    Fx.block<3, 3>(6, 12) = -Eigen::Matrix3d::Identity() * loopTime;
+    Fx.block<3, 3>(9, 9) = Eigen::Matrix3d::Identity();
+    Fx.block<3, 3>(12, 12) = Eigen::Matrix3d::Identity();
 
-    Eigen::MatrixXd Fi = Eigen::MatrixXd::Zero(15,12);
-    Fi.block<3,3>(3,0) = Eigen::Matrix3d::Identity();
-    Fi.block<3,3>(6,3) = Eigen::Matrix3d::Identity();
-    Fi.block<3,3>(9,6) = Eigen::Matrix3d::Identity();
-    Fi.block<3,3>(12,9) = Eigen::Matrix3d::Identity();
+    Eigen::MatrixXd Fi = Eigen::MatrixXd::Zero(15, 12);
+    Fi.block<3, 3>(3, 0) = Eigen::Matrix3d::Identity();
+    Fi.block<3, 3>(6, 3) = Eigen::Matrix3d::Identity();
+    Fi.block<3, 3>(9, 6) = Eigen::Matrix3d::Identity();
+    Fi.block<3, 3>(12, 9) = Eigen::Matrix3d::Identity();
 
     const double sigma_a_n = MissionConstants::kNavAccelWhiteNoiseSigma;
     const double sigma_w_n = MissionConstants::kNavGyroWhiteNoiseSigma;
     const double sigma_a_w = MissionConstants::kNavAccelBiasRandomWalkSigma;
     const double sigma_w_w = MissionConstants::kNavGyroBiasRandomWalkSigma;
 
-    Eigen::MatrixXd Qi = Eigen::MatrixXd::Zero(12,12);
-    Qi.block<3,3>(0,0) = sigma_a_n*sigma_a_n * loopTime*loopTime * Eigen::Matrix3d::Identity();
-    Qi.block<3,3>(3,3) = sigma_w_n*sigma_w_n * loopTime*loopTime * Eigen::Matrix3d::Identity();
-    Qi.block<3,3>(6,6) = sigma_a_w*sigma_a_w * loopTime*loopTime * Eigen::Matrix3d::Identity();
-    Qi.block<3,3>(9,9) = sigma_w_w*sigma_w_w * loopTime*loopTime * Eigen::Matrix3d::Identity();
+    Eigen::MatrixXd Qi = Eigen::MatrixXd::Zero(12, 12);
+    Qi.block<3, 3>(0, 0) = sigma_a_n * sigma_a_n * loopTime * loopTime * Eigen::Matrix3d::Identity();
+    Qi.block<3, 3>(3, 3) = sigma_w_n * sigma_w_n * loopTime * loopTime * Eigen::Matrix3d::Identity();
+    Qi.block<3, 3>(6, 6) = sigma_a_w * sigma_a_w * loopTime * loopTime * Eigen::Matrix3d::Identity();
+    Qi.block<3, 3>(9, 9) = sigma_w_w * sigma_w_w * loopTime * loopTime * Eigen::Matrix3d::Identity();
 
     // Compute Covariance Matrix //
     P = Fx * P * Fx.transpose() + Fi * Qi * Fi.transpose();
@@ -182,18 +186,36 @@ void Navigation::UpdateNavigation()
         magnetometerUpdate(magneticFieldVector, R);
         magnetometer_update_counter = 0; // Reset counter
     }
-
-    // Update GPS on fixed cadence (every kGPSUpdateCadence steps) when altitude > 2.0m
     ++gps_update_counter;
-    if (gps_update_counter >= kGPSUpdateCadence) {
-        gpsPosition = gps.GetGPSPosition();
-        auto gpsVelocity = gps.GetGPSVelocity();
-        //std::cout << "GPS Update: Position = (" << std::get<0>(gpsPosition) << ", " 
-        //         << std::get<1>(gpsPosition) << ", " << std::get<2>(gpsPosition) << ")\n";
-        Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
-        Eigen::Vector2d gpsVelocityVector(std::get<0>(gpsVelocity), std::get<1>(gpsVelocity));
-        gpsUpdate(gpsPositionVector, gpsVelocityVector);
-        gps_update_counter = 0; // Reset counter
+    if (gps_update_counter == kGPSUpdateCadence)
+    {
+        gps.read_data();
+        std::map<std::string, std::vector<std::string>> hist = gps.retrieve_all_NMEA_sentences();
+        gps.reset_acculumated_messages();
+        if (hist.empty())
+        {
+            gps.set_valid(false);
+        }
+        else
+        {
+            gps.set_valid(true);
+            for (const auto &sentence_info : hist)
+            {
+                gps.parse_NMEA_type(sentence_info.first, sentence_info.second);
+            }
+        }
+
+        if (gps.GPSAvailable())
+        {
+            gps.convert_coordinate_frame();
+            gpsPosition = gps.GetGPSPosition();
+            gpsVelocity = gps.GetGPSVelocity();
+            Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
+            Eigen::Vector2d gpsVelocityVector(std::get<0>(gpsVelocity), std::get<1>(gpsVelocity));
+            gpsUpdate(gpsPositionVector, gpsVelocityVector);
+            gps.set_valid(false);
+        }
+        gps_update_counter = 0;
     }
 
     const double camera_frame_id = camera.GetFrameId();
@@ -201,8 +223,8 @@ void Navigation::UpdateNavigation()
         cameraDirections = camera.GetUnitVectors();
         Eigen::VectorXd cameraDirectionsVector(9);
         cameraDirectionsVector << std::get<0>(cameraDirections), std::get<1>(cameraDirections), std::get<2>(cameraDirections),
-                                  std::get<3>(cameraDirections), std::get<4>(cameraDirections), std::get<5>(cameraDirections),
-                                  std::get<6>(cameraDirections), std::get<7>(cameraDirections), std::get<8>(cameraDirections);
+            std::get<3>(cameraDirections), std::get<4>(cameraDirections), std::get<5>(cameraDirections),
+            std::get<6>(cameraDirections), std::get<7>(cameraDirections), std::get<8>(cameraDirections);
         cameraUpdate(cameraDirectionsVector, R);
         last_camera_frame_id = camera_frame_id;
     }
@@ -221,8 +243,9 @@ void Navigation::UpdateNavigation()
     w = angularRateVector;
 
     // Apply pad updates when on the pad (idle mode)
-    if (onPad) {
-        //padUpdateVelocity();
+    if (onPad)
+    {
+        padUpdateVelocity();
         padUpdateAngularVelocity(w);
     }
 
@@ -235,13 +258,12 @@ void Navigation::UpdateNavigation()
     stateMat(9) = q.z();
     stateMat.segment(10, 3) = a_b;
     stateMat.segment(13, 3) = w_b;
-
 }
 
-void Navigation::magnetometerUpdate(const Eigen::Vector3d& magneticField, const Eigen::Matrix3d& R)
+void Navigation::magnetometerUpdate(const Eigen::Vector3d &magneticField, const Eigen::Matrix3d &R)
 {
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
-    H.block<3,3>(0,6) = skew(R.transpose() * MissionConstants::kEarthMagField);
+    H.block<3, 3>(0, 6) = skew(R.transpose() * MissionConstants::kEarthMagField);
     Eigen::Vector3d y_pred = R.transpose() * MissionConstants::kEarthMagField;
     
     const double mag_noise = MissionConstants::kSensorMagnetometerNoise;
@@ -322,7 +344,7 @@ void Navigation::padUpdateVelocity()
 void Navigation::padUpdateAngularVelocity(const Eigen::Vector3d& angularVelocity)
 {
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
-    H.block<3,3>(0,12) = Eigen::Matrix3d::Identity();
+    H.block<3, 3>(0, 12) = Eigen::Matrix3d::Identity();
     Eigen::Vector3d initialAngularVelocity = Eigen::Vector3d(0, 0, 0);
     const double pad_angular_velocity_sigma = MissionConstants::kNavPadAngularVelocityNoiseRadps;
     kalmanUpdate(H, pad_angular_velocity_sigma * pad_angular_velocity_sigma * Eigen::Matrix3d::Identity(), angularVelocity, initialAngularVelocity);
@@ -333,7 +355,7 @@ void Navigation::SetOnPad(bool isOnPad)
     onPad = isOnPad;
 }
 
-void Navigation::cameraUpdate(const Eigen::VectorXd& cameraDirectionsVector, const Eigen::Matrix3d& R)
+void Navigation::cameraUpdate(const Eigen::VectorXd &cameraDirectionsVector, const Eigen::Matrix3d &R)
 {
     const int N = MissionConstants::kMarkerData.cols();
 
@@ -394,24 +416,24 @@ void Navigation::cameraUpdate(const Eigen::VectorXd& cameraDirectionsVector, con
 }
 
 void Navigation::kalmanUpdate(
-    const Eigen::MatrixXd& H,
-    const Eigen::MatrixXd& V,
-    const Eigen::VectorXd& y,
-    const Eigen::VectorXd& y_pred
-) {
+    const Eigen::MatrixXd &H,
+    const Eigen::MatrixXd &V,
+    const Eigen::VectorXd &y,
+    const Eigen::VectorXd &y_pred)
+{
     Eigen::VectorXd r = y - y_pred;
     Eigen::MatrixXd S = H * P * H.transpose() + V;
     Eigen::MatrixXd K = P * H.transpose() * S.inverse();
 
     Eigen::VectorXd dx = K * r;
-    P = (Eigen::MatrixXd::Identity(15,15) - K * H) * P;
+    P = (Eigen::MatrixXd::Identity(15, 15) - K * H) * P;
 
     // Inject error state
     x_e += dx.segment<3>(0);
     v_e += dx.segment<3>(3);
 
     Eigen::Vector3d dtheta = dx.segment<3>(6);
-    Eigen::Quaterniond dq(1, 0.5*dtheta.x(), 0.5*dtheta.y(), 0.5*dtheta.z());
+    Eigen::Quaterniond dq(1, 0.5 * dtheta.x(), 0.5 * dtheta.y(), 0.5 * dtheta.z());
     q = (q * dq).normalized();
 
     a_b += dx.segment<3>(9);
@@ -487,10 +509,75 @@ Eigen::Vector3d Navigation::GetEstimatedMomentOfInertiaBodyKgm2()
     return estimatedMomentOfInertiaBodyKgm2;
 }
 
-Eigen::Matrix3d Navigation::skew(const Eigen::Vector3d& v) {
+void Navigation::UpdateMassFractionEstimate(double throttleCommandN)
+{
+    const double wetMassKg = MissionConstants::kStructuresWetMassKg;
+    const double dryMassKg = MissionConstants::kStructuresDryMassKg;
+    const double propellantMassKg = wetMassKg - dryMassKg;
+
+    if (propellantMassKg <= 0.0)
+    {
+        estimatedMassKg = dryMassKg;
+        estimatedMassFraction = 0.0;
+        return;
+    }
+
+    const double commandedThrustN = std::max(0.0, throttleCommandN);
+    const double massFlowRateKgPerS = commandedThrustN * MissionConstants::kThrottleToMassFlowScale;
+
+    estimatedMassKg += massFlowRateKgPerS * loopTime;
+    if (estimatedMassKg < dryMassKg)
+    {
+        estimatedMassKg = dryMassKg;
+    }
+    else if (estimatedMassKg > wetMassKg)
+    {
+        estimatedMassKg = wetMassKg;
+    }
+
+    estimatedMassFraction = (estimatedMassKg - dryMassKg) / propellantMassKg;
+    UpdateMassPropertyEstimates();
+}
+
+void Navigation::UpdateMassPropertyEstimates()
+{
+    const double alpha = std::clamp(estimatedMassFraction, 0.0, 1.0);
+    estimatedCenterOfMassBodyM = MissionConstants::kStructuresDryCenterOfMassBodyM +
+                                 alpha * (MissionConstants::kStructuresWetCenterOfMassBodyM - MissionConstants::kStructuresDryCenterOfMassBodyM);
+    estimatedMomentOfInertiaBodyKgm2 = MissionConstants::kStructuresDryMomentOfInertiaBodyKgm2 +
+                                       alpha * (MissionConstants::kStructuresWetMomentOfInertiaBodyKgm2 - MissionConstants::kStructuresDryMomentOfInertiaBodyKgm2);
+}
+
+double Navigation::GetEstimatedMassFraction()
+{
+    return estimatedMassFraction;
+}
+
+double Navigation::GetEstimatedMassKg()
+{
+    return estimatedMassKg;
+}
+
+Eigen::Vector3d Navigation::GetEstimatedCenterOfMassBodyM()
+{
+    return estimatedCenterOfMassBodyM;
+}
+
+Eigen::Vector3d Navigation::GetEstimatedMomentOfInertiaBodyKgm2()
+{
+    return estimatedMomentOfInertiaBodyKgm2;
+}
+
+std::tuple<double, double, double> Navigation::GetMagneticField()
+{
+    return magneticField;
+}
+
+Eigen::Matrix3d Navigation::skew(const Eigen::Vector3d& v)
+{
     Eigen::Matrix3d S;
-    S <<     0, -v.z(),  v.y(),
-          v.z(),     0, -v.x(),
-         -v.y(),  v.x(),     0;
+    S << 0, -v.z(), v.y(),
+        v.z(), 0, -v.x(),
+        -v.y(), v.x(), 0;
     return S;
 }

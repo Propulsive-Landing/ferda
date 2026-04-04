@@ -15,32 +15,34 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <unistd.h>
+#include <iomanip>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <tuple>
 
 #ifdef NDEBUG
-#include <pigpio.h>
+#include <wiringPi.h>
 #endif
 
 int main()
 {
 #ifdef NDEBUG
-    if (gpioInitialise() < 0)
+    if (wiringPiSetupGpio() < 0)
         throw std::runtime_error("failed to initialize gpio");
+    // ADD NEW PIN SETUPS BECAUSE WE DON'T NEED THE ONES BELOW
+    // pinMode(5, OUTPUT);
+    // pinMode(6, OUTPUT);
 
-    gpioSetMode(5, PI_OUTPUT);
-    gpioSetMode(6, PI_OUTPUT);
+    // pinMode(23, OUTPUT);
+    // pinMode(24, OUTPUT);
 
-    gpioSetMode(23, PI_OUTPUT);
-    gpioSetMode(24, PI_OUTPUT);
-
-    gpioWrite(5, 1);
-    gpioWrite(6, 1);
+    // gpioWrite(5, 1);
+    // gpioWrite(6, 1);
 
 #endif
-
+    std::cout << std::setprecision(8) << std::fixed;
     IMU imu;
     GPS gps;
     Lidar lidar;
@@ -60,7 +62,7 @@ int main()
 
     Mode mode(Mode::Calibration);
 
-    while (mode.Update(navigation, controller, igniter, imu))
+    while (mode.Update(navigation, controller, gps, igniter, imu))
     {
     }
 

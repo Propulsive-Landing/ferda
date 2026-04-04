@@ -4,7 +4,7 @@
 #include <ctime>
 #include <iomanip>
 #include <stdio.h>
-#include <sys/poll.h> 
+#include <sys/poll.h>
 #include <fstream>
 #include <tuple>
 
@@ -16,42 +16,67 @@ using json = nlohmann::json;
 #include "Telemetry.hpp"
 #include "MissionConstants.hpp"
 
-void Telemetry::HardwareSaveFrame(Navigation& navigation, Controller& controller)
+void Telemetry::HardwareSaveFrame(Navigation &navigation, Controller &controller, GPS &gps)
 {
     // write time to hardware file
     auto time_now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(time_now);
 
-    HardwareSaved << std::put_time(std::localtime(&in_time_t), "%c") << ", " ;
-    SensorSaved << std::put_time(std::localtime(&in_time_t), "%c") << ", " ;
+    auto now = std::chrono::system_clock::now();
+
+    auto seconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - seconds).count();
+
+    std::time_t tt = std::chrono::system_clock::to_time_t(seconds);
+
+    std::tm tm;
+    localtime_r(&tt, &tm); // thread-safe on Linux
+
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%d-%m-%Y %H:%M:%S")
+        << "." << std::setw(3) << std::setfill('0') << ms;
+
+    HardwareSaved << oss.str() << ", ";
+    SensorSaved << oss.str() << ", ";
 
     // Navigation state, U, k matrix current index
     // Write data to file
-    
 
-    for(int i = 0; i < 12; ++i){
-        HardwareSaved << std::to_string(navigation.GetNavigation()(i))<< ", ";
+    for (int i = 0; i < 16; ++i)
+    {
+        HardwareSaved << std::to_string(navigation.GetNavigation()(i)) << ", ";
     }
+
+    HardwareSaved << std::to_string(std::get<0>(gps.GetGPSPosition())) << ", ";
+    HardwareSaved << std::to_string(std::get<1>(gps.GetGPSPosition())) << ", ";
+    HardwareSaved << std::to_string(std::get<2>(gps.GetGPSPosition())) << ", ";
+
     HardwareSaved << std::to_string(controller.GetCurrentTVCCommand()[0]) << ", ";
     HardwareSaved << std::to_string(controller.GetCurrentTVCCommand()[1]) << ", ";
     HardwareSaved << std::to_string(controller.GetCurrentIterationIndex());
 
     std::tuple<double, double, double> linAc = navigation.GetLinearAcceleration();
     std::tuple<double, double, double> angAc = navigation.GetAngularAcceleration();
-    SensorSaved << std::to_string(std::get<0>(linAc))<< ", ";
-    SensorSaved << std::to_string(std::get<1>(linAc))<< ", ";
-    SensorSaved << std::to_string(std::get<2>(linAc))<< ", ";
-    SensorSaved << std::to_string(std::get<0>(angAc))<< ", ";
-    SensorSaved << std::to_string(std::get<1>(angAc))<< ", ";
-    SensorSaved << std::to_string(std::get<2>(angAc));
+    std::tuple<double, double, double> mag = navigation.GetMagneticField();
 
-    HardwareSaved<<"\n" << std::flush;
-    SensorSaved<<"\n" << std::flush;
+    SensorSaved << std::to_string(std::get<0>(linAc)) << ", ";
+    SensorSaved << std::to_string(std::get<1>(linAc)) << ", ";
+    SensorSaved << std::to_string(std::get<2>(linAc)) << ", ";
+    SensorSaved << std::to_string(std::get<0>(angAc)) << ", ";
+    SensorSaved << std::to_string(std::get<1>(angAc)) << ", ";
+    SensorSaved << std::to_string(std::get<2>(angAc)) << ",";
+    SensorSaved << std::to_string(std::get<0>(mag)) << ", ";
+    SensorSaved << std::to_string(std::get<1>(mag)) << ", ";
+    SensorSaved << std::to_string(std::get<2>(mag));
 
+    HardwareSaved << "\n"
+                  << std::flush;
+    SensorSaved << "\n"
+                << std::flush;
 }
 
-
-void Telemetry::Log(std::string message) {
+void Telemetry::Log(std::string message)
+{
     // write time to hardware file
     auto time_now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(time_now);
@@ -66,10 +91,11 @@ void Telemetry::Log(std::string message) {
 
     // Write data to file
     Logs << std::put_time(std::localtime(&in_time_t), "%c") << ",";
-    Logs << message << "\n" << std::flush;
-} 
+    Logs << message << "\n"
+         << std::flush;
+}
 
-void Telemetry::RfSendFrame(Navigation& navigation, Controller& controller)
+void Telemetry::RfSendFrame(Navigation &navigation, Controller &controller)
 {
     json json_msg;
     json_msg["data_type"] = "telem";
@@ -91,7 +117,7 @@ void Telemetry::RfSendFrame(Navigation& navigation, Controller& controller)
         // dt.
         0.0,
     };
-    
+
     // frame.euler[0] = 1.0;// navigation.GetNavigation()(0, 0);
     // frame.euler[1] = 2.0; // navigation.GetNavigation()(1, 0);
     // frame.euler[2] = 3.0; // navigation.GetNavigation()(2, 0);
@@ -101,33 +127,33 @@ void Telemetry::RfSendFrame(Navigation& navigation, Controller& controller)
     // frame.velocity[1] = 8.0; // navigation.GetNavigation()(4, 0);
     // frame.velocity[2] = 9.0; // navigation.GetNavigation()(5, 0);
     // frame.dt = 0.0;
-    
+
     RF::GetInstance().SendString(json_msg.dump());
 }
 
+void Telemetry::RunTelemetry(Navigation &navigation, Controller &controller, GPS &gps, float HardwareSaveDelta, float RFSaveDelta)
+{
 
-void Telemetry::RunTelemetry(Navigation& navigation, Controller& controller, float HardwareSaveDelta, float RFSaveDelta) {
-       
-        /* Start calculate time change*/
-        static auto last_hardware_time = std::chrono::high_resolution_clock::now();
-        auto hardware_change_time = std::chrono::high_resolution_clock::now() - last_hardware_time;
+    /* Start calculate time change*/
+    static auto last_hardware_time = std::chrono::high_resolution_clock::now();
+    auto hardware_change_time = std::chrono::high_resolution_clock::now() - last_hardware_time;
 
-        static auto last_rf_time = std::chrono::high_resolution_clock::now();
-        auto rf_change_time = std::chrono::high_resolution_clock::now() - last_rf_time;
-        /* End calculate time change*/
+    static auto last_rf_time = std::chrono::high_resolution_clock::now();
+    auto rf_change_time = std::chrono::high_resolution_clock::now() - last_rf_time;
+    /* End calculate time change*/
 
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(hardware_change_time).count() / 1000.0 >= HardwareSaveDelta)
+    {
+        HardwareSaveFrame(navigation, controller, gps);
+        last_hardware_time = std::chrono::high_resolution_clock::now();
+    }
 
-        if(std::chrono::duration_cast<std::chrono::milliseconds>(hardware_change_time).count() / 1000.0 >= HardwareSaveDelta){
-            HardwareSaveFrame(navigation, controller);
-            last_hardware_time = std::chrono::high_resolution_clock::now();
-        }
-        
-        if(std::chrono::duration_cast<std::chrono::milliseconds>(rf_change_time).count() / 1000.0 >= RFSaveDelta){
-            RfSendFrame(navigation, controller);
-            last_rf_time = std::chrono::high_resolution_clock::now();
-        }
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(rf_change_time).count() / 1000.0 >= RFSaveDelta)
+    {
+        RfSendFrame(navigation, controller);
+        last_rf_time = std::chrono::high_resolution_clock::now();
+    }
 }
-
 
 Telemetry::Telemetry()
 {
@@ -138,17 +164,14 @@ Telemetry::Telemetry()
     oss << std::put_time(&tm, "%d-%m-%Y %H-%M-%S");
     auto str = oss.str();
 
-    Logs.open ("../logs/logs"+str+".txt");
-    HardwareSaved.open ("../logs/data"+str+".txt");
-    SensorSaved.open ("../logs/sensors"+str+".txt");
+    Logs.open("../logs/logs" + str + ".txt");
+    HardwareSaved.open("../logs/data" + str + ".txt");
+    SensorSaved.open("../logs/sensors" + str + ".txt");
 
+    HardwareSaved << "Date, x, y, z, vx, vy, vz, q1, q2, q3, q4, ab1, ab2, ab3, wb1, wb2, wb3, E, N, U, ux, uy, K_Matrix_Index \n";
+    SensorSaved << "Date, accelX, accelY, accelZ, gyroX, gryoY, gyroZ, magx, magy, magz \n";
 
-    HardwareSaved << "Date, x, y, z, vx, vy, vz, phi, theta, psi, p, q, r, ux, uy, K_Matrix_Index \n";
-    SensorSaved << "Date, accelX, accelY, accelZ, gyroX, gryoY, gyroZ \n";
-
-
-
-    //TODO Write headers to data file where needed
+    // TODO Write headers to data file where needed
 }
 
 Telemetry::~Telemetry()

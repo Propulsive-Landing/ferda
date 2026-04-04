@@ -30,8 +30,8 @@ private:
     double current_thrust_command_N = 0.0;
 
 public:
-    TVC tvc;
-    Engine engine;
+    TVC &tvc;
+    Engine &engine;
     Eigen::Vector2d input;
     double loopTime = 0.005;
     double refPositionX = 0.0;      // reference position in x (meters)

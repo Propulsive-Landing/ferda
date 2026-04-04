@@ -49,7 +49,7 @@ elseif(CMAKE_BUILD_TYPE STREQUAL Simulation)
         SIM_SERVER_IP="${SIM_SERVER_IP}"
     )
 else()
-    target_link_libraries(Ferda Eigen3::Eigen pigpio nlohmann_json::nlohmann_json)
+    target_link_libraries(Ferda Eigen3::Eigen wiringPi PiPCA9685 i2c nlohmann_json::nlohmann_json)
 endif()
 
 
