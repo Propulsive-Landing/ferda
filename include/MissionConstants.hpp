@@ -42,17 +42,17 @@ namespace MissionConstants
     const double kNavGPSVelocityNoiseFactor = 1.0;
     const double kNavLidarNoiseFactor = 10.0;
     const double kNavCameraNoiseFactor = 1.5;
-    const double kNavAccelWhiteNoiseSigma = 0.0316;
-    const double kNavGyroWhiteNoiseSigma = 0.00224;
+    const double kNavAccelWhiteNoiseSigma = 0.02;
+    const double kNavGyroWhiteNoiseSigma = 0.0025;
     const double kNavAccelBiasRandomWalkSigma = 0.0;
     const double kNavGyroBiasRandomWalkSigma = 0.0;
     const double kNavPadVelocityNoiseMps = 1e-3;
-    const double kNavPadAngularVelocityNoiseRadps = 0.00224;
+    const double kNavPadAngularVelocityNoiseRadps = 1e-4;
     const double kNavInitialPositionVariance = 1e-5;
     const double kNavInitialVelocityVariance = 1e-6;
     const double kNavInitialAttitudeVariance = 1e-2;
-    const double kNavInitialAccelBiasVariance = 1e-2;
-    const double kNavInitialGyroBiasVariance = 1e-5;
+    const double kNavInitialAccelBiasVariance = 0.5;
+    const double kNavInitialGyroBiasVariance = 1e-6;
     inline const Eigen::Matrix<double, 3, 3> kMarkerData =
         (Eigen::Matrix<double, 3, 3>() <<
             2.0, 2.0, 5.0,
