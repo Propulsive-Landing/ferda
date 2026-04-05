@@ -23,6 +23,7 @@ private:
     double pendingCaptureFrameId = -1.0;
 
     void TryProcessPendingLocalCapture();
+    bool InitializeVideoStream();
     bool CaptureLocalFrameAndProcess(double frameId);
     void UpdateFromPixelList(double frameId, const std::vector<std::pair<double, double>>& pixelList);
 };

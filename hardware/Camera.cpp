@@ -9,14 +9,20 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <cstdlib>
-#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace
 {
+struct VideoStreamState
+{
+    bool initialized = false;
+    cv::VideoCapture capture;
+};
+
+VideoStreamState gVideoStream;
+
 Eigen::Vector3d PixelToUnitVector(double px, double py)
 {
     const cv::Matx33d cameraMatrix(
@@ -51,6 +57,35 @@ Camera::Camera()
 {
 }
 
+bool Camera::InitializeVideoStream()
+{
+    if (gVideoStream.initialized && gVideoStream.capture.isOpened()) {
+        return true;
+    }
+
+    if (gVideoStream.capture.isOpened()) {
+        gVideoStream.capture.release();
+    }
+
+    if (!gVideoStream.capture.open(0, cv::CAP_V4L2)) {
+        if (!gVideoStream.capture.open(0, cv::CAP_ANY)) {
+            gVideoStream.initialized = false;
+            return false;
+        }
+    }
+
+    gVideoStream.capture.set(cv::CAP_PROP_FRAME_WIDTH, MissionConstants::kSensorCameraImageWidthPx);
+    gVideoStream.capture.set(cv::CAP_PROP_FRAME_HEIGHT, MissionConstants::kSensorCameraImageHeightPx);
+    gVideoStream.capture.set(cv::CAP_PROP_BUFFERSIZE, 1.0);
+
+    // Grab one frame at startup so the next request returns a recent image.
+    cv::Mat warmupFrame;
+    gVideoStream.capture.read(warmupFrame);
+
+    gVideoStream.initialized = true;
+    return true;
+}
+
 void Camera::TryProcessPendingLocalCapture()
 {
     if (!capturePending) {
@@ -64,21 +99,25 @@ void Camera::TryProcessPendingLocalCapture()
 
 bool Camera::CaptureLocalFrameAndProcess(double frameId)
 {
-    std::ostringstream command;
-    command << MissionConstants::kSensorCameraCaptureCommand
-            << " -n"
-            << " --timeout " << MissionConstants::kSensorCameraCaptureTimeoutMs
-            << " --width " << MissionConstants::kSensorCameraImageWidthPx
-            << " --height " << MissionConstants::kSensorCameraImageHeightPx
-            << " -o " << MissionConstants::kSensorCameraCaptureOutputPath
-            << " > /dev/null 2>&1";
-
-    const int ret = std::system(command.str().c_str());
-    if (ret != 0) {
+    if (!InitializeVideoStream()) {
         return false;
     }
 
-    cv::Mat img = cv::imread(MissionConstants::kSensorCameraCaptureOutputPath, cv::IMREAD_COLOR);
+    cv::Mat img;
+    if (!gVideoStream.capture.read(img)) {
+        gVideoStream.initialized = false;
+        return false;
+    }
+
+    // Drop one buffered frame when available to bias toward the latest image.
+    cv::Mat latestImg;
+    if (gVideoStream.capture.grab()) {
+        gVideoStream.capture.retrieve(latestImg);
+        if (!latestImg.empty()) {
+            img = latestImg;
+        }
+    }
+
     if (img.empty()) {
         return false;
     }
