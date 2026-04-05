@@ -15,6 +15,13 @@
 // TODO: add more namespaces to sub types like navigation and controller, etc
 namespace MissionConstants
 {
+    enum class CameraAssociationStrategy
+    {
+        kPermutation = 0,
+        kGreedy = 1,
+        kHungarian = 2
+    };
+
     // YAML::Node LoadConstants(std::string filepath) {
     //     YAML::Node constants = YAML::LoadFile(filepath);
     //     return constants;
@@ -48,6 +55,10 @@ namespace MissionConstants
     const double kNavGyroBiasRandomWalkSigma = 0.0;
     const double kNavPadVelocityNoiseMps = 1e-3;
     const double kNavPadAngularVelocityNoiseRadps = 1e-4;
+    const CameraAssociationStrategy kNavCameraAssociationStrategy = CameraAssociationStrategy::kHungarian;
+    const double kNavCameraAssociationMaxAngleRad = 0.6;
+    const double kNavCameraAssociationUnassignedPenaltyRad = 0.35;
+    const int kNavCameraAssociationMinMatches = 2;
     const double kNavInitialPositionVariance = 1e-5;
     const double kNavInitialVelocityVariance = 1e-6;
     const double kNavInitialAttitudeVariance = 1e-2;
@@ -62,6 +73,22 @@ namespace MissionConstants
 
     // Sensor constants, TODO: USER EDIT PRE-FLIGHT
     const double kSensorCameraNoise = 1e-3;
+    const std::string kSensorCameraCaptureCommand = "libcamera-still";
+    const std::string kSensorCameraCaptureOutputPath = "/tmp/ferda_camera_frame.jpg";
+    const int kSensorCameraCaptureTimeoutMs = 1;
+    const double kSensorCameraFocalLengthXPx = 1450.0;
+    const double kSensorCameraFocalLengthYPx = 1450.0;
+    const double kSensorCameraPrincipalPointXPx = 960.0;
+    const double kSensorCameraPrincipalPointYPx = 540.0;
+    const double kSensorCameraDistortionK1 = 0.0;
+    const double kSensorCameraDistortionK2 = 0.0;
+    const double kSensorCameraDistortionP1 = 0.0;
+    const double kSensorCameraDistortionP2 = 0.0;
+    const double kSensorCameraDistortionK3 = 0.0;
+    const int kSensorCameraImageWidthPx = 1920;
+    const int kSensorCameraImageHeightPx = 1080;
+    const int kSensorCameraMaxDetections = 5;
+    const int kSensorCameraMarkerMinAreaPx = 2000;
     const double kSensorMagnetometerNoise = 1; // Magnetometer measurement noise (Tesla)
     const double kSensorGPSPositionNoiseM = 3.0;
     const double kSensorGPSVelocityNoiseMps = 0.1;

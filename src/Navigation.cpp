@@ -9,10 +9,320 @@
 #include <iostream>
 #include <chrono>
 #include <iomanip>
+#include <limits>
+#include <numeric>
 
 #include "Navigation.hpp"
 #include "MissionConstants.hpp"
 #include <iostream>
+
+namespace {
+struct PredictedMarker {
+    int markerIdx = -1;
+    double d = 0.0;
+    Eigen::Vector3d rho = Eigen::Vector3d::Zero();
+    Eigen::Vector3d u = Eigen::Vector3d::Zero();
+};
+
+double AngularErrorRad(const Eigen::Vector3d& measured, const Eigen::Vector3d& predicted)
+{
+    const double cosTheta = std::clamp(measured.dot(predicted), -1.0, 1.0);
+    return std::acos(cosTheta);
+}
+
+void SearchPermutationAssignments(
+    const std::vector<std::vector<double>>& costs,
+    int row,
+    std::vector<bool>& usedPredictions,
+    std::vector<int>& currentAssignment,
+    double currentCost,
+    double& bestCost,
+    std::vector<int>& bestAssignment)
+{
+    const int numMeasurements = static_cast<int>(costs.size());
+    const int numPredictions = static_cast<int>(costs.front().size());
+
+    if (row >= numMeasurements) {
+        if (currentCost < bestCost) {
+            bestCost = currentCost;
+            bestAssignment = currentAssignment;
+        }
+        return;
+    }
+
+    if (currentCost >= bestCost) {
+        return;
+    }
+
+    for (int predictionIdx = 0; predictionIdx < numPredictions; ++predictionIdx) {
+        if (usedPredictions[predictionIdx]) {
+            continue;
+        }
+
+        usedPredictions[predictionIdx] = true;
+        currentAssignment[row] = predictionIdx;
+        SearchPermutationAssignments(
+            costs,
+            row + 1,
+            usedPredictions,
+            currentAssignment,
+            currentCost + costs[row][predictionIdx],
+            bestCost,
+            bestAssignment);
+        usedPredictions[predictionIdx] = false;
+    }
+}
+
+bool AssignByPermutation(
+    const std::vector<std::vector<double>>& costs,
+    std::vector<int>& assignment,
+    double& totalCost)
+{
+    if (costs.empty() || costs.front().empty()) {
+        return false;
+    }
+
+    const int numMeasurements = static_cast<int>(costs.size());
+    const int numPredictions = static_cast<int>(costs.front().size());
+    if (numPredictions < numMeasurements) {
+        return false;
+    }
+
+    std::vector<bool> usedPredictions(numPredictions, false);
+    std::vector<int> currentAssignment(numMeasurements, -1);
+    assignment.assign(numMeasurements, -1);
+    totalCost = std::numeric_limits<double>::infinity();
+
+    SearchPermutationAssignments(
+        costs,
+        0,
+        usedPredictions,
+        currentAssignment,
+        0.0,
+        totalCost,
+        assignment);
+
+    return std::isfinite(totalCost);
+}
+
+bool AssignByGreedy(
+    const std::vector<std::vector<double>>& costs,
+    std::vector<int>& assignment,
+    double& totalCost)
+{
+    if (costs.empty() || costs.front().empty()) {
+        return false;
+    }
+
+    const int numMeasurements = static_cast<int>(costs.size());
+    const int numPredictions = static_cast<int>(costs.front().size());
+    if (numPredictions < numMeasurements) {
+        return false;
+    }
+
+    std::vector<bool> usedPredictions(numPredictions, false);
+    assignment.assign(numMeasurements, -1);
+    totalCost = 0.0;
+
+    for (int row = 0; row < numMeasurements; ++row) {
+        double bestRowCost = std::numeric_limits<double>::infinity();
+        int bestPrediction = -1;
+
+        for (int predictionIdx = 0; predictionIdx < numPredictions; ++predictionIdx) {
+            if (usedPredictions[predictionIdx]) {
+                continue;
+            }
+            if (costs[row][predictionIdx] < bestRowCost) {
+                bestRowCost = costs[row][predictionIdx];
+                bestPrediction = predictionIdx;
+            }
+        }
+
+        if (bestPrediction < 0 || !std::isfinite(bestRowCost)) {
+            return false;
+        }
+
+        assignment[row] = bestPrediction;
+        usedPredictions[bestPrediction] = true;
+        totalCost += bestRowCost;
+    }
+
+    return true;
+}
+
+bool SolveHungarianRectangular(
+    const std::vector<std::vector<double>>& costs,
+    std::vector<int>& assignment,
+    double& totalCost)
+{
+    if (costs.empty() || costs.front().empty()) {
+        return false;
+    }
+
+    const int rows = static_cast<int>(costs.size());
+    const int cols = static_cast<int>(costs.front().size());
+    if (rows > cols) {
+        return false;
+    }
+
+    for (int r = 0; r < rows; ++r) {
+        if (static_cast<int>(costs[r].size()) != cols) {
+            return false;
+        }
+    }
+
+    std::vector<double> u(rows + 1, 0.0);
+    std::vector<double> v(cols + 1, 0.0);
+    std::vector<int> p(cols + 1, 0);
+    std::vector<int> way(cols + 1, 0);
+
+    for (int i = 1; i <= rows; ++i) {
+        p[0] = i;
+        int j0 = 0;
+        std::vector<double> minv(cols + 1, std::numeric_limits<double>::infinity());
+        std::vector<bool> used(cols + 1, false);
+
+        do {
+            used[j0] = true;
+            const int i0 = p[j0];
+            double delta = std::numeric_limits<double>::infinity();
+            int j1 = 0;
+
+            for (int j = 1; j <= cols; ++j) {
+                if (used[j]) {
+                    continue;
+                }
+
+                const double cur = costs[i0 - 1][j - 1] - u[i0] - v[j];
+                if (cur < minv[j]) {
+                    minv[j] = cur;
+                    way[j] = j0;
+                }
+                if (minv[j] < delta) {
+                    delta = minv[j];
+                    j1 = j;
+                }
+            }
+
+            if (!std::isfinite(delta)) {
+                return false;
+            }
+
+            for (int j = 0; j <= cols; ++j) {
+                if (used[j]) {
+                    u[p[j]] += delta;
+                    v[j] -= delta;
+                } else {
+                    minv[j] -= delta;
+                }
+            }
+            j0 = j1;
+        } while (p[j0] != 0);
+
+        do {
+            const int j1 = way[j0];
+            p[j0] = p[j1];
+            j0 = j1;
+        } while (j0 != 0);
+    }
+
+    assignment.assign(rows, -1);
+    for (int j = 1; j <= cols; ++j) {
+        if (p[j] != 0) {
+            assignment[p[j] - 1] = j - 1;
+        }
+    }
+
+    totalCost = 0.0;
+    for (int i = 0; i < rows; ++i) {
+        if (assignment[i] < 0 || assignment[i] >= cols) {
+            return false;
+        }
+        totalCost += costs[i][assignment[i]];
+    }
+
+    return std::isfinite(totalCost);
+}
+
+bool AssignByHungarian(
+    const std::vector<std::vector<double>>& costs,
+    std::vector<int>& assignment,
+    double& totalCost)
+{
+    if (costs.empty() || costs.front().empty()) {
+        return false;
+    }
+
+    const int numMeasurements = static_cast<int>(costs.size());
+    const int numPredictions = static_cast<int>(costs.front().size());
+
+    std::vector<std::vector<double>> augmentedCosts(
+        numMeasurements,
+        std::vector<double>(numPredictions + numMeasurements,
+                            MissionConstants::kNavCameraAssociationUnassignedPenaltyRad));
+
+    for (int i = 0; i < numMeasurements; ++i) {
+        for (int j = 0; j < numPredictions; ++j) {
+            augmentedCosts[i][j] = costs[i][j];
+        }
+    }
+
+    std::vector<int> rawAssignment;
+    if (!SolveHungarianRectangular(augmentedCosts, rawAssignment, totalCost)) {
+        return false;
+    }
+
+    assignment.assign(numMeasurements, -1);
+    for (int i = 0; i < numMeasurements; ++i) {
+        if (rawAssignment[i] >= 0 && rawAssignment[i] < numPredictions) {
+            assignment[i] = rawAssignment[i];
+        }
+    }
+
+    return true;
+}
+
+bool AssignCameraMarkers(
+    const std::vector<Eigen::Vector3d>& measuredBody,
+    const std::vector<PredictedMarker>& predictions,
+    std::vector<int>& assignment,
+    double& totalCost)
+{
+    const int numMeasurements = static_cast<int>(measuredBody.size());
+    const int numPredictions = static_cast<int>(predictions.size());
+    if (numMeasurements == 0 || numPredictions == 0) {
+        return false;
+    }
+
+    std::vector<std::vector<double>> costs(
+        numMeasurements,
+        std::vector<double>(numPredictions, 0.0));
+
+    for (int measurementIdx = 0; measurementIdx < numMeasurements; ++measurementIdx) {
+        for (int predictionIdx = 0; predictionIdx < numPredictions; ++predictionIdx) {
+            costs[measurementIdx][predictionIdx] =
+                AngularErrorRad(measuredBody[measurementIdx], predictions[predictionIdx].rho);
+        }
+    }
+
+    switch (MissionConstants::kNavCameraAssociationStrategy) {
+        case MissionConstants::CameraAssociationStrategy::kPermutation:
+            if (numPredictions < numMeasurements) {
+                return false;
+            }
+            return AssignByPermutation(costs, assignment, totalCost);
+        case MissionConstants::CameraAssociationStrategy::kGreedy:
+            if (numPredictions < numMeasurements) {
+                return false;
+            }
+            return AssignByGreedy(costs, assignment, totalCost);
+        case MissionConstants::CameraAssociationStrategy::kHungarian:
+            return AssignByHungarian(costs, assignment, totalCost);
+        default:
+            return false;
+    }
+}
+} // namespace
 
 Navigation::Navigation(IMU &inputImu, Magnetometer &inputMagnetometer, GPS &inputGps, Lidar &inputLidar, Camera &inputCamera, TVC &inputTvc) : imu(inputImu), magnetometer(inputMagnetometer), gps(inputGps), lidar(inputLidar), camera(inputCamera), tvc(inputTvc)
 {
@@ -43,6 +353,7 @@ void Navigation::reset()
     gps_update_counter = 0;
     lidar_update_counter = 0;
     magnetometer_update_counter = 0;
+    camera_capture_elapsed_s = 0.0;
     last_camera_frame_id = -1.0;
     UpdateMassPropertyEstimates();
 }
@@ -191,14 +502,16 @@ void Navigation::UpdateNavigation()
         gps_update_counter = 0;
     }
 
+    camera_capture_elapsed_s += loopTime;
+    if (camera_capture_elapsed_s >= kCameraCapturePeriodS) {
+        camera.RequestCapture();
+        camera_capture_elapsed_s -= kCameraCapturePeriodS;
+    }
+
     const double camera_frame_id = camera.GetFrameId();
-    if (x_e(2) > 1.0 && camera_frame_id >= 0.0 && camera_frame_id != last_camera_frame_id && false) {
-        cameraDirections = camera.GetUnitVectors();
-        Eigen::VectorXd cameraDirectionsVector(9);
-        cameraDirectionsVector << std::get<0>(cameraDirections), std::get<1>(cameraDirections), std::get<2>(cameraDirections),
-            std::get<3>(cameraDirections), std::get<4>(cameraDirections), std::get<5>(cameraDirections),
-            std::get<6>(cameraDirections), std::get<7>(cameraDirections), std::get<8>(cameraDirections);
-        cameraUpdate(cameraDirectionsVector, R);
+    if (x_e(2) > 1.0 && camera_frame_id >= 0.0 && camera_frame_id != last_camera_frame_id) {
+        const std::vector<Eigen::Vector3d> cameraDirections = camera.GetUnitVectorList();
+        cameraUpdate(cameraDirections, R);
         last_camera_frame_id = camera_frame_id;
     }
 
@@ -329,7 +642,7 @@ void Navigation::SetOnPad(bool isOnPad)
     onPad = isOnPad;
 }
 
-void Navigation::cameraUpdate(const Eigen::VectorXd &cameraDirectionsVector, const Eigen::Matrix3d &R)
+void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d>& cameraDirections, const Eigen::Matrix3d& R)
 {
     const int N = MissionConstants::kMarkerData.cols();
 
@@ -339,25 +652,22 @@ void Navigation::cameraUpdate(const Eigen::VectorXd &cameraDirectionsVector, con
          Eigen::AngleAxisd(eul.y(), Eigen::Vector3d::UnitY()).toRotationMatrix() *
          Eigen::AngleAxisd(eul.z(), Eigen::Vector3d::UnitZ()).toRotationMatrix());
 
-    std::vector<int> validIdx;
-    validIdx.reserve(N);
-    for (int i = 0; i < N; ++i) {
-        if (cameraDirectionsVector.segment<3>(3 * i).norm() > 0.5) {
-            validIdx.push_back(i);
+    std::vector<Eigen::Vector3d> measuredBody;
+    measuredBody.reserve(cameraDirections.size());
+    for (const Eigen::Vector3d& measuredCam : cameraDirections) {
+        if (measuredCam.norm() > 0.5) {
+            measuredBody.push_back((DCM_bc * measuredCam).normalized());
         }
     }
 
-    const int M = static_cast<int>(validIdx.size());
+    const int M = static_cast<int>(measuredBody.size());
     if (M == 0) {
         return;
     }
 
-    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3 * M, 15);
-    Eigen::VectorXd y = Eigen::VectorXd::Zero(3 * M);
-    Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(3 * M);
-
-    for (int k = 0; k < M; ++k) {
-        const int i = validIdx[k];
+    std::vector<PredictedMarker> predictions;
+    predictions.reserve(N);
+    for (int i = 0; i < N; ++i) {
         const Eigen::Vector3d delta =
             R.transpose() * (MissionConstants::kMarkerData.col(i) + MissionConstants::kStructuresGroundOffset - x_e) -
             MissionConstants::kSensorCameraPosition;
@@ -367,22 +677,63 @@ void Navigation::cameraUpdate(const Eigen::VectorXd &cameraDirectionsVector, con
             continue;
         }
 
-        const Eigen::Vector3d rho = delta / d;
-        const Eigen::Vector3d u = (R.transpose() * delta) / d;
-        const int row = 3 * k;
-
-        y.segment<3>(row) = DCM_bc * cameraDirectionsVector.segment<3>(3 * i);
-        y_pred.segment<3>(row) = rho;
-        H.block<3,3>(row, 0) =
-            -R.transpose() * (Eigen::Matrix3d::Identity() - u * u.transpose()) / d;
-        H.block<3,3>(row, 6) = skew(R.transpose() * u);
+        PredictedMarker prediction;
+        prediction.markerIdx = i;
+        prediction.d = d;
+        prediction.rho = delta / d;
+        prediction.u = (R.transpose() * delta) / d;
+        predictions.push_back(prediction);
     }
 
-    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(3 * M, 3 * M);
+    std::vector<int> assignment;
+    double totalAngularError = std::numeric_limits<double>::infinity();
+    if (!AssignCameraMarkers(measuredBody, predictions, assignment, totalAngularError)) {
+        return;
+    }
+
+    const double maxPairAngleRad = MissionConstants::kNavCameraAssociationMaxAngleRad;
+    std::vector<std::pair<int, int>> matchedPairs;
+    matchedPairs.reserve(static_cast<size_t>(M));
+
+    for (int k = 0; k < M; ++k) {
+        const int predictionIdx = assignment[k];
+        if (predictionIdx < 0 || predictionIdx >= static_cast<int>(predictions.size())) {
+            continue;
+        }
+        const double pairAngle = AngularErrorRad(measuredBody[k], predictions[predictionIdx].rho);
+        if (pairAngle <= maxPairAngleRad) {
+            matchedPairs.emplace_back(k, predictionIdx);
+        }
+    }
+
+    if (static_cast<int>(matchedPairs.size()) < MissionConstants::kNavCameraAssociationMinMatches) {
+        return;
+    }
+
+    const int K = static_cast<int>(matchedPairs.size());
+
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3 * K, 15);
+    Eigen::VectorXd y = Eigen::VectorXd::Zero(3 * K);
+    Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(3 * K);
+
+    for (int k = 0; k < K; ++k) {
+        const int measurementIdx = matchedPairs[k].first;
+        const int predictionIdx = matchedPairs[k].second;
+        const PredictedMarker& prediction = predictions[predictionIdx];
+        const int row = 3 * k;
+
+        y.segment<3>(row) = measuredBody[measurementIdx];
+        y_pred.segment<3>(row) = prediction.rho;
+        H.block<3,3>(row, 0) =
+            -R.transpose() * (Eigen::Matrix3d::Identity() - prediction.u * prediction.u.transpose()) / prediction.d;
+        H.block<3,3>(row, 6) = skew(R.transpose() * prediction.u);
+    }
+
+    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(3 * K, 3 * K);
     const double cameraNoise = MissionConstants::kNavCameraNoiseFactor *
                                MissionConstants::kSensorCameraNoise *
                                MissionConstants::kSensorCameraNoise;
-    for (int k = 0; k < M; ++k) {
+    for (int k = 0; k < K; ++k) {
         V.block<3,3>(3 * k, 3 * k) = cameraNoise * Eigen::Matrix3d::Identity();
     }
 

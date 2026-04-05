@@ -5,10 +5,15 @@
 
 Camera::Camera() {}
 
-std::tuple<double, double, double, double, double, double, double, double, double> Camera::GetUnitVectors()
+void Camera::RequestCapture()
 {
-    return std::make_tuple(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 }
+
+std::vector<Eigen::Vector3d> Camera::GetUnitVectorList()
+{
+    return {};
+}
+
 double Camera::GetFrameId()
 {
     return -1.0;

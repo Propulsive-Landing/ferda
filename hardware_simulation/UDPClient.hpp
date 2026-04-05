@@ -45,6 +45,7 @@
 #include <limits>
 #include <cmath>
 #include <iomanip>
+#include <vector>
 #include <Eigen/Dense>
 
 #ifdef _WIN32
@@ -78,7 +79,7 @@ private:
     std::array<double, 3> magnetic_field{0};
     std::array<double, 3> gps_position{0};
     std::array<double, 2> gps_velocity{0};
-    std::array<double, 9> camera_vectors{0};
+    std::array<double, 15> camera_vectors{0};
     std::array<double, 1> lidar_data{0};
     double camera_frame_id{-1.0};
     double simulation_time_k{0.0};
@@ -95,7 +96,7 @@ private:
     std::array<double, 3> nav_velocity_e{0};
 
     void ReadThread() {
-        constexpr int kRxDoubles = 26; // [t_k, accel(3), gyro(3), mag(3), gps_pos(3), gps_vel(2), camera(9), frame_ID(1), lidar(1)]
+        constexpr int kRxDoubles = 32; // [t_k, accel(3), gyro(3), mag(3), gps_pos(3), gps_vel(2), camera(15), frame_ID(1), lidar(1)]
         constexpr int kRxBytes = static_cast<int>(sizeof(double) * kRxDoubles);
         constexpr int kStatsPrintEvery = 200;
 
@@ -153,9 +154,9 @@ private:
                 memcpy(magnetic_field.data(), buffer + sizeof(double) * 7, sizeof(double) * 3);
                 memcpy(gps_position.data(), buffer + sizeof(double) * 10, sizeof(double) * 3);
                 memcpy(gps_velocity.data(), buffer + sizeof(double) * 13, sizeof(double) * 2);
-                memcpy(camera_vectors.data(), buffer + sizeof(double) * 15, sizeof(double) * 9);
-                memcpy(&camera_frame_id, buffer + sizeof(double) * 24, sizeof(double));
-                memcpy(lidar_data.data(), buffer + sizeof(double) * 25, sizeof(double));
+                memcpy(camera_vectors.data(), buffer + sizeof(double) * 15, sizeof(double) * 15);
+                memcpy(&camera_frame_id, buffer + sizeof(double) * 30, sizeof(double));
+                memcpy(lidar_data.data(), buffer + sizeof(double) * 31, sizeof(double));
             }
 
             
@@ -296,13 +297,23 @@ public:
         return std::make_tuple(lidar_data[0]);
     }
 
-    std::tuple<double, double, double, double, double, double, double, double, double> GetUnitVectors() {
+    std::vector<Eigen::Vector3d> GetUnitVectorList() {
         std::lock_guard<std::mutex> lock(data_mutex);
-        return std::make_tuple(
-            camera_vectors[0], camera_vectors[1], camera_vectors[2],
-            camera_vectors[3], camera_vectors[4], camera_vectors[5],
-            camera_vectors[6], camera_vectors[7], camera_vectors[8]
-        );
+        std::vector<Eigen::Vector3d> unitVectors;
+        unitVectors.reserve(5);
+
+        for (int i = 0; i < 5; ++i) {
+            const int base = 3 * i;
+            const Eigen::Vector3d v(
+                camera_vectors[base],
+                camera_vectors[base + 1],
+                camera_vectors[base + 2]);
+            if (v.norm() > 0.5) {
+                unitVectors.push_back(v.normalized());
+            }
+        }
+
+        return unitVectors;
     }
 
     double GetCameraFrameId() {
