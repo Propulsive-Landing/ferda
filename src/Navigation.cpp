@@ -30,126 +30,6 @@ double AngularErrorRad(const Eigen::Vector3d& measured, const Eigen::Vector3d& p
     return std::acos(cosTheta);
 }
 
-void SearchPermutationAssignments(
-    const std::vector<std::vector<double>>& costs,
-    int row,
-    std::vector<bool>& usedPredictions,
-    std::vector<int>& currentAssignment,
-    double currentCost,
-    double& bestCost,
-    std::vector<int>& bestAssignment)
-{
-    const int numMeasurements = static_cast<int>(costs.size());
-    const int numPredictions = static_cast<int>(costs.front().size());
-
-    if (row >= numMeasurements) {
-        if (currentCost < bestCost) {
-            bestCost = currentCost;
-            bestAssignment = currentAssignment;
-        }
-        return;
-    }
-
-    if (currentCost >= bestCost) {
-        return;
-    }
-
-    for (int predictionIdx = 0; predictionIdx < numPredictions; ++predictionIdx) {
-        if (usedPredictions[predictionIdx]) {
-            continue;
-        }
-
-        usedPredictions[predictionIdx] = true;
-        currentAssignment[row] = predictionIdx;
-        SearchPermutationAssignments(
-            costs,
-            row + 1,
-            usedPredictions,
-            currentAssignment,
-            currentCost + costs[row][predictionIdx],
-            bestCost,
-            bestAssignment);
-        usedPredictions[predictionIdx] = false;
-    }
-}
-
-bool AssignByPermutation(
-    const std::vector<std::vector<double>>& costs,
-    std::vector<int>& assignment,
-    double& totalCost)
-{
-    if (costs.empty() || costs.front().empty()) {
-        return false;
-    }
-
-    const int numMeasurements = static_cast<int>(costs.size());
-    const int numPredictions = static_cast<int>(costs.front().size());
-    if (numPredictions < numMeasurements) {
-        return false;
-    }
-
-    std::vector<bool> usedPredictions(numPredictions, false);
-    std::vector<int> currentAssignment(numMeasurements, -1);
-    assignment.assign(numMeasurements, -1);
-    totalCost = std::numeric_limits<double>::infinity();
-
-    SearchPermutationAssignments(
-        costs,
-        0,
-        usedPredictions,
-        currentAssignment,
-        0.0,
-        totalCost,
-        assignment);
-
-    return std::isfinite(totalCost);
-}
-
-bool AssignByGreedy(
-    const std::vector<std::vector<double>>& costs,
-    std::vector<int>& assignment,
-    double& totalCost)
-{
-    if (costs.empty() || costs.front().empty()) {
-        return false;
-    }
-
-    const int numMeasurements = static_cast<int>(costs.size());
-    const int numPredictions = static_cast<int>(costs.front().size());
-    if (numPredictions < numMeasurements) {
-        return false;
-    }
-
-    std::vector<bool> usedPredictions(numPredictions, false);
-    assignment.assign(numMeasurements, -1);
-    totalCost = 0.0;
-
-    for (int row = 0; row < numMeasurements; ++row) {
-        double bestRowCost = std::numeric_limits<double>::infinity();
-        int bestPrediction = -1;
-
-        for (int predictionIdx = 0; predictionIdx < numPredictions; ++predictionIdx) {
-            if (usedPredictions[predictionIdx]) {
-                continue;
-            }
-            if (costs[row][predictionIdx] < bestRowCost) {
-                bestRowCost = costs[row][predictionIdx];
-                bestPrediction = predictionIdx;
-            }
-        }
-
-        if (bestPrediction < 0 || !std::isfinite(bestRowCost)) {
-            return false;
-        }
-
-        assignment[row] = bestPrediction;
-        usedPredictions[bestPrediction] = true;
-        totalCost += bestRowCost;
-    }
-
-    return true;
-}
-
 bool SolveHungarianRectangular(
     const std::vector<std::vector<double>>& costs,
     std::vector<int>& assignment,
@@ -305,22 +185,7 @@ bool AssignCameraMarkers(
         }
     }
 
-    switch (MissionConstants::kNavCameraAssociationStrategy) {
-        case MissionConstants::CameraAssociationStrategy::kPermutation:
-            if (numPredictions < numMeasurements) {
-                return false;
-            }
-            return AssignByPermutation(costs, assignment, totalCost);
-        case MissionConstants::CameraAssociationStrategy::kGreedy:
-            if (numPredictions < numMeasurements) {
-                return false;
-            }
-            return AssignByGreedy(costs, assignment, totalCost);
-        case MissionConstants::CameraAssociationStrategy::kHungarian:
-            return AssignByHungarian(costs, assignment, totalCost);
-        default:
-            return false;
-    }
+    return AssignByHungarian(costs, assignment, totalCost);
 }
 } // namespace
 
@@ -691,7 +556,6 @@ void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d>& cameraDirectio
         return;
     }
 
-    const double maxPairAngleRad = MissionConstants::kNavCameraAssociationMaxAngleRad;
     std::vector<std::pair<int, int>> matchedPairs;
     matchedPairs.reserve(static_cast<size_t>(M));
 
@@ -700,14 +564,7 @@ void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d>& cameraDirectio
         if (predictionIdx < 0 || predictionIdx >= static_cast<int>(predictions.size())) {
             continue;
         }
-        const double pairAngle = AngularErrorRad(measuredBody[k], predictions[predictionIdx].rho);
-        if (pairAngle <= maxPairAngleRad) {
-            matchedPairs.emplace_back(k, predictionIdx);
-        }
-    }
-
-    if (static_cast<int>(matchedPairs.size()) < MissionConstants::kNavCameraAssociationMinMatches) {
-        return;
+        matchedPairs.emplace_back(k, predictionIdx);
     }
 
     const int K = static_cast<int>(matchedPairs.size());

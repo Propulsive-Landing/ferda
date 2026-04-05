@@ -15,13 +15,6 @@
 // TODO: add more namespaces to sub types like navigation and controller, etc
 namespace MissionConstants
 {
-    enum class CameraAssociationStrategy
-    {
-        kPermutation = 0,
-        kGreedy = 1,
-        kHungarian = 2
-    };
-
     // YAML::Node LoadConstants(std::string filepath) {
     //     YAML::Node constants = YAML::LoadFile(filepath);
     //     return constants;
@@ -55,10 +48,7 @@ namespace MissionConstants
     const double kNavGyroBiasRandomWalkSigma = 0.0;
     const double kNavPadVelocityNoiseMps = 1e-3;
     const double kNavPadAngularVelocityNoiseRadps = 1e-4;
-    const CameraAssociationStrategy kNavCameraAssociationStrategy = CameraAssociationStrategy::kHungarian;
-    const double kNavCameraAssociationMaxAngleRad = 0.6;
-    const double kNavCameraAssociationUnassignedPenaltyRad = 0.35;
-    const int kNavCameraAssociationMinMatches = 2;
+    const double kNavCameraAssociationUnassignedPenaltyRad = 0.10;
     const double kNavInitialPositionVariance = 1e-5;
     const double kNavInitialVelocityVariance = 1e-6;
     const double kNavInitialAttitudeVariance = 1e-2;
