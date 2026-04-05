@@ -318,9 +318,10 @@ void Navigation::padUpdateAngularVelocity(const Eigen::Vector3d& angularVelocity
 {
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
     H.block<3, 3>(0, 12) = Eigen::Matrix3d::Identity();
-    Eigen::Vector3d initialAngularVelocity = Eigen::Vector3d(0, 0, 0);
+    // On-pad pseudo-measurement model: measured gyro rate ~= gyro bias (true body rate ~= 0).
+    Eigen::Vector3d predictedAngularVelocity = w_b;
     const double pad_angular_velocity_sigma = MissionConstants::kNavPadAngularVelocityNoiseRadps;
-    kalmanUpdate(H, pad_angular_velocity_sigma * pad_angular_velocity_sigma * Eigen::Matrix3d::Identity(), angularVelocity, initialAngularVelocity);
+    kalmanUpdate(H, pad_angular_velocity_sigma * pad_angular_velocity_sigma * Eigen::Matrix3d::Identity(), angularVelocity, predictedAngularVelocity);
 }
 
 void Navigation::SetOnPad(bool isOnPad)
