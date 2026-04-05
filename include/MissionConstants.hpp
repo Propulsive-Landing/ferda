@@ -64,7 +64,7 @@ namespace MissionConstants
     // Sensor constants, TODO: USER EDIT PRE-FLIGHT
     const double kSensorCameraNoise = 1e-3;
     const std::string kSensorCameraCaptureCommand = "libcamera-still";
-    const std::string kSensorCameraCaptureOutputPath = "/tmp/ferda_camera_frame.jpg";
+    const std::string kSensorCameraCaptureOutputPath = "/images/ferda_camera_frame.jpg";
     const int kSensorCameraCaptureTimeoutMs = 1;
     const double kSensorCameraFocalLengthXPx = 1450.0;
     const double kSensorCameraFocalLengthYPx = 1450.0;

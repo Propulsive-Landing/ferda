@@ -119,7 +119,6 @@ void Camera::UpdateFromPixelList(double frameId, const std::vector<std::pair<dou
     }
     latestFrameId = frameId;
 }
-}
 
 std::vector<Eigen::Vector3d> Camera::GetUnitVectorList()
 {
