@@ -218,8 +218,8 @@ void Navigation::UpdateNavigation()
     // Apply pad updates when on the pad (idle mode)
     if (onPad)
     {
-        //padUpdateVelocity();
-        //padUpdateAngularVelocity(w);
+        padUpdateVelocity();
+        padUpdateAngularVelocity(w);
     }
 
     // Repack states into stateMat
