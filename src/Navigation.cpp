@@ -180,14 +180,14 @@ void Navigation::UpdateNavigation()
 
     // Update magnetometer on fixed cadence
     ++magnetometer_update_counter;
-    if (magnetometer_update_counter >= kMagnetometerUpdateCadence) {
+    if (magnetometer_update_counter >= kMagnetometerUpdateCadence && false) {
         magneticField = magnetometer.GetMagneticField();
         Eigen::Vector3d magneticFieldVector(std::get<0>(magneticField), std::get<1>(magneticField), std::get<2>(magneticField));
         magnetometerUpdate(magneticFieldVector, R);
         magnetometer_update_counter = 0; // Reset counter
     }
     ++gps_update_counter;
-    if (gps_update_counter == kGPSUpdateCadence)
+    if (gps_update_counter == kGPSUpdateCadence && false)
     {
         gps.Update();
 
@@ -203,7 +203,7 @@ void Navigation::UpdateNavigation()
     }
 
     const double camera_frame_id = camera.GetFrameId();
-    if (x_e(2) > 1.0 && camera_frame_id >= 0.0 && camera_frame_id != last_camera_frame_id) {
+    if (x_e(2) > 1.0 && camera_frame_id >= 0.0 && camera_frame_id != last_camera_frame_id && false) {
         cameraDirections = camera.GetUnitVectors();
         Eigen::VectorXd cameraDirectionsVector(9);
         cameraDirectionsVector << std::get<0>(cameraDirections), std::get<1>(cameraDirections), std::get<2>(cameraDirections),
@@ -215,7 +215,7 @@ void Navigation::UpdateNavigation()
 
     // Update lidar on fixed cadence near ground.
     ++lidar_update_counter;
-    if (lidar_update_counter >= kLidarUpdateCadence) {
+    if (lidar_update_counter >= kLidarUpdateCadence && false) {
         if (x_e(2) < 4.0) {
             double lidarDistance = std::get<0>(lidar.GetLidarDistance());
             lidarUpdate(lidarDistance, R);
@@ -229,8 +229,8 @@ void Navigation::UpdateNavigation()
     // Apply pad updates when on the pad (idle mode)
     if (onPad)
     {
-        padUpdateVelocity();
-        padUpdateAngularVelocity(w);
+        //padUpdateVelocity();
+        //padUpdateAngularVelocity(w);
     }
 
     // Repack states into stateMat

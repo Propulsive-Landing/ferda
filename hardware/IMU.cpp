@@ -61,5 +61,5 @@ std::tuple<double, double, double> IMU::GetBodyAngularRate()
     double nAnglVelY = (double)read16LE(fd, MissionConstants::REG_GYRO_Y);
     double nAnglVelZ = (double)read16LE(fd, MissionConstants::REG_GYRO_Z);
 
-    return std::make_tuple(nAnglVelX / 900.0f, nAnglVelY / 900.0f, nAnglVelZ / 900.0f); // deg/s
+    return std::make_tuple(nAnglVelX / 900.0f, nAnglVelY / 900.0f, nAnglVelZ / 900.0f);
 }

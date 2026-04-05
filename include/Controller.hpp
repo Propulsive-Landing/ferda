@@ -56,7 +56,6 @@ public:
     void ImportAngleParameters(std::string file_name);
     void ImportHeightParameters(std::string file_name);
     void ImportTranslationParameters(std::string file_name);
-    int GetCurrentIterationIndex();
     Eigen::Matrix<double, 2, 1> GetCurrentTVCCommand();
     double GetCurrentThrustCommand();
 };
