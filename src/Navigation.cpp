@@ -38,17 +38,6 @@ Navigation::Navigation(IMU &inputImu, Magnetometer &inputMagnetometer, GPS &inpu
 
 void Navigation::reset()
 {
-    // Preserve bias estimates when resetting for launch
-    Eigen::Vector3d a_b_saved = stateMat.segment(10, 3);
-    Eigen::Vector3d w_b_saved = stateMat.segment(13, 3);
-
-    stateMat = Eigen::Matrix<double, 16, 1>::Zero();
-    stateMat(6) = 1;
-
-    // Restore the bias estimates
-    stateMat.segment(10, 3) = a_b_saved;
-    stateMat.segment(13, 3) = w_b_saved;
-
     estimatedMassKg = MissionConstants::kStructuresWetMassKg;
     estimatedMassFraction = 1.0;
     gps_update_counter = 0;
