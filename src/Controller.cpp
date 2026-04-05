@@ -311,11 +311,6 @@ void Controller::ImportAngleParameters(std::string file_name)
     in.close();
 }
 
-int Controller::GetCurrentIterationIndex()
-{
-    return current_iteration_index;
-}
-
 Eigen::Matrix<double, 2, 1> Controller::GetCurrentTVCCommand()
 {
     return input;

@@ -53,7 +53,6 @@ void Telemetry::HardwareSaveFrame(Navigation &navigation, Controller &controller
 
     HardwareSaved << std::to_string(controller.GetCurrentTVCCommand()[0]) << ", ";
     HardwareSaved << std::to_string(controller.GetCurrentTVCCommand()[1]) << ", ";
-    HardwareSaved << std::to_string(controller.GetCurrentIterationIndex());
 
     std::tuple<double, double, double> linAc = navigation.GetLinearAcceleration();
     std::tuple<double, double, double> angAc = navigation.GetAngularAcceleration();
