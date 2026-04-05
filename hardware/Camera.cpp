@@ -9,6 +9,13 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <condition_variable>
+#include <deque>
+#include <filesystem>
+#include <iomanip>
+#include <ios>
+#include <mutex>
+#include <thread>
 #include <string>
 #include <utility>
 #include <vector>
@@ -22,6 +29,88 @@ struct VideoStreamState
 };
 
 VideoStreamState gVideoStream;
+
+struct DebugFrameItem
+{
+    double frameId = -1.0;
+    cv::Mat frame;
+};
+
+class DebugFrameLogger
+{
+public:
+    DebugFrameLogger()
+        : worker(&DebugFrameLogger::Run, this)
+    {
+    }
+
+    ~DebugFrameLogger()
+    {
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            stop = true;
+        }
+        condition.notify_all();
+        if (worker.joinable()) {
+            worker.join();
+        }
+    }
+
+    void Enqueue(double frameId, const cv::Mat& frame)
+    {
+        if (!MissionConstants::kSensorCameraSaveDebugFrames) {
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(mutex);
+        if (queue.size() >= kMaxQueueDepth) {
+            queue.pop_front();
+        }
+        queue.push_back(DebugFrameItem{frameId, frame.clone()});
+        condition.notify_one();
+    }
+
+private:
+    static constexpr size_t kMaxQueueDepth = 8;
+
+    void Run()
+    {
+        std::filesystem::create_directories(MissionConstants::kSensorCameraDebugFrameDirectory);
+
+        for (;;) {
+            DebugFrameItem item;
+            {
+                std::unique_lock<std::mutex> lock(mutex);
+                condition.wait(lock, [&] { return stop || !queue.empty(); });
+                if (stop && queue.empty()) {
+                    return;
+                }
+
+                item = std::move(queue.front());
+                queue.pop_front();
+            }
+
+            std::ostringstream filename;
+            filename << MissionConstants::kSensorCameraDebugFrameDirectory << "/"
+                     << "frame_" << std::setw(6) << std::setfill('0') << static_cast<int>(item.frameId)
+                     << ".jpg";
+
+            cv::imwrite(filename.str(), item.frame);
+        }
+    }
+
+    std::mutex mutex;
+    std::condition_variable condition;
+    std::deque<DebugFrameItem> queue;
+    bool stop = false;
+    std::thread worker;
+};
+
+DebugFrameLogger& GetDebugFrameLogger()
+{
+    static DebugFrameLogger logger;
+    return logger;
+}
 
 Eigen::Vector3d PixelToUnitVector(double px, double py)
 {
@@ -126,6 +215,8 @@ bool Camera::CaptureLocalFrameAndProcess(double frameId)
         img,
         MissionConstants::kSensorCameraMarkerMinAreaPx,
         MissionConstants::kSensorCameraMaxDetections);
+
+    GetDebugFrameLogger().Enqueue(frameId, img);
 
     std::vector<std::pair<double, double>> pixelList;
     pixelList.reserve(detections.size());

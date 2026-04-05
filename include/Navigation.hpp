@@ -47,7 +47,7 @@ private:
     int magnetometer_update_counter = 0;
     static constexpr int kMagnetometerUpdateCadence = 2; // Update magnetometer every N nav steps
     double camera_capture_elapsed_s = 0.0;
-    static constexpr double kCameraCapturePeriodS = 0.1; // 10 Hz capture requests
+    static constexpr double kCameraCapturePeriodS = 0.2; // 5 Hz capture requests
     double last_camera_frame_id = -1.0;
 
 public:
