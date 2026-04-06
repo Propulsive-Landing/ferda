@@ -180,22 +180,36 @@ bool Camera::InitializeVideoStream()
         std::make_pair(640, 480),
     };
 
-    for (const auto& resolution : resolutionCandidates) {
+    auto tryOpenCapture = [&](int width, int height) -> bool {
         gVideoStream.capture.release();
+
+        if (MissionConstants::kSensorCameraUseGStreamer) {
+            std::ostringstream pipeline;
+            pipeline
+                << "libcamerasrc ! video/x-raw,width=" << width
+                << ",height=" << height
+                << " ! videoconvert ! appsink";
+
+            if (gVideoStream.capture.open(pipeline.str(), cv::CAP_GSTREAMER)) {
+                std::cerr << "Camera opened with GStreamer pipeline at " << width << "x" << height << std::endl;
+                return true;
+            }
+
+            std::cerr << "Camera GStreamer pipeline failed at " << width << "x" << height << std::endl;
+        }
 
         if (!gVideoStream.capture.open(cameraDeviceIndex, cv::CAP_V4L2)) {
             if (!gVideoStream.capture.open(cameraDeviceIndex, cv::CAP_ANY)) {
                 std::cerr << "Camera open failed for device index " << cameraDeviceIndex << std::endl;
-                gVideoStream.initialized = false;
                 return false;
             }
         }
 
         std::cerr << "Camera opened on device index " << cameraDeviceIndex
-                  << " with requested resolution " << resolution.first << "x" << resolution.second << std::endl;
+                  << " with requested resolution " << width << "x" << height << std::endl;
 
-        gVideoStream.capture.set(cv::CAP_PROP_FRAME_WIDTH, resolution.first);
-        gVideoStream.capture.set(cv::CAP_PROP_FRAME_HEIGHT, resolution.second);
+        gVideoStream.capture.set(cv::CAP_PROP_FRAME_WIDTH, width);
+        gVideoStream.capture.set(cv::CAP_PROP_FRAME_HEIGHT, height);
         gVideoStream.capture.set(cv::CAP_PROP_BUFFERSIZE, 1.0);
 
         // Grab one frame at startup so the next request returns a recent image.
@@ -211,13 +225,20 @@ bool Camera::InitializeVideoStream()
 
         if (warmupSucceeded) {
             std::cerr << "Camera warmup succeeded on device index " << cameraDeviceIndex
-                      << " at " << resolution.first << "x" << resolution.second << std::endl;
+                      << " at " << width << "x" << height << std::endl;
             gVideoStream.initialized = true;
             return true;
         }
 
         std::cerr << "Camera warmup frame read failed on device index " << cameraDeviceIndex
-                  << " at " << resolution.first << "x" << resolution.second << std::endl;
+                  << " at " << width << "x" << height << std::endl;
+        return false;
+    };
+
+    for (const auto& resolution : resolutionCandidates) {
+        if (tryOpenCapture(resolution.first, resolution.second)) {
+            return true;
+        }
     }
 
     gVideoStream.capture.release();
