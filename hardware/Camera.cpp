@@ -229,19 +229,72 @@ bool Camera::InitializeVideoStream()
         gVideoStream.capture.release();
 
         if (MissionConstants::kSensorCameraUseGStreamer) {
-            std::cerr << "Camera trying GStreamer pipeline at " << width << "x" << height << std::endl;
+            std::cerr << "Camera trying GStreamer pipeline at " << width << "x" << height << " on device index " << deviceIndex << std::endl;
             std::ostringstream pipeline;
+            // Use camera-name=... if you need to select a specific port by index (e.g. camera-name=0 or camera-name=1) 
             pipeline
-                << "libcamerasrc ! video/x-raw,width=" << width
+                << "libcamerasrc camera-name=" << deviceIndex << " ! video/x-raw,width=" << width
                 << ",height=" << height
-                << " ! videoconvert ! appsink";
+                << ",format=RGBx ! videoconvert ! video/x-raw,format=BGR ! appsink drop=true max-buffers=1";
 
             if (gVideoStream.capture.open(pipeline.str(), cv::CAP_GSTREAMER)) {
                 std::cerr << "Camera opened with GStreamer pipeline at " << width << "x" << height << std::endl;
-                return true;
-            }
+                gVideoStream.capture.set(cv::CAP_PROP_BUFFERSIZE, 1.0);
+                
+                cv::Mat warmupFrame;
+                bool warmupSucceeded = false;
+                for (int attempt = 0; attempt < 20; ++attempt) {
+                    if (gVideoStream.capture.read(warmupFrame) && !warmupFrame.empty()) {
+                        warmupSucceeded = true;
+                        break;
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                }
 
-            std::cerr << "Camera GStreamer pipeline failed at " << width << "x" << height << std::endl;
+                if (warmupSucceeded) {
+                    std::cerr << "Camera warmup succeeded via GStreamer on device index " << deviceIndex
+                              << " at " << width << "x" << height << std::endl;
+                    gVideoStream.activeDeviceIndex = deviceIndex;
+                    gVideoStream.initialized = true;
+                    return true;
+                }
+                
+                std::cerr << "Camera warmup failed via GStreamer at " << width << "x" << height << std::endl;
+                gVideoStream.capture.release();
+            } else {
+                std::cerr << "Camera GStreamer pipeline failed to open at " << width << "x" << height << std::endl;
+            }
+            
+            // Second try without camera-name just in case index lookup fails
+            std::cerr << "Camera trying generic GStreamer pipeline at " << width << "x" << height << std::endl;
+            std::ostringstream genericPipeline;
+            genericPipeline
+                << "libcamerasrc ! video/x-raw,width=" << width
+                << ",height=" << height
+                << ",format=RGBx ! videoconvert ! video/x-raw,format=BGR ! appsink drop=true max-buffers=1";
+                
+            if (gVideoStream.capture.open(genericPipeline.str(), cv::CAP_GSTREAMER)) {
+                std::cerr << "Camera opened with generic GStreamer pipeline at " << width << "x" << height << std::endl;
+                gVideoStream.capture.set(cv::CAP_PROP_BUFFERSIZE, 1.0);
+                
+                cv::Mat warmupFrame;
+                bool warmupSucceeded = false;
+                for (int attempt = 0; attempt < 20; ++attempt) {
+                    if (gVideoStream.capture.read(warmupFrame) && !warmupFrame.empty()) {
+                        warmupSucceeded = true;
+                        break;
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                }
+
+                if (warmupSucceeded) {
+                    std::cerr << "Camera warmup succeeded via generic GStreamer at " << width << "x" << height << std::endl;
+                    gVideoStream.activeDeviceIndex = deviceIndex;
+                    gVideoStream.initialized = true;
+                    return true;
+                }
+                gVideoStream.capture.release();
+            }
         }
 
         std::cerr << "Camera trying device index " << deviceIndex
@@ -290,7 +343,7 @@ bool Camera::InitializeVideoStream()
     };
 
     for (const int deviceIndex : deviceCandidates) {
-        if (!IsCaptureDeviceIndex(deviceIndex)) {
+        if (!MissionConstants::kSensorCameraUseGStreamer && !IsCaptureDeviceIndex(deviceIndex)) {
             std::cerr << "Camera skipping device index " << deviceIndex
                       << " because it is not a V4L2 capture device" << std::endl;
             continue;
