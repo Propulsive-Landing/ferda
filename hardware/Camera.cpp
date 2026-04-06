@@ -229,32 +229,15 @@ bool Camera::InitializeVideoStream()
         gVideoStream.capture.release();
 
         if (MissionConstants::kSensorCameraUseGStreamer) {
-            std::cerr << "Camera trying UDP rpicam-vid pipeline at " << width << "x" << height << " on device index " << deviceIndex << std::endl;
+            std::cerr << "Camera trying native GStreamer pipeline at " << width << "x" << height << " on device index " << deviceIndex << std::endl;
             
-            // Clean up any lingering rpicam-vid processes
-            std::system("pkill rpicam-vid");
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-            // Launch rpicam-vid as a background streaming server
-            std::ostringstream rpicamCmd;
-            rpicamCmd << "rpicam-vid -t 0 --camera " << deviceIndex 
-                      << " --width " << width << " --height " << height 
-                      << " --framerate 30 --codec mjpeg --nopreview "
-                      << "-o udp://127.0.0.1:5000 >/tmp/rpicam_log.txt 2>&1 &";
-            std::system(rpicamCmd.str().c_str());
-
-            // Give the stream a moment to start
-            std::this_thread::sleep_for(std::chrono::milliseconds(1500));
-
-            // OpenCV GStreamer pipeline to read the UDP stream
             std::ostringstream pipeline;
-            pipeline << "udpsrc port=5000 caps=\"application/x-rtp,media=(string)video,payload=(int)26,clock-rate=(int)90000\" ! rtpjpegdepay ! jpegdec ! videoconvert ! video/x-raw,format=(string)BGR ! appsink drop=true max-buffers=1";
+            // Native libcamera GStreamer pipeline (videoconvert automatically handles format conversion to BGR for OpenCV)
+            pipeline << "libcamerasrc camera-name=" << deviceIndex << " ! video/x-raw,width=" << width << ",height=" << height 
+                     << " ! videoconvert ! video/x-raw,format=BGR ! appsink drop=true max-buffers=1";
 
-            std::cerr << "Trying GStreamer UDP..." << std::endl;
             if (gVideoStream.capture.open(pipeline.str(), cv::CAP_GSTREAMER)) {
-                
-                std::cerr << "Camera opened with UDP stream at " << width << "x" << height << std::endl;
-                gVideoStream.capture.set(cv::CAP_PROP_BUFFERSIZE, 1.0);
+                std::cerr << "Camera opened with native GStreamer pipeline at " << width << "x" << height << std::endl;
                 
                 cv::Mat warmupFrame;
                 bool warmupSucceeded = false;
@@ -267,19 +250,18 @@ bool Camera::InitializeVideoStream()
                 }
 
                 if (warmupSucceeded) {
-                    std::cerr << "Camera warmup succeeded via UDP on device index " << deviceIndex
+                    std::cerr << "Camera warmup succeeded via native GStreamer on device index " << deviceIndex
                               << " at " << width << "x" << height << std::endl;
                     gVideoStream.activeDeviceIndex = deviceIndex;
                     gVideoStream.initialized = true;
                     return true;
                 }
                 
-                std::cerr << "Camera warmup failed via UDP at " << width << "x" << height << std::endl;
+                std::cerr << "Camera warmup failed via native GStreamer at " << width << "x" << height << std::endl;
                 gVideoStream.capture.release();
             } else {
-                std::cerr << "Camera UDP pipeline failed to open at " << width << "x" << height << std::endl;
+                std::cerr << "Camera native GStreamer pipeline failed to open at " << width << "x" << height << std::endl;
             }
-            std::system("pkill rpicam-vid");
         }
 
         std::cerr << "Camera trying device index " << deviceIndex
