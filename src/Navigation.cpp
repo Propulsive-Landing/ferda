@@ -373,9 +373,9 @@ void Navigation::UpdateNavigation()
         camera_capture_elapsed_s -= kCameraCapturePeriodS;
     }
 
+    const std::vector<Eigen::Vector3d> cameraDirections = camera.GetUnitVectorList();
     const double camera_frame_id = camera.GetFrameId();
     if (x_e(2) > 1.0 && camera_frame_id >= 0.0 && camera_frame_id != last_camera_frame_id) {
-        const std::vector<Eigen::Vector3d> cameraDirections = camera.GetUnitVectorList();
         cameraUpdate(cameraDirections, R);
         last_camera_frame_id = camera_frame_id;
     }
