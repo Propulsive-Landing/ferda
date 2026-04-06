@@ -343,6 +343,8 @@ void Camera::TryProcessPendingLocalCapture()
 
 bool Camera::CaptureLocalFrameAndProcess(double frameId)
 {
+    auto capture_start_time = std::chrono::steady_clock::now();
+
     if (!InitializeVideoStream()) {
         return false;
     }
@@ -382,6 +384,21 @@ bool Camera::CaptureLocalFrameAndProcess(double frameId)
     }
 
     UpdateFromPixelList(frameId, pixelList);
+
+    auto capture_end_time = std::chrono::steady_clock::now();
+    double processing_duration_ms = std::chrono::duration<double, std::milli>(capture_end_time - capture_start_time).count();
+    
+    std::cerr << "[Camera TIMING] Frame " << frameId << " processed in " << processing_duration_ms << " ms. ";
+    if (latestUnitVectorList.empty()) {
+        std::cerr << "Found 0 unit vectors." << std::endl;
+    } else {
+        std::cerr << "Found " << latestUnitVectorList.size() << " unit vector(s):";
+        for (const auto& vec : latestUnitVectorList) {
+            std::cerr << " [" << vec.x() << ", " << vec.y() << ", " << vec.z() << "]";
+        }
+        std::cerr << std::endl;
+    }
+
     return true;
 }
 
