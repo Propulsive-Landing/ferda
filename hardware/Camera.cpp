@@ -75,13 +75,17 @@ private:
 
     void Run()
     {
+        const std::filesystem::path debugDir = std::filesystem::absolute(
+            MissionConstants::kSensorCameraDebugFrameDirectory).lexically_normal();
+        std::cerr << "Camera debug frame output directory: " << debugDir.string() << std::endl;
+
         std::error_code createDirectoryError;
         std::filesystem::create_directories(
-            MissionConstants::kSensorCameraDebugFrameDirectory,
+            debugDir,
             createDirectoryError);
         if (createDirectoryError) {
             std::cerr << "Camera debug frame directory creation failed: "
-                      << MissionConstants::kSensorCameraDebugFrameDirectory
+                      << debugDir.string()
                       << " (" << createDirectoryError.message() << ")" << std::endl;
         }
 
@@ -99,7 +103,7 @@ private:
             }
 
             std::ostringstream filename;
-            filename << MissionConstants::kSensorCameraDebugFrameDirectory << "/"
+            filename << debugDir.string() << "/"
                      << "frame_" << std::setw(6) << std::setfill('0') << static_cast<int>(item.frameId)
                      << ".jpg";
 
