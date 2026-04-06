@@ -375,6 +375,24 @@ bool Camera::CaptureLocalFrameAndProcess(double frameId)
         MissionConstants::kSensorCameraMarkerMinAreaPx,
         MissionConstants::kSensorCameraMaxDetections);
 
+    // Draw bounding boxes around the detected markers for the saved debug frames
+    for (const auto& detection : detections) {
+        // Approximate a radius based on the pixel area of the circle
+        int radius = static_cast<int>(std::sqrt(detection.areaPx / 3.14159265));
+        
+        // Create a bounding box based on the centroid and radius
+        cv::Rect bbox(
+            static_cast<int>(detection.centroidPx.x) - radius,
+            static_cast<int>(detection.centroidPx.y) - radius,
+            radius * 2,
+            radius * 2
+        );
+
+        // Draw the box in green, and a small red cross at the exact centroid
+        cv::rectangle(img, bbox, cv::Scalar(0, 255, 0), 2);
+        cv::drawMarker(img, detection.centroidPx, cv::Scalar(0, 0, 255), cv::MARKER_CROSS, 10, 1);
+    }
+
     GetDebugFrameLogger().Enqueue(frameId, img);
 
     std::vector<std::pair<double, double>> pixelList;
