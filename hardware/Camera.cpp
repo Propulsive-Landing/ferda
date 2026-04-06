@@ -10,6 +10,7 @@
 #include <array>
 #include <cmath>
 #include <condition_variable>
+#include <chrono>
 #include <deque>
 #include <filesystem>
 #include <iomanip>
@@ -189,8 +190,20 @@ bool Camera::InitializeVideoStream()
 
     // Grab one frame at startup so the next request returns a recent image.
     cv::Mat warmupFrame;
-    if (!gVideoStream.capture.read(warmupFrame) || warmupFrame.empty()) {
+    bool warmupSucceeded = false;
+    for (int attempt = 0; attempt < 20; ++attempt) {
+        if (gVideoStream.capture.read(warmupFrame) && !warmupFrame.empty()) {
+            warmupSucceeded = true;
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    if (!warmupSucceeded) {
         std::cerr << "Camera warmup frame read failed on device index " << cameraDeviceIndex << std::endl;
+        gVideoStream.capture.release();
+        gVideoStream.initialized = false;
+        return false;
     }
 
     gVideoStream.initialized = true;
