@@ -64,6 +64,7 @@ namespace MissionConstants
     // Sensor constants, TODO: USER EDIT PRE-FLIGHT
     const double kSensorCameraNoise = 1e-3;
     const int kSensorCameraCaptureTimeoutMs = 1;
+    const int kSensorCameraDeviceIndex = 1;
     const bool kSensorCameraSaveDebugFrames = true;
     const std::string kSensorCameraDebugFrameDirectory = "../images";
     const double kSensorCameraFocalLengthXPx = 1450.0;

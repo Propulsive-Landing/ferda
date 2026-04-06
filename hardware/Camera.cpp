@@ -170,12 +170,16 @@ bool Camera::InitializeVideoStream()
         gVideoStream.capture.release();
     }
 
-    if (!gVideoStream.capture.open(0, cv::CAP_V4L2)) {
-        if (!gVideoStream.capture.open(0, cv::CAP_ANY)) {
+    const int cameraDeviceIndex = MissionConstants::kSensorCameraDeviceIndex;
+    if (!gVideoStream.capture.open(cameraDeviceIndex, cv::CAP_V4L2)) {
+        if (!gVideoStream.capture.open(cameraDeviceIndex, cv::CAP_ANY)) {
+            std::cerr << "Camera open failed for device index " << cameraDeviceIndex << std::endl;
             gVideoStream.initialized = false;
             return false;
         }
     }
+
+    std::cerr << "Camera opened on device index " << cameraDeviceIndex << std::endl;
 
     gVideoStream.capture.set(cv::CAP_PROP_FRAME_WIDTH, MissionConstants::kSensorCameraImageWidthPx);
     gVideoStream.capture.set(cv::CAP_PROP_FRAME_HEIGHT, MissionConstants::kSensorCameraImageHeightPx);
