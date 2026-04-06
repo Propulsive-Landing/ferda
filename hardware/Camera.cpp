@@ -229,21 +229,36 @@ bool Camera::InitializeVideoStream()
         gVideoStream.capture.release();
 
         if (MissionConstants::kSensorCameraUseGStreamer) {
-            std::cerr << "Camera trying GStreamer pipeline at " << width << "x" << height << " on device index " << deviceIndex << std::endl;
-            std::ostringstream pipeline;
-            // Use camera-name=... if you need to select a specific port by index (e.g. camera-name=0 or camera-name=1) 
-            pipeline
-                << "libcamerasrc camera-name=" << deviceIndex << " ! video/x-raw,width=" << width
-                << ",height=" << height
-                << ",format=RGBx ! videoconvert ! video/x-raw,format=BGR ! appsink drop=true max-buffers=1";
+            std::cerr << "Camera trying UDP rpicam-vid pipeline at " << width << "x" << height << " on device index " << deviceIndex << std::endl;
+            
+            // Clean up any lingering rpicam-vid processes
+            std::system("pkill rpicam-vid");
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-            if (gVideoStream.capture.open(pipeline.str(), cv::CAP_GSTREAMER)) {
-                std::cerr << "Camera opened with GStreamer pipeline at " << width << "x" << height << std::endl;
+            // Launch rpicam-vid as a background streaming server
+            std::ostringstream rpicamCmd;
+            rpicamCmd << "rpicam-vid -t 0 --camera " << deviceIndex 
+                      << " --width " << width << " --height " << height 
+                      << " --framerate 30 --codec mjpeg --nopreview --inline "
+                      << "-o udp://127.0.0.1:5000 >/dev/null 2>&1 &";
+            std::system(rpicamCmd.str().c_str());
+
+            // Give the stream a moment to start
+            std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+
+            // OpenCV GStreamer pipeline to read the UDP stream
+            std::ostringstream pipeline;
+            pipeline << "udpsrc port=5000 ! application/x-rtp,media=video,payload=26,clock-rate=90000 ! rtpjpegdepay ! jpegdec ! videoconvert ! video/x-raw,format=BGR ! appsink drop=true max-buffers=1";
+
+            if (gVideoStream.capture.open(pipeline.str(), cv::CAP_GSTREAMER) || 
+                gVideoStream.capture.open("udp://@127.0.0.1:5000", cv::CAP_FFMPEG)) {
+                
+                std::cerr << "Camera opened with UDP stream at " << width << "x" << height << std::endl;
                 gVideoStream.capture.set(cv::CAP_PROP_BUFFERSIZE, 1.0);
                 
                 cv::Mat warmupFrame;
                 bool warmupSucceeded = false;
-                for (int attempt = 0; attempt < 20; ++attempt) {
+                for (int attempt = 0; attempt < 30; ++attempt) {
                     if (gVideoStream.capture.read(warmupFrame) && !warmupFrame.empty()) {
                         warmupSucceeded = true;
                         break;
@@ -252,49 +267,19 @@ bool Camera::InitializeVideoStream()
                 }
 
                 if (warmupSucceeded) {
-                    std::cerr << "Camera warmup succeeded via GStreamer on device index " << deviceIndex
+                    std::cerr << "Camera warmup succeeded via UDP on device index " << deviceIndex
                               << " at " << width << "x" << height << std::endl;
                     gVideoStream.activeDeviceIndex = deviceIndex;
                     gVideoStream.initialized = true;
                     return true;
                 }
                 
-                std::cerr << "Camera warmup failed via GStreamer at " << width << "x" << height << std::endl;
+                std::cerr << "Camera warmup failed via UDP at " << width << "x" << height << std::endl;
                 gVideoStream.capture.release();
             } else {
-                std::cerr << "Camera GStreamer pipeline failed to open at " << width << "x" << height << std::endl;
+                std::cerr << "Camera UDP pipeline failed to open at " << width << "x" << height << std::endl;
             }
-            
-            // Second try without camera-name just in case index lookup fails
-            std::cerr << "Camera trying generic GStreamer pipeline at " << width << "x" << height << std::endl;
-            std::ostringstream genericPipeline;
-            genericPipeline
-                << "libcamerasrc ! video/x-raw,width=" << width
-                << ",height=" << height
-                << ",format=RGBx ! videoconvert ! video/x-raw,format=BGR ! appsink drop=true max-buffers=1";
-                
-            if (gVideoStream.capture.open(genericPipeline.str(), cv::CAP_GSTREAMER)) {
-                std::cerr << "Camera opened with generic GStreamer pipeline at " << width << "x" << height << std::endl;
-                gVideoStream.capture.set(cv::CAP_PROP_BUFFERSIZE, 1.0);
-                
-                cv::Mat warmupFrame;
-                bool warmupSucceeded = false;
-                for (int attempt = 0; attempt < 20; ++attempt) {
-                    if (gVideoStream.capture.read(warmupFrame) && !warmupFrame.empty()) {
-                        warmupSucceeded = true;
-                        break;
-                    }
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                }
-
-                if (warmupSucceeded) {
-                    std::cerr << "Camera warmup succeeded via generic GStreamer at " << width << "x" << height << std::endl;
-                    gVideoStream.activeDeviceIndex = deviceIndex;
-                    gVideoStream.initialized = true;
-                    return true;
-                }
-                gVideoStream.capture.release();
-            }
+            std::system("pkill rpicam-vid");
         }
 
         std::cerr << "Camera trying device index " << deviceIndex
