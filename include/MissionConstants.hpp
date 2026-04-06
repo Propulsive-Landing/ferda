@@ -65,7 +65,7 @@ namespace MissionConstants
     const double kSensorCameraNoise = 1e-3;
     const int kSensorCameraCaptureTimeoutMs = 1;
     const bool kSensorCameraSaveDebugFrames = true;
-    const std::string kSensorCameraDebugFrameDirectory = "..ferda/images";
+    const std::string kSensorCameraDebugFrameDirectory = "images";
     const double kSensorCameraFocalLengthXPx = 1450.0;
     const double kSensorCameraFocalLengthYPx = 1450.0;
     const double kSensorCameraPrincipalPointXPx = 960.0;

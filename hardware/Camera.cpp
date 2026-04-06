@@ -75,7 +75,15 @@ private:
 
     void Run()
     {
-        std::filesystem::create_directories(MissionConstants::kSensorCameraDebugFrameDirectory);
+        std::error_code createDirectoryError;
+        std::filesystem::create_directories(
+            MissionConstants::kSensorCameraDebugFrameDirectory,
+            createDirectoryError);
+        if (createDirectoryError) {
+            std::cerr << "Camera debug frame directory creation failed: "
+                      << MissionConstants::kSensorCameraDebugFrameDirectory
+                      << " (" << createDirectoryError.message() << ")" << std::endl;
+        }
 
         for (;;) {
             DebugFrameItem item;
@@ -95,7 +103,9 @@ private:
                      << "frame_" << std::setw(6) << std::setfill('0') << static_cast<int>(item.frameId)
                      << ".jpg";
 
-            cv::imwrite(filename.str(), item.frame);
+            if (!cv::imwrite(filename.str(), item.frame)) {
+                std::cerr << "Camera debug frame write failed: " << filename.str() << std::endl;
+            }
         }
     }
 
