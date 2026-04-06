@@ -109,6 +109,8 @@ private:
 
             if (!cv::imwrite(filename.str(), item.frame)) {
                 std::cerr << "Camera debug frame write failed: " << filename.str() << std::endl;
+            } else {
+                std::cerr << "Camera debug frame saved: " << filename.str() << std::endl;
             }
         }
     }
@@ -187,7 +189,9 @@ bool Camera::InitializeVideoStream()
 
     // Grab one frame at startup so the next request returns a recent image.
     cv::Mat warmupFrame;
-    gVideoStream.capture.read(warmupFrame);
+    if (!gVideoStream.capture.read(warmupFrame) || warmupFrame.empty()) {
+        std::cerr << "Camera warmup frame read failed on device index " << cameraDeviceIndex << std::endl;
+    }
 
     gVideoStream.initialized = true;
     return true;
@@ -212,6 +216,7 @@ bool Camera::CaptureLocalFrameAndProcess(double frameId)
 
     cv::Mat img;
     if (!gVideoStream.capture.read(img)) {
+        std::cerr << "Camera frame read failed on device index " << MissionConstants::kSensorCameraDeviceIndex << std::endl;
         gVideoStream.initialized = false;
         return false;
     }
@@ -226,6 +231,7 @@ bool Camera::CaptureLocalFrameAndProcess(double frameId)
     }
 
     if (img.empty()) {
+        std::cerr << "Camera captured empty frame on device index " << MissionConstants::kSensorCameraDeviceIndex << std::endl;
         return false;
     }
 
