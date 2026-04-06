@@ -27,6 +27,7 @@ struct VideoStreamState
 {
     bool initialized = false;
     cv::VideoCapture capture;
+    int activeDeviceIndex = -1;
 };
 
 VideoStreamState gVideoStream;
@@ -172,15 +173,24 @@ bool Camera::InitializeVideoStream()
     if (gVideoStream.capture.isOpened()) {
         gVideoStream.capture.release();
     }
+    gVideoStream.activeDeviceIndex = -1;
 
-    const int cameraDeviceIndex = MissionConstants::kSensorCameraDeviceIndex;
+    const int preferredDeviceIndex = MissionConstants::kSensorCameraDeviceIndex;
+    std::vector<int> deviceCandidates;
+    deviceCandidates.push_back(preferredDeviceIndex);
+    for (int idx = 0; idx <= 5; ++idx) {
+        if (idx != preferredDeviceIndex) {
+            deviceCandidates.push_back(idx);
+        }
+    }
+
     const std::array<std::pair<int, int>, 3> resolutionCandidates = {
         std::make_pair(MissionConstants::kSensorCameraImageWidthPx, MissionConstants::kSensorCameraImageHeightPx),
         std::make_pair(1280, 720),
         std::make_pair(640, 480),
     };
 
-    auto tryOpenCapture = [&](int width, int height) -> bool {
+    auto tryOpenCapture = [&](int deviceIndex, int width, int height) -> bool {
         gVideoStream.capture.release();
 
         if (MissionConstants::kSensorCameraUseGStreamer) {
@@ -199,16 +209,16 @@ bool Camera::InitializeVideoStream()
             std::cerr << "Camera GStreamer pipeline failed at " << width << "x" << height << std::endl;
         }
 
-        std::cerr << "Camera trying device index " << cameraDeviceIndex
+        std::cerr << "Camera trying device index " << deviceIndex
                   << " at " << width << "x" << height << std::endl;
-        if (!gVideoStream.capture.open(cameraDeviceIndex, cv::CAP_V4L2)) {
-            if (!gVideoStream.capture.open(cameraDeviceIndex, cv::CAP_ANY)) {
-                std::cerr << "Camera open failed for device index " << cameraDeviceIndex << std::endl;
+        if (!gVideoStream.capture.open(deviceIndex, cv::CAP_V4L2)) {
+            if (!gVideoStream.capture.open(deviceIndex, cv::CAP_ANY)) {
+                std::cerr << "Camera open failed for device index " << deviceIndex << std::endl;
                 return false;
             }
         }
 
-        std::cerr << "Camera opened on device index " << cameraDeviceIndex
+        std::cerr << "Camera opened on device index " << deviceIndex
                   << " with requested resolution " << width << "x" << height << std::endl;
 
         gVideoStream.capture.set(cv::CAP_PROP_FRAME_WIDTH, width);
@@ -227,20 +237,23 @@ bool Camera::InitializeVideoStream()
         }
 
         if (warmupSucceeded) {
-            std::cerr << "Camera warmup succeeded on device index " << cameraDeviceIndex
+            std::cerr << "Camera warmup succeeded on device index " << deviceIndex
                       << " at " << width << "x" << height << std::endl;
+            gVideoStream.activeDeviceIndex = deviceIndex;
             gVideoStream.initialized = true;
             return true;
         }
 
-        std::cerr << "Camera warmup frame read failed on device index " << cameraDeviceIndex
+        std::cerr << "Camera warmup frame read failed on device index " << deviceIndex
                   << " at " << width << "x" << height << std::endl;
         return false;
     };
 
-    for (const auto& resolution : resolutionCandidates) {
-        if (tryOpenCapture(resolution.first, resolution.second)) {
-            return true;
+    for (const int deviceIndex : deviceCandidates) {
+        for (const auto& resolution : resolutionCandidates) {
+            if (tryOpenCapture(deviceIndex, resolution.first, resolution.second)) {
+                return true;
+            }
         }
     }
 
@@ -268,7 +281,7 @@ bool Camera::CaptureLocalFrameAndProcess(double frameId)
 
     cv::Mat img;
     if (!gVideoStream.capture.read(img)) {
-        std::cerr << "Camera frame read failed on device index " << MissionConstants::kSensorCameraDeviceIndex << std::endl;
+        std::cerr << "Camera frame read failed on device index " << gVideoStream.activeDeviceIndex << std::endl;
         gVideoStream.initialized = false;
         return false;
     }
@@ -283,7 +296,7 @@ bool Camera::CaptureLocalFrameAndProcess(double frameId)
     }
 
     if (img.empty()) {
-        std::cerr << "Camera captured empty frame on device index " << MissionConstants::kSensorCameraDeviceIndex << std::endl;
+        std::cerr << "Camera captured empty frame on device index " << gVideoStream.activeDeviceIndex << std::endl;
         return false;
     }
 
