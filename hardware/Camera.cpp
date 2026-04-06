@@ -232,8 +232,10 @@ bool Camera::InitializeVideoStream()
             std::cerr << "Camera trying native GStreamer pipeline at " << width << "x" << height << " on device index " << deviceIndex << std::endl;
             
             std::ostringstream pipeline;
-            // Native libcamera GStreamer pipeline (videoconvert automatically handles format conversion to BGR for OpenCV)
-            pipeline << "libcamerasrc camera-name=" << deviceIndex << " ! video/x-raw,width=" << width << ",height=" << height << ",format=RGBx"
+            // Native libcamera GStreamer pipeline
+            // When only 1 camera is connected on Pi, libcamerasrc generally uses camera-name=/base/axi/... (full path) 
+            // OR auto-selects if we simply omit the camera-name argument. Let's omit it so it auto-selects the only available camera!
+            pipeline << "libcamerasrc ! video/x-raw,width=" << width << ",height=" << height << ",format=RGBx"
                      << " ! videoconvert ! video/x-raw,format=BGR ! appsink drop=true max-buffers=1 sync=false";
 
             if (gVideoStream.capture.open(pipeline.str(), cv::CAP_GSTREAMER)) {
