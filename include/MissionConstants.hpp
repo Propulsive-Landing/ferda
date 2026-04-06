@@ -66,6 +66,7 @@ namespace MissionConstants
     const int kSensorCameraCaptureTimeoutMs = 1;
     const int kSensorCameraDeviceIndex = 0;
     const bool kSensorCameraUseGStreamer = false;
+    const bool kSensorCameraUseCapAnyFallback = false;
     const bool kSensorCameraSaveDebugFrames = true;
     const std::string kSensorCameraDebugFrameDirectory = "../images";
     const double kSensorCameraFocalLengthXPx = 1450.0;

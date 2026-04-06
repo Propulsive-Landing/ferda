@@ -13,11 +13,15 @@
 #include <chrono>
 #include <deque>
 #include <filesystem>
+#include <fcntl.h>
 #include <iomanip>
 #include <ios>
 #include <mutex>
+#include <linux/videodev2.h>
+#include <sys/ioctl.h>
 #include <thread>
 #include <string>
+#include <unistd.h>
 #include <utility>
 #include <vector>
 
@@ -31,6 +35,37 @@ struct VideoStreamState
 };
 
 VideoStreamState gVideoStream;
+
+std::string DevicePathForIndex(int deviceIndex)
+{
+    return std::string("/dev/video") + std::to_string(deviceIndex);
+}
+
+bool IsCaptureDeviceIndex(int deviceIndex)
+{
+    const std::string devicePath = DevicePathForIndex(deviceIndex);
+    const int fd = ::open(devicePath.c_str(), O_RDONLY | O_NONBLOCK);
+    if (fd < 0) {
+        return false;
+    }
+
+    v4l2_capability caps{};
+    const int ioctlResult = ::ioctl(fd, VIDIOC_QUERYCAP, &caps);
+    ::close(fd);
+    if (ioctlResult < 0) {
+        return false;
+    }
+
+    uint32_t deviceCaps = caps.capabilities;
+    if (caps.capabilities & V4L2_CAP_DEVICE_CAPS) {
+        deviceCaps = caps.device_caps;
+    }
+
+    const bool hasCapture = (deviceCaps & V4L2_CAP_VIDEO_CAPTURE) ||
+                            (deviceCaps & V4L2_CAP_VIDEO_CAPTURE_MPLANE);
+    const bool hasStreaming = (deviceCaps & V4L2_CAP_STREAMING);
+    return hasCapture && hasStreaming;
+}
 
 struct DebugFrameItem
 {
@@ -212,8 +247,13 @@ bool Camera::InitializeVideoStream()
         std::cerr << "Camera trying device index " << deviceIndex
                   << " at " << width << "x" << height << std::endl;
         if (!gVideoStream.capture.open(deviceIndex, cv::CAP_V4L2)) {
-            if (!gVideoStream.capture.open(deviceIndex, cv::CAP_ANY)) {
-                std::cerr << "Camera open failed for device index " << deviceIndex << std::endl;
+            if (MissionConstants::kSensorCameraUseCapAnyFallback) {
+                if (!gVideoStream.capture.open(deviceIndex, cv::CAP_ANY)) {
+                    std::cerr << "Camera open failed for device index " << deviceIndex << std::endl;
+                    return false;
+                }
+            } else {
+                std::cerr << "Camera open failed for device index " << deviceIndex << " using V4L2" << std::endl;
                 return false;
             }
         }
@@ -250,6 +290,12 @@ bool Camera::InitializeVideoStream()
     };
 
     for (const int deviceIndex : deviceCandidates) {
+        if (!IsCaptureDeviceIndex(deviceIndex)) {
+            std::cerr << "Camera skipping device index " << deviceIndex
+                      << " because it is not a V4L2 capture device" << std::endl;
+            continue;
+        }
+
         for (const auto& resolution : resolutionCandidates) {
             if (tryOpenCapture(deviceIndex, resolution.first, resolution.second)) {
                 return true;
