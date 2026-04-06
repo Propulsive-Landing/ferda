@@ -174,40 +174,55 @@ bool Camera::InitializeVideoStream()
     }
 
     const int cameraDeviceIndex = MissionConstants::kSensorCameraDeviceIndex;
-    if (!gVideoStream.capture.open(cameraDeviceIndex, cv::CAP_V4L2)) {
-        if (!gVideoStream.capture.open(cameraDeviceIndex, cv::CAP_ANY)) {
-            std::cerr << "Camera open failed for device index " << cameraDeviceIndex << std::endl;
-            gVideoStream.initialized = false;
-            return false;
-        }
-    }
+    const std::array<std::pair<int, int>, 3> resolutionCandidates = {
+        std::make_pair(MissionConstants::kSensorCameraImageWidthPx, MissionConstants::kSensorCameraImageHeightPx),
+        std::make_pair(1280, 720),
+        std::make_pair(640, 480),
+    };
 
-    std::cerr << "Camera opened on device index " << cameraDeviceIndex << std::endl;
-
-    gVideoStream.capture.set(cv::CAP_PROP_FRAME_WIDTH, MissionConstants::kSensorCameraImageWidthPx);
-    gVideoStream.capture.set(cv::CAP_PROP_FRAME_HEIGHT, MissionConstants::kSensorCameraImageHeightPx);
-    gVideoStream.capture.set(cv::CAP_PROP_BUFFERSIZE, 1.0);
-
-    // Grab one frame at startup so the next request returns a recent image.
-    cv::Mat warmupFrame;
-    bool warmupSucceeded = false;
-    for (int attempt = 0; attempt < 20; ++attempt) {
-        if (gVideoStream.capture.read(warmupFrame) && !warmupFrame.empty()) {
-            warmupSucceeded = true;
-            break;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-
-    if (!warmupSucceeded) {
-        std::cerr << "Camera warmup frame read failed on device index " << cameraDeviceIndex << std::endl;
+    for (const auto& resolution : resolutionCandidates) {
         gVideoStream.capture.release();
-        gVideoStream.initialized = false;
-        return false;
+
+        if (!gVideoStream.capture.open(cameraDeviceIndex, cv::CAP_V4L2)) {
+            if (!gVideoStream.capture.open(cameraDeviceIndex, cv::CAP_ANY)) {
+                std::cerr << "Camera open failed for device index " << cameraDeviceIndex << std::endl;
+                gVideoStream.initialized = false;
+                return false;
+            }
+        }
+
+        std::cerr << "Camera opened on device index " << cameraDeviceIndex
+                  << " with requested resolution " << resolution.first << "x" << resolution.second << std::endl;
+
+        gVideoStream.capture.set(cv::CAP_PROP_FRAME_WIDTH, resolution.first);
+        gVideoStream.capture.set(cv::CAP_PROP_FRAME_HEIGHT, resolution.second);
+        gVideoStream.capture.set(cv::CAP_PROP_BUFFERSIZE, 1.0);
+
+        // Grab one frame at startup so the next request returns a recent image.
+        cv::Mat warmupFrame;
+        bool warmupSucceeded = false;
+        for (int attempt = 0; attempt < 20; ++attempt) {
+            if (gVideoStream.capture.read(warmupFrame) && !warmupFrame.empty()) {
+                warmupSucceeded = true;
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        if (warmupSucceeded) {
+            std::cerr << "Camera warmup succeeded on device index " << cameraDeviceIndex
+                      << " at " << resolution.first << "x" << resolution.second << std::endl;
+            gVideoStream.initialized = true;
+            return true;
+        }
+
+        std::cerr << "Camera warmup frame read failed on device index " << cameraDeviceIndex
+                  << " at " << resolution.first << "x" << resolution.second << std::endl;
     }
 
-    gVideoStream.initialized = true;
-    return true;
+    gVideoStream.capture.release();
+    gVideoStream.initialized = false;
+    return false;
 }
 
 void Camera::TryProcessPendingLocalCapture()
