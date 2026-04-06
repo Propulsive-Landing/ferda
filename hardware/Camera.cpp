@@ -239,8 +239,8 @@ bool Camera::InitializeVideoStream()
             std::ostringstream rpicamCmd;
             rpicamCmd << "rpicam-vid -t 0 --camera " << deviceIndex 
                       << " --width " << width << " --height " << height 
-                      << " --framerate 30 --codec mjpeg --nopreview --inline "
-                      << "-o udp://127.0.0.1:5000 >/dev/null 2>&1 &";
+                      << " --framerate 30 --codec mjpeg --nopreview "
+                      << "-o udp://127.0.0.1:5000 >/tmp/rpicam_log.txt 2>&1 &";
             std::system(rpicamCmd.str().c_str());
 
             // Give the stream a moment to start
@@ -248,7 +248,7 @@ bool Camera::InitializeVideoStream()
 
             // OpenCV GStreamer pipeline to read the UDP stream
             std::ostringstream pipeline;
-            pipeline << "udpsrc port=5000 ! application/x-rtp,media=video,payload=26,clock-rate=90000 ! rtpjpegdepay ! jpegdec ! videoconvert ! video/x-raw,format=BGR ! appsink drop=true max-buffers=1";
+            pipeline << "udpsrc port=5000 caps=\"application/x-rtp,media=(string)video,payload=(int)26,clock-rate=(int)90000\" ! rtpjpegdepay ! jpegdec ! videoconvert ! video/x-raw,format=(string)BGR ! appsink drop=true max-buffers=1";
 
             std::cerr << "Trying GStreamer UDP..." << std::endl;
             if (gVideoStream.capture.open(pipeline.str(), cv::CAP_GSTREAMER)) {
