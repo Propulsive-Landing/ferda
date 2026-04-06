@@ -233,8 +233,8 @@ bool Camera::InitializeVideoStream()
             
             std::ostringstream pipeline;
             // Native libcamera GStreamer pipeline (videoconvert automatically handles format conversion to BGR for OpenCV)
-            pipeline << "libcamerasrc camera-name=" << deviceIndex << " ! video/x-raw,width=" << width << ",height=" << height 
-                     << " ! videoconvert ! video/x-raw,format=BGR ! appsink drop=true max-buffers=1";
+            pipeline << "libcamerasrc camera-name=" << deviceIndex << " ! video/x-raw,width=" << width << ",height=" << height << ",format=RGBx"
+                     << " ! videoconvert ! video/x-raw,format=BGR ! appsink drop=true max-buffers=1 sync=false";
 
             if (gVideoStream.capture.open(pipeline.str(), cv::CAP_GSTREAMER)) {
                 std::cerr << "Camera opened with native GStreamer pipeline at " << width << "x" << height << std::endl;
