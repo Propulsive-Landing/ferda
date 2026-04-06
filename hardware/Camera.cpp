@@ -184,6 +184,7 @@ bool Camera::InitializeVideoStream()
         gVideoStream.capture.release();
 
         if (MissionConstants::kSensorCameraUseGStreamer) {
+            std::cerr << "Camera trying GStreamer pipeline at " << width << "x" << height << std::endl;
             std::ostringstream pipeline;
             pipeline
                 << "libcamerasrc ! video/x-raw,width=" << width
@@ -198,6 +199,8 @@ bool Camera::InitializeVideoStream()
             std::cerr << "Camera GStreamer pipeline failed at " << width << "x" << height << std::endl;
         }
 
+        std::cerr << "Camera trying device index " << cameraDeviceIndex
+                  << " at " << width << "x" << height << std::endl;
         if (!gVideoStream.capture.open(cameraDeviceIndex, cv::CAP_V4L2)) {
             if (!gVideoStream.capture.open(cameraDeviceIndex, cv::CAP_ANY)) {
                 std::cerr << "Camera open failed for device index " << cameraDeviceIndex << std::endl;
