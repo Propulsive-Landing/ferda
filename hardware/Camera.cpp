@@ -250,8 +250,8 @@ bool Camera::InitializeVideoStream()
             std::ostringstream pipeline;
             pipeline << "udpsrc port=5000 ! application/x-rtp,media=video,payload=26,clock-rate=90000 ! rtpjpegdepay ! jpegdec ! videoconvert ! video/x-raw,format=BGR ! appsink drop=true max-buffers=1";
 
-            std::cerr << "Trying FFmpeg UDP..." << std::endl;
-            if (gVideoStream.capture.open("udp://@127.0.0.1:5000", cv::CAP_FFMPEG)) {
+            std::cerr << "Trying GStreamer UDP..." << std::endl;
+            if (gVideoStream.capture.open(pipeline.str(), cv::CAP_GSTREAMER)) {
                 
                 std::cerr << "Camera opened with UDP stream at " << width << "x" << height << std::endl;
                 gVideoStream.capture.set(cv::CAP_PROP_BUFFERSIZE, 1.0);
