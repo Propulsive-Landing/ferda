@@ -136,7 +136,27 @@ void Telemetry::RfSendFrame(Navigation &navigation, Controller &controller)
     RF::GetInstance().SendString(json_msg.dump());
 }
 
-void Telemetry::RunTelemetry(Navigation &navigation, Controller &controller, GPS &gps, float HardwareSaveDelta, float RFSaveDelta)
+void Telemetry::RfSendLiquidPropulsionData(PressureTransducer &pt, LoadCell &lc)
+{
+    // Match the original hotfire.ino data structure
+    // Original struct: header (uint32_t), 8 floats, footer (uint32_t)
+    json json_msg;
+    json_msg["data_type"] = "liquid_telem";
+    json_msg["payload"] = {
+        pt.ReadPSI(PressureTransducer::NitrogenLine),    // 0-1000 PSI
+        pt.ReadPSI(PressureTransducer::EthanolTank),     // 0-1000 PSI
+        pt.ReadPSI(PressureTransducer::NitrousLine),     // 0-1000 PSI
+        pt.ReadPSI(PressureTransducer::OxygenLine),      // 0-200 PSI
+        pt.ReadPSI(PressureTransducer::FuelInlet),       // 0-1000 PSI
+        pt.ReadPSI(PressureTransducer::FuelOutlet),      // 0-1000 PSI
+        pt.ReadPSI(PressureTransducer::ChamberPressure), // 0-1000 PSI
+        lc.ReadLBS()                                     // Load cell in pounds
+    };
+
+    RF::GetInstance().SendString(json_msg.dump());
+}
+
+void Telemetry::RunTelemetry(Navigation &navigation, Controller &controller, PressureTransducer &pt, LoadCell &lc, float HardwareSaveDelta, float RFSaveDelta)
 {
 
     /* Start calculate time change*/
@@ -149,13 +169,15 @@ void Telemetry::RunTelemetry(Navigation &navigation, Controller &controller, GPS
 
     if (std::chrono::duration_cast<std::chrono::milliseconds>(hardware_change_time).count() / 1000.0 >= HardwareSaveDelta)
     {
-        HardwareSaveFrame(navigation, controller, gps);
+        HardwareSaveFrame(navigation, controller);
         last_hardware_time = std::chrono::high_resolution_clock::now();
     }
 
+    // Log navigational sensors in RFSendFrame() and Log liquid engine sensors in RfSendLiquidPropulsionData()
     if (std::chrono::duration_cast<std::chrono::milliseconds>(rf_change_time).count() / 1000.0 >= RFSaveDelta)
     {
         RfSendFrame(navigation, controller);
+        RfSendLiquidPropulsionData(pt, lc);
         last_rf_time = std::chrono::high_resolution_clock::now();
     }
 }

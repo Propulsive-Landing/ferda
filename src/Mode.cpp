@@ -5,20 +5,15 @@
 #include "MissionConstants.hpp"
 #include "Telemetry.hpp"
 #include "RF.hpp"
+#include "ValveControl.hpp"
+#include "SparkPlug.hpp"
+#include "PressureTransducer.hpp"
+#include "LoadCell.hpp"
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <iostream>
 #include <thread>
-
-// CONSTANTS TO BE FIGURED OUT LATER
-int abort_threshold = 1;
-int calibration_time = 1;
-int descent_time = 1;
-int total_time = 1;
-double ignition_height = 1;
-double offset = 0.45;
-double gse_height = 0.2800;
 
 Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
@@ -150,6 +145,11 @@ Mode::Phase Mode::UpdateIdle(Navigation &navigation, Controller &controller, IMU
         navigation.reset();
         return Mode::Launch;
     }
+    else if (command == RF::Command::GoHotfireIdle)
+    {
+        Telemetry::GetInstance().Log("Switching mode from idle to HotfireIdle");
+        return Mode::HotfireIdle;
+    }
 
     return Mode::Idle;
 }
@@ -193,7 +193,226 @@ Mode::Phase Mode::UpdateSafeMode(Navigation &navigation, Controller &controller,
     return Mode::Terminate;
 }
 
-bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igniter &igniter, IMU &imu)
+// Liquid Propulsion State Implementations
+Mode::Phase Mode::UpdateHotfireIdle(Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug)
+{
+    navigation.UpdateNavigation();
+
+    RF::Command command = RF::GetInstance().GetCommand();
+
+    if (command == RF::Command::ABORT)
+    {
+        Telemetry::GetInstance().Log("ABORT, EXITING");
+        exit(0);
+    }
+    else if (command == RF::Command::ASITest)
+    {
+        Telemetry::GetInstance().Log("Switching mode from HotfireIdle to ASITest");
+        return Mode::ASITest;
+    }
+    else if (command == RF::Command::WaterFlow)
+    {
+        Telemetry::GetInstance().Log("Switching mode from HotfireIdle to WaterFlow");
+        return Mode::WaterFlow;
+    }
+    else if (command == RF::Command::GoIdle)
+    {
+        Telemetry::GetInstance().Log("Switching mode from HotfireIdle to Idle");
+        return Mode::Idle;
+    }
+    // Handle Valve commands
+    else if (command == RF::Command::ValveNitrogenOpen)
+    {
+        valveControl.OpenValve(ValveControl::Nitrogen);
+    }
+    else if (command == RF::Command::ValveNitrogenClose)
+    {
+        valveControl.CloseValve(ValveControl::Nitrogen);
+    }
+    else if (command == RF::Command::ValvePurgeOpen)
+    {
+        valveControl.OpenValve(ValveControl::Purge);
+    }
+    else if (command == RF::Command::ValvePurgeClose)
+    {
+        valveControl.CloseValve(ValveControl::Purge);
+    }
+    else if (command == RF::Command::ValveMainEthanolOpen)
+    {
+        valveControl.OpenValve(ValveControl::MainEthanol);
+    }
+    else if (command == RF::Command::ValveMainEthanolClose)
+    {
+        valveControl.CloseValve(ValveControl::MainEthanol);
+    }
+    else if (command == RF::Command::ValveMainNitrousOpen)
+    {
+        valveControl.OpenValve(ValveControl::MainNitrous);
+    }
+    else if (command == RF::Command::ValveMainNitrousClose)
+    {
+        valveControl.CloseValve(ValveControl::MainNitrous);
+    }
+    else if (command == RF::Command::ValveASIEthanolOpen)
+    {
+        valveControl.OpenValve(ValveControl::ASIEthanol);
+    }
+    else if (command == RF::Command::ValveASIEthanolClose)
+    {
+        valveControl.CloseValve(ValveControl::ASIEthanol);
+    }
+    else if (command == RF::Command::ValveASIOxygenOpen)
+    {
+        valveControl.OpenValve(ValveControl::ASIOxygen);
+    }
+    else if (command == RF::Command::ValveASIOxygenClose)
+    {
+        valveControl.CloseValve(ValveControl::ASIOxygen);
+    }
+    else if (command == RF::Command::ValveNitrogenBleedOpen)
+    {
+        valveControl.OpenValve(ValveControl::NitrogenBleed);
+    }
+    else if (command == RF::Command::ValveNitrogenBleedClose)
+    {
+        valveControl.CloseValve(ValveControl::NitrogenBleed);
+    }
+    // Handle spark commands
+    else if (command == RF::Command::SparkOn)
+    {
+        sparkPlug.TurnOn();
+    }
+    else if (command == RF::Command::SparkOff)
+    {
+        sparkPlug.TurnOff();
+    }
+
+    return Mode::HotfireIdle;
+}
+
+Mode::Phase Mode::UpdateASITest(Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug,
+                                double currentTime)
+{
+    static double startTime = currentTime;
+    static bool sequenceStarted = false;
+    double seconds_since_start = currentTime - startTime;
+
+    if (!sequenceStarted)
+    {
+        Telemetry::GetInstance().Log("Starting ASI Test sequence");
+        valveControl.OpenValve(ValveControl::ASIOxygen);
+        sparkPlug.TurnOn();
+        sequenceStarted = true;
+    }
+
+    navigation.UpdateNavigation();
+
+    // Sequence timing (matching original hotfire.ino logic)
+    if (seconds_since_start >= 0.3 && seconds_since_start < 2.3)
+    {
+        // Open ASI ethanol after 300ms
+        if (seconds_since_start < 0.31)
+        {
+            valveControl.OpenValve(ValveControl::ASIEthanol);
+        }
+    }
+    else if (seconds_since_start >= 2.3 && seconds_since_start < 2.6)
+    {
+        // Close ASI ethanol and turn off spark after 2 seconds
+        if (seconds_since_start < 2.31)
+        {
+            valveControl.CloseValve(ValveControl::ASIEthanol);
+            sparkPlug.TurnOff();
+        }
+    }
+    else if (seconds_since_start >= 2.6)
+    {
+        // Close ASI oxygen after 2.3 seconds
+        if (seconds_since_start < 2.61)
+        {
+            valveControl.CloseValve(ValveControl::ASIOxygen);
+        }
+        // Return to HotfireIdle after sequence completes
+        if (seconds_since_start >= 3.0)
+        {
+            startTime = 0;
+            sequenceStarted = false;
+            return Mode::HotfireIdle;
+        }
+    }
+
+    RF::Command command = RF::GetInstance().GetCommand();
+    if (command == RF::Command::ABORT)
+    {
+        Telemetry::GetInstance().Log("ABORT during ASI Test, EXITING");
+        // Close all valves and turn off spark
+        valveControl.CloseValve(ValveControl::ASIOxygen);
+        valveControl.CloseValve(ValveControl::ASIEthanol);
+        sparkPlug.TurnOff();
+        exit(0);
+    }
+
+    return Mode::ASITest;
+}
+
+Mode::Phase Mode::UpdateWaterFlow(Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug,
+                                  double currentTime)
+{
+    static double startTime = currentTime;
+    static bool sequenceStarted = false;
+    double seconds_since_start = currentTime - startTime;
+
+    if (!sequenceStarted)
+    {
+        Telemetry::GetInstance().Log("Starting Water Flow sequence");
+        valveControl.OpenValve(ValveControl::MainNitrous);
+        sequenceStarted = true;
+    }
+
+    navigation.UpdateNavigation();
+
+    // Sequence timing (matching original hotfire.ino logic)
+    if (seconds_since_start >= 2.0 && seconds_since_start < 5.0)
+    {
+        // Open main ethanol after 2 seconds
+        if (seconds_since_start < 2.01)
+        {
+            valveControl.OpenValve(ValveControl::MainEthanol);
+        }
+    }
+    else if (seconds_since_start >= 5.0)
+    {
+        // Close both valves after 5 seconds total (3 seconds after ethanol opens)
+        if (seconds_since_start < 5.01)
+        {
+            valveControl.CloseValve(ValveControl::MainNitrous);
+            valveControl.CloseValve(ValveControl::MainEthanol);
+        }
+        // Return to HotfireIdle after sequence completes
+        if (seconds_since_start >= 5.5)
+        {
+            Telemetry::GetInstance().Log("Water Flow sequence completed, returning to HotfireIdle");
+            startTime = 0;
+            sequenceStarted = false;
+            return Mode::HotfireIdle;
+        }
+    }
+
+    RF::Command command = RF::GetInstance().GetCommand();
+    if (command == RF::Command::ABORT)
+    {
+        Telemetry::GetInstance().Log("ABORT during Water Flow, EXITING");
+        // Close all valves
+        valveControl.CloseValve(ValveControl::MainNitrous);
+        valveControl.CloseValve(ValveControl::MainEthanol);
+        exit(0);
+    }
+
+    return Mode::WaterFlow;
+}
+
+bool Mode::Update(Navigation &navigation, Controller &controller, Igniter &igniter, IMU &imu, ValveControl &valveControl,
+                  SparkPlug &sparkPlug, PressureTransducer &pressureTransducer, LoadCell &loadCell)
 {
 
     // Track total elapsed time and delta time
@@ -216,20 +435,32 @@ bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igni
     switch (this->eCurrentMode)
     {
     case Calibration:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, 0.05, 0.08);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, pressureTransducer, loadCell, 0.05, 0.08);
         this->eCurrentMode = UpdateCalibration(navigation, controller, currentTime);
         break;
     case TestTVC:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, 0.05, 0.08);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, pressureTransducer, loadCell, 0.05, 0.08);
         this->eCurrentMode = UpdateTestTVC(navigation, controller, currentTime);
         break;
     case Idle:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, 0.05, 0.08);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, pressureTransducer, loadCell, 0.05, 0.08);
         this->eCurrentMode = UpdateIdle(navigation, controller, imu, currentTime);
         break;
     case Launch:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, 0.01, 0.08);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, pressureTransducer, loadCell, 0.05, 0.08);
         this->eCurrentMode = UpdateLaunch(navigation, controller, igniter, currentTime);
+        break;
+    case HotfireIdle:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, pressureTransducer, loadCell, 0.05, 0.08);
+        this->eCurrentMode = UpdateHotfireIdle(navigation, valveControl, sparkPlug);
+        break;
+    case ASITest:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, pressureTransducer, loadCell, 0.05, 0.08);
+        this->eCurrentMode = UpdateASITest(navigation, valveControl, sparkPlug, currentTime);
+        break;
+    case WaterFlow:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, pressureTransducer, loadCell, 0.05, 0.08);
+        this->eCurrentMode = UpdateWaterFlow(navigation, valveControl, sparkPlug, currentTime);
         break;
     case Safe:
         this->eCurrentMode = UpdateSafeMode(navigation, controller, currentTime);

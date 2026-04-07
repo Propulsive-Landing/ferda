@@ -35,7 +35,7 @@ namespace MissionConstants
     const Eigen::Vector3d kStructuresWetMomentOfInertiaBodyKgm2 = Eigen::Vector3d(30.0, 30.0, 0.44);
     const Eigen::Vector3d kStructuresDryMomentOfInertiaBodyKgm2 = Eigen::Vector3d(20.0, 20.0, 0.34);
     const Eigen::Vector3d kStructuresGroundOffset = Eigen::Vector3d(0.0, 0.0, -1.0); // Position of the ground relative to the rocket's origin (in meters)
-    
+
     // Navigation constants
     const double kNavMagnetometerNoiseFactor = 1.0;
     const double kNavGPSPositionNoiseFactor = 1.0;
@@ -55,11 +55,10 @@ namespace MissionConstants
     const double kNavInitialAccelBiasVariance = 0.5;
     const double kNavInitialGyroBiasVariance = 1e-6;
     inline const Eigen::Matrix<double, 3, 3> kMarkerData =
-        (Eigen::Matrix<double, 3, 3>() <<
-            2.0, 2.0, 5.0,
-            1.7320508075688774, -1.7320508075688774, 0.0,
-            0.0,  0.0,  0.0
-        ).finished();
+        (Eigen::Matrix<double, 3, 3>() << 2.0, 2.0, 5.0,
+         1.7320508075688774, -1.7320508075688774, 0.0,
+         0.0, 0.0, 0.0)
+            .finished();
 
     // Sensor constants, TODO: USER EDIT PRE-FLIGHT
     const double kSensorCameraNoise = 1e-3;
@@ -86,10 +85,10 @@ namespace MissionConstants
     const double kSensorGPSPositionNoiseM = 3.0;
     const double kSensorGPSVelocityNoiseMps = 0.1;
     const double kSensorLidarNoiseM = 0.005;
-    const Eigen::Vector3d kSensorCameraPosition = Eigen::Vector3d(0.2, 0.0, -1); // Position of the camera in the body frame (in meters)
+    const Eigen::Vector3d kSensorCameraPosition = Eigen::Vector3d(0.2, 0.0, -1);                       // Position of the camera in the body frame (in meters)
     const Eigen::Vector3d kSensorCameraOrientationRad = Eigen::Vector3d(0.0, 2.3561944901923448, 0.0); // XYZ Euler orientation from camera frame to body frame
-    const Eigen::Vector3d kSensorGPSPosition = Eigen::Vector3d(0.0, 0.0, 1.0); // Position of the GPS sensor (antenna) in the body frame (in meters)
-    const Eigen::Vector3d kSensorMagnetometerPosition = Eigen::Vector3d(0.0, 0.0, 0.0); // Position of magnetometer in the body frame (in meters)
+    const Eigen::Vector3d kSensorGPSPosition = Eigen::Vector3d(0.0, 0.0, 1.0);                         // Position of the GPS sensor (antenna) in the body frame (in meters)
+    const Eigen::Vector3d kSensorMagnetometerPosition = Eigen::Vector3d(0.0, 0.0, 0.0);                // Position of magnetometer in the body frame (in meters)
 
     // Guidance constants, TODO: USER EDIT PRE-FLIGHT
     const double kGuidanceHoverDurationSeconds = 15.0;
@@ -103,8 +102,8 @@ namespace MissionConstants
     // Throttle control constants, TODO: USER EDIT PRE-FLIGHT
     const double kMaximumTvcAngle = 7.5 * kDeg2Rad;
     const double kMaximumTvcAngleDeg = 7.5;
-    const double kEngineMinThrust = 461.0; // N
-    const double kEngineMaxThrust = 1107; // N
+    const double kEngineMinThrust = 461.0;           // N
+    const double kEngineMaxThrust = 1107;            // N
     const double kThrottleToMassFlowScale = -5.6e-4; // kg/(N*s)
     const Eigen::Vector3d kEngineThrustLocationBodyM = Eigen::Vector3d(0.0, 0.0, -1.13);
 
@@ -116,9 +115,46 @@ namespace MissionConstants
     const double kTvcXInputCenterAngleRad = -0.29;
     const int kTvcXPin = 19;
     const int kTvcYPin = 18;
-    
+
     // Ignition constants, TODO: USER EDIT PRE-FlIGHT
     const int kIgnitionPin = 6;
+
+    // ADS1115 constants
+    const int BASE0 100;
+    const int BASE1 100;
+    const int BASE2 100;
+
+    // Liquid Propulsion Hardware Pins, TODO: USER EDIT PRE-FLIGHT
+    // Valve Servo Pins (PWM)
+    const int kNitrogenServoPin = 6;
+    const int kPurgeServoPin = 0;
+    const int kMainEthanolServoPin = 11;
+    const int kMainNitrousServoPin = 0;
+
+    // Valve Solenoid Pins (GPIO)
+    const int kASIEthanolPin = 0;
+    const int kASIOxygenPin = 5;
+    const int kNitrogenBleedPin = 0;
+
+    // Spark Plug Pins
+    const int kSparkPin = 0; // Relay control
+    const int kRPMPin = 0;   // PWM output
+
+    // Pressure Transducer Pins (Analog)
+    const int kNitrogenLinePTPin = 0;    // A0
+    const int kEthanolTankPTPin = 0;     // A0
+    const int kNitrousLinePTPin = 0;     // A0
+    const int kOxygenLinePTPin = 0;      // A0
+    const int kFuelInletPTPin = 0;       // A0
+    const int kFuelOutletPTPin = 0;      // A0
+    const int kChamberPressurePTPin = 0; // A0
+
+    // Load Cell Pin (Analog)
+    const int kLoadCellPin = 0; // A0
+
+    // Valve Servo Angles
+    const int kValveClosedAngle = 179; // degrees
+    const int kValveOpenAngle = 91;    // degrees
 
     // Voltage reading, TODO: USER EDIT PRE-FLIGHT
     const double kR1 = 100000;
@@ -159,7 +195,7 @@ namespace MissionConstants
     const int MAX_SIZE = 1000;
     inline const char *GPS_Port = "/dev/ttyUSB0";
 
-    //inline const char *GPS_Port = "/dev/cu.usbserial-110";
+    // inline const char *GPS_Port = "/dev/cu.usbserial-110";
 
     namespace NMEA
     {

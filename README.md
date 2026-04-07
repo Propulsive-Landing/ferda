@@ -6,6 +6,15 @@ All source code utilizes [Hungarian Notation](https://www.cse.iitk.ac.in/users/d
 
 Create features in branches originating from the `dev` branch. When a feature is complete, make a pull request to merge it into `dev`.
 
+## Liquid Propulsion Support
+
+This codebase now supports both solid and liquid propulsion systems. For detailed documentation on the liquid propulsion port, see:
+
+- **[Liquid Propulsion Port Documentation](LIQUID_PROPULSION_PORT.md)** - Comprehensive guide covering architecture, implementation, and remaining work
+- **[Liquid Propulsion Quick Start](LIQUID_PROPULSION_QUICK_START.md)** - Quick reference for operators
+
+**Note:** Liquid propulsion hardware requires ADC implementation and pin configuration before use. See the documentation for details.
+
 ## Table of Contents
 
 1. [How to Run](#how-to-run)
