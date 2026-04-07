@@ -153,7 +153,7 @@ namespace MissionConstants
     const int RAD = 0x02;
 
     // RF consants
-    inline const char *RF_Port = "/dev/ttyS0";
+    inline const char *RF_Port = "/dev/ttyUSB1";
 
     // GPS constants
     const int MAX_SIZE = 1000;

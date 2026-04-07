@@ -10,12 +10,11 @@
 IMU::IMU()
 {
     fd = wiringPiI2CSetup(MissionConstants::IMU_i2c_addr);
-    if (fd == -1)
-    {
-        std::cerr << "BNO055 not found!" << std::endl;
-        exit(-1);
-    }
-    // Set power mode
+ 
+    // TODO: Look at acc (0x01) =0xFB, mag (0x02) =0x32, gyro(0x03) =(0x0F) registers-fdefault value using read and see if the defualt vaues match and if not then add boolean flags to disable them in navigation
+    //       primarily do this for magnometer since we will have to use acc and gyro 
+
+    // Set power modewiri
     wiringPiI2CWriteReg8(fd, MissionConstants::POWER_MODE, MissionConstants::POWER_NORMAL);
     delay(10);
 

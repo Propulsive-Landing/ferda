@@ -355,7 +355,6 @@ void GPS::read_data()
         return;
     }
 
-    std::cout << "Received " << bytes_received << "\n";
     for (int i = 0; i < bytes_received; ++i)
     {
         char character = buffer[i];

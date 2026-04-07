@@ -6,7 +6,7 @@ source /home/pi/Documents/venv/bin/activate
 
 echo "Waiting until GPS is fixed" 
 python gps_startup.py 
-echo "GPS is fix"
+echo "GPS has fix"
 
 # Configure terminal settings to be raw
 stty -F "$PORT" 9600 raw -echo -ixon

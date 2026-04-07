@@ -16,6 +16,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt install -y libgtest-dev libeigen3-dev libi2c-dev cmake
+        sudo apt install -y libopencv-dev
 
     - name: Install WiringPi from source
       run: |

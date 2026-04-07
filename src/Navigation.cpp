@@ -403,7 +403,7 @@ void Navigation::UpdateNavigation()
     }
 
     camera_capture_elapsed_s += loopTime;
-    if (camera_capture_elapsed_s >= kCameraCapturePeriodS)
+    if (camera_capture_elapsed_s >= kCameraCapturePeriodS && false)
     {
         camera.RequestCapture();
         camera_capture_elapsed_s -= kCameraCapturePeriodS;
