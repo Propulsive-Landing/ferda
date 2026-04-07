@@ -11,9 +11,7 @@ std::tuple<double, double, double>  Magnetometer::GetMagneticField()
     double nMagX = (double)read16LE(fd, MissionConstants::REG_MAG_X) / 16.0f;
     double nMagY = (double)read16LE(fd, MissionConstants::REG_MAG_Y) / 16.0f;
     double nMagZ = (double)read16LE(fd, MissionConstants::REG_MAG_Z) / 16.0f;
-
-    double norm = sqrt(pow(nMagX,2) + pow(nMagY,2) + pow(nMagZ,2));
     
-    return std::make_tuple(nMagX / norm, nMagY / norm, nMagZ / norm);
+    return std::make_tuple(nMagX, nMagY, nMagZ);
 
 }

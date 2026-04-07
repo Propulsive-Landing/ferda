@@ -5,6 +5,7 @@
 #include <termios.h>
 #include <fstream>
 #include <map>
+#include <vector>
 #include "MissionConstants.hpp"
 
 class GPS
@@ -17,6 +18,8 @@ private:
         double E;
         double N;
         double U;
+        double E_velocity;
+        double N_velocity;
         double altitude;
         double course;
         double speed;
@@ -34,15 +37,12 @@ private:
     // Used for validity checking
     bool valid;
 
-    // Boolean flag used to see if gps is used
+    // Used as a flag to see if GPS is plugged in
     bool found_gps;
 
     // GPS only outputs 3 bytes at a time it seems
     char buffer[MissionConstants::MAX_SIZE];
 
-public:
-    GPS();
-    ~GPS();
     std::string get_message();
     std::vector<std::string> get_acculumated_messages();
     void reset_acculumated_messages();
@@ -56,9 +56,16 @@ public:
     float convert_latitude(const std::string &latitude, const char &latitude_direction);
     float convert_longitude(const std::string &longitude, const char &longitude_direction);
     float convert_speed_to_meter_per_seconds(const std::string &speed);
+    void convert_speed_course_to_velocity();
     void convert_coordinate_frame();
+    void set_valid(bool state);
+
+public:
+    GPS();
+    ~GPS();
+    void Update();
     std::tuple<double, double, double> GetGPSPosition();
+    std::tuple<double, double> GetGPSVelocity();
     bool GPSAvailable();
     bool GPSUsed();
-    void set_valid(bool state);
 };

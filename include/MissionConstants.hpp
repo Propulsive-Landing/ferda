@@ -23,40 +23,100 @@ namespace MissionConstants
     // Physical constants
     const double kPi = 3.1415926535897932384626433;
     const double kGravity = 9.80298; // calculated at Ashford Town Park using https://www.sensorsone.com/local-gravity-calculator/#height
-    const double kPressureH = 0.0;   // TODO: calculate H
+    const Eigen::Vector3d kEarthMagField = Eigen::Vector3d(-4.8415717072661559, 20.116087207173326, -46.952237491806379);
     const double kRad2Deg = 180 / kPi;
     const double kDeg2Rad = kPi / 180;
 
+    // Structure constants
+    const double kStructuresWetMassKg = 94.0;
+    const double kStructuresDryMassKg = 66.0;
+    const Eigen::Vector3d kStructuresWetCenterOfMassBodyM = Eigen::Vector3d(0.0, 0.0, 0.5);
+    const Eigen::Vector3d kStructuresDryCenterOfMassBodyM = Eigen::Vector3d(0.0, 0.0, -0.5);
+    const Eigen::Vector3d kStructuresWetMomentOfInertiaBodyKgm2 = Eigen::Vector3d(30.0, 30.0, 0.44);
+    const Eigen::Vector3d kStructuresDryMomentOfInertiaBodyKgm2 = Eigen::Vector3d(20.0, 20.0, 0.34);
+    const Eigen::Vector3d kStructuresGroundOffset = Eigen::Vector3d(0.0, 0.0, -1.0); // Position of the ground relative to the rocket's origin (in meters)
+    
     // Navigation constants
-    const double kNavThetaDotSmooth = 0.05;
-    const double kFswLoopTime = .005;
-    const double kFSWCalibrationTime = 0.05;
-    const double originalOffsetAngle = 5 * kDeg2Rad;
-    const Eigen::Vector3d kEarthMagField = Eigen::Vector3d(-0.089, 0.378, -0.921).normalized(); // Unit vector pointing in the direction of Earth's magnetic field
-    const Eigen::Vector3d kSensorCameraPosition = Eigen::Vector3d(0.2, 0.2, -1);                // Position of the camera in the body frame (in meters)
+    const double kNavMagnetometerNoiseFactor = 1.0;
+    const double kNavGPSPositionNoiseFactor = 1.0;
+    const double kNavGPSVelocityNoiseFactor = 1.0;
+    const double kNavLidarNoiseFactor = 10.0;
+    const double kNavCameraNoiseFactor = 1.5;
+    const double kNavAccelWhiteNoiseSigma = 0.02;
+    const double kNavGyroWhiteNoiseSigma = 0.0025;
+    const double kNavAccelBiasRandomWalkSigma = 0.0;
+    const double kNavGyroBiasRandomWalkSigma = 0.0;
+    const double kNavPadVelocityNoiseMps = 1e-3;
+    const double kNavPadAngularVelocityNoiseRadps = 1e-4;
+    const double kNavCameraAssociationUnassignedPenaltyRad = 0.10;
+    const double kNavInitialPositionVariance = 1e-5;
+    const double kNavInitialVelocityVariance = 1e-6;
+    const double kNavInitialAttitudeVariance = 1e-2;
+    const double kNavInitialAccelBiasVariance = 0.5;
+    const double kNavInitialGyroBiasVariance = 1e-6;
     inline const Eigen::Matrix<double, 3, 3> kMarkerData =
-        (Eigen::Matrix<double, 3, 3>() << -2.5, -2.5, 5.0,
-         4.3301, -4.3301, 0.0,
-         0.5, 0.5, 0.5)
-            .finished();
+        (Eigen::Matrix<double, 3, 3>() <<
+            2.0, 2.0, 5.0,
+            1.7320508075688774, -1.7320508075688774, 0.0,
+            0.0,  0.0,  0.0
+        ).finished();
 
-    // Controller constants, TODO: USER EDIT PRE-FLIGHT
+    // Sensor constants, TODO: USER EDIT PRE-FLIGHT
+    const double kSensorCameraNoise = 1e-3;
+    const int kSensorCameraCaptureTimeoutMs = 1;
+    const int kSensorCameraDeviceIndex = 0;
+    const bool kSensorCameraUseGStreamer = true;
+    const bool kSensorCameraUseCapAnyFallback = false;
+    const bool kSensorCameraSaveDebugFrames = true;
+    const std::string kSensorCameraDebugFrameDirectory = "../images";
+    const double kSensorCameraFocalLengthXPx = 1450.0;
+    const double kSensorCameraFocalLengthYPx = 1450.0;
+    const double kSensorCameraPrincipalPointXPx = 960.0;
+    const double kSensorCameraPrincipalPointYPx = 540.0;
+    const double kSensorCameraDistortionK1 = 0.0;
+    const double kSensorCameraDistortionK2 = 0.0;
+    const double kSensorCameraDistortionP1 = 0.0;
+    const double kSensorCameraDistortionP2 = 0.0;
+    const double kSensorCameraDistortionK3 = 0.0;
+    const int kSensorCameraImageWidthPx = 1920;
+    const int kSensorCameraImageHeightPx = 1080;
+    const int kSensorCameraMaxDetections = 5;
+    const int kSensorCameraMarkerMinAreaPx = 2000;
+    const double kSensorMagnetometerNoise = 1; // Magnetometer measurement noise (Tesla)
+    const double kSensorGPSPositionNoiseM = 3.0;
+    const double kSensorGPSVelocityNoiseMps = 0.1;
+    const double kSensorLidarNoiseM = 0.005;
+    const Eigen::Vector3d kSensorCameraPosition = Eigen::Vector3d(0.2, 0.0, -1); // Position of the camera in the body frame (in meters)
+    const Eigen::Vector3d kSensorCameraOrientationRad = Eigen::Vector3d(0.0, 2.3561944901923448, 0.0); // XYZ Euler orientation from camera frame to body frame
+    const Eigen::Vector3d kSensorGPSPosition = Eigen::Vector3d(0.0, 0.0, 1.0); // Position of the GPS sensor (antenna) in the body frame (in meters)
+    const Eigen::Vector3d kSensorMagnetometerPosition = Eigen::Vector3d(0.0, 0.0, 0.0); // Position of magnetometer in the body frame (in meters)
+
+    // Guidance constants, TODO: USER EDIT PRE-FLIGHT
+    const double kGuidanceHoverDurationSeconds = 15.0;
+    const double kGuidanceSlowReferenceVelocityMps = 0.5;
+    const double kGuidanceFastReferenceVelocityMps = 5.0;
+    const double kGuidanceHoverTargetAltitudeM = 10.0;
+    const double kGuidanceTakeoffAltitudeThresholdM = 1.0;
+    const double kGuidanceDescendTransitionAltitudeM = 2.0;
+    const double kGuidanceAccelerationMargin = 0.75; // Use fraction of max acceleration/deceleration for safety margin
+
+    // Throttle control constants, TODO: USER EDIT PRE-FLIGHT
     const double kMaximumTvcAngle = 7.5 * kDeg2Rad;
     const double kMaximumTvcAngleDeg = 7.5;
+    const double kEngineMinThrust = 461.0; // N
+    const double kEngineMaxThrust = 1107; // N
+    const double kThrottleToMassFlowScale = -5.6e-4; // kg/(N*s)
+    const Eigen::Vector3d kEngineThrustLocationBodyM = Eigen::Vector3d(0.0, 0.0, -1.13);
 
-    const double kControlIntegralPeriod = 0.25;
+    // TVC Constants, TODO: USER EDIT PRE-FLIGHT
     const double kDeg2PulseWidth = ((double)1000.0) / ((double)90.0);
     const double kTvcXCenterAngleDeg = -10;
     const double kTvcYCenterAngleDeg = -55;
     const double kTvcYInputCenterAngleRad = 0.12;
     const double kTvcXInputCenterAngleRad = -0.29;
-    const double TVCPeriod = 0.02;
     const int kTvcXPin = 19;
     const int kTvcYPin = 18;
-    const int kNumberControllerGains = 10;
-    const double weights_control_velocity = 0;
-    const double weights_control_steady_state = 0;
-    const double timeToStartControllerBeforeIgnite2 = 0.2;
+    
     // Ignition constants, TODO: USER EDIT PRE-FlIGHT
     const int kIgnitionPin = 6;
 

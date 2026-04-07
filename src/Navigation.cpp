@@ -1,5 +1,7 @@
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
 #include <cmath>
+#include <algorithm>
 #include <deque>
 #include <vector>
 #include <map>
@@ -7,27 +9,234 @@
 #include <iostream>
 #include <chrono>
 #include <iomanip>
+#include <limits>
+#include <numeric>
 
 #include "Navigation.hpp"
 #include "MissionConstants.hpp"
 #include <iostream>
 
-Navigation::Navigation(IMU &inputImu, Magnetometer &inputMagnetometer, GPS &inputGps, Camera &inputCamera, TVC &inputTvc) : imu(inputImu), magnetometer(inputMagnetometer), gps(inputGps), camera(inputCamera), tvc(inputTvc)
+namespace
+{
+    struct PredictedMarker
+    {
+        int markerIdx = -1;
+        double d = 0.0;
+        Eigen::Vector3d rho = Eigen::Vector3d::Zero();
+        Eigen::Vector3d u = Eigen::Vector3d::Zero();
+    };
+
+    double AngularErrorRad(const Eigen::Vector3d &measured, const Eigen::Vector3d &predicted)
+    {
+        const double cosTheta = std::clamp(measured.dot(predicted), -1.0, 1.0);
+        return std::acos(cosTheta);
+    }
+
+    bool SolveHungarianRectangular(
+        const std::vector<std::vector<double>> &costs,
+        std::vector<int> &assignment,
+        double &totalCost)
+    {
+        if (costs.empty() || costs.front().empty())
+        {
+            return false;
+        }
+
+        const int rows = static_cast<int>(costs.size());
+        const int cols = static_cast<int>(costs.front().size());
+        if (rows > cols)
+        {
+            return false;
+        }
+
+        for (int r = 0; r < rows; ++r)
+        {
+            if (static_cast<int>(costs[r].size()) != cols)
+            {
+                return false;
+            }
+        }
+
+        std::vector<double> u(rows + 1, 0.0);
+        std::vector<double> v(cols + 1, 0.0);
+        std::vector<int> p(cols + 1, 0);
+        std::vector<int> way(cols + 1, 0);
+
+        for (int i = 1; i <= rows; ++i)
+        {
+            p[0] = i;
+            int j0 = 0;
+            std::vector<double> minv(cols + 1, std::numeric_limits<double>::infinity());
+            std::vector<bool> used(cols + 1, false);
+
+            do
+            {
+                used[j0] = true;
+                const int i0 = p[j0];
+                double delta = std::numeric_limits<double>::infinity();
+                int j1 = 0;
+
+                for (int j = 1; j <= cols; ++j)
+                {
+                    if (used[j])
+                    {
+                        continue;
+                    }
+
+                    const double cur = costs[i0 - 1][j - 1] - u[i0] - v[j];
+                    if (cur < minv[j])
+                    {
+                        minv[j] = cur;
+                        way[j] = j0;
+                    }
+                    if (minv[j] < delta)
+                    {
+                        delta = minv[j];
+                        j1 = j;
+                    }
+                }
+
+                if (!std::isfinite(delta))
+                {
+                    return false;
+                }
+
+                for (int j = 0; j <= cols; ++j)
+                {
+                    if (used[j])
+                    {
+                        u[p[j]] += delta;
+                        v[j] -= delta;
+                    }
+                    else
+                    {
+                        minv[j] -= delta;
+                    }
+                }
+                j0 = j1;
+            } while (p[j0] != 0);
+
+            do
+            {
+                const int j1 = way[j0];
+                p[j0] = p[j1];
+                j0 = j1;
+            } while (j0 != 0);
+        }
+
+        assignment.assign(rows, -1);
+        for (int j = 1; j <= cols; ++j)
+        {
+            if (p[j] != 0)
+            {
+                assignment[p[j] - 1] = j - 1;
+            }
+        }
+
+        totalCost = 0.0;
+        for (int i = 0; i < rows; ++i)
+        {
+            if (assignment[i] < 0 || assignment[i] >= cols)
+            {
+                return false;
+            }
+            totalCost += costs[i][assignment[i]];
+        }
+
+        return std::isfinite(totalCost);
+    }
+
+    bool AssignByHungarian(
+        const std::vector<std::vector<double>> &costs,
+        std::vector<int> &assignment,
+        double &totalCost)
+    {
+        if (costs.empty() || costs.front().empty())
+        {
+            return false;
+        }
+
+        const int numMeasurements = static_cast<int>(costs.size());
+        const int numPredictions = static_cast<int>(costs.front().size());
+
+        std::vector<std::vector<double>> augmentedCosts(
+            numMeasurements,
+            std::vector<double>(numPredictions + numMeasurements,
+                                MissionConstants::kNavCameraAssociationUnassignedPenaltyRad));
+
+        for (int i = 0; i < numMeasurements; ++i)
+        {
+            for (int j = 0; j < numPredictions; ++j)
+            {
+                augmentedCosts[i][j] = costs[i][j];
+            }
+        }
+
+        std::vector<int> rawAssignment;
+        if (!SolveHungarianRectangular(augmentedCosts, rawAssignment, totalCost))
+        {
+            return false;
+        }
+
+        assignment.assign(numMeasurements, -1);
+        for (int i = 0; i < numMeasurements; ++i)
+        {
+            if (rawAssignment[i] >= 0 && rawAssignment[i] < numPredictions)
+            {
+                assignment[i] = rawAssignment[i];
+            }
+        }
+
+        return true;
+    }
+
+    bool AssignCameraMarkers(
+        const std::vector<Eigen::Vector3d> &measuredBody,
+        const std::vector<PredictedMarker> &predictions,
+        std::vector<int> &assignment,
+        double &totalCost)
+    {
+        const int numMeasurements = static_cast<int>(measuredBody.size());
+        const int numPredictions = static_cast<int>(predictions.size());
+        if (numMeasurements == 0 || numPredictions == 0)
+        {
+            return false;
+        }
+
+        std::vector<std::vector<double>> costs(
+            numMeasurements,
+            std::vector<double>(numPredictions, 0.0));
+
+        for (int measurementIdx = 0; measurementIdx < numMeasurements; ++measurementIdx)
+        {
+            for (int predictionIdx = 0; predictionIdx < numPredictions; ++predictionIdx)
+            {
+                costs[measurementIdx][predictionIdx] =
+                    AngularErrorRad(measuredBody[measurementIdx], predictions[predictionIdx].rho);
+            }
+        }
+
+        return AssignByHungarian(costs, assignment, totalCost);
+    }
+} // namespace
+
+Navigation::Navigation(IMU &inputImu, Magnetometer &inputMagnetometer, GPS &inputGps, Lidar &inputLidar, Camera &inputCamera, TVC &inputTvc) : imu(inputImu), magnetometer(inputMagnetometer), gps(inputGps), lidar(inputLidar), camera(inputCamera), tvc(inputTvc)
 {
     stateMat = Eigen::Matrix<double, 16, 1>::Zero();
-    // Set z position to rocket com
-    stateMat(2) = 0.28;
     // Initializes Quaternion to [1,0,0,0] equivalent to 0 roll, 0 pitch, 0 yaw
     stateMat(6) = 1;
 
     Eigen::VectorXd d(15);
-    d << 1e-5, 1e-5, 1e-5,   // Position variances
-        10e-3, 10e-3, 10e-3, // Velocity variances
-        0.1, 0.1, 0.1,       // Attitude variances
-        1e-2, 1e-2, 1e-2,    // Accelerometer bias variances
-        1e-5, 1e-5, 1e-5;    // Gyroscope bias variances
+    d << MissionConstants::kNavInitialPositionVariance, MissionConstants::kNavInitialPositionVariance, MissionConstants::kNavInitialPositionVariance,   // Position variances
+        MissionConstants::kNavInitialVelocityVariance, MissionConstants::kNavInitialVelocityVariance, MissionConstants::kNavInitialVelocityVariance,    // Velocity variances
+        MissionConstants::kNavInitialAttitudeVariance, MissionConstants::kNavInitialAttitudeVariance, MissionConstants::kNavInitialAttitudeVariance,    // Attitude variances
+        MissionConstants::kNavInitialAccelBiasVariance, MissionConstants::kNavInitialAccelBiasVariance, MissionConstants::kNavInitialAccelBiasVariance, // Accelerometer bias variances
+        MissionConstants::kNavInitialGyroBiasVariance, MissionConstants::kNavInitialGyroBiasVariance, MissionConstants::kNavInitialGyroBiasVariance;    // Gyroscope bias variances
 
     P = d.asDiagonal();
+    estimatedMassKg = MissionConstants::kStructuresWetMassKg;
+    estimatedMassFraction = 1.0;
+    UpdateMassPropertyEstimates();
 
     // Logging for SIL testing
     // dataFile.open("data.csv", std::ios::app);
@@ -35,17 +244,14 @@ Navigation::Navigation(IMU &inputImu, Magnetometer &inputMagnetometer, GPS &inpu
 
 void Navigation::reset()
 {
-    // Preserve bias estimates when resetting for launch
-    Eigen::Vector3d a_b_saved = stateMat.segment(10, 3);
-    Eigen::Vector3d w_b_saved = stateMat.segment(13, 3);
-
-    stateMat = Eigen::Matrix<double, 16, 1>::Zero();
-    stateMat(2) = 0.28;
-    stateMat(6) = 1;
-
-    // Restore the bias estimates
-    stateMat.segment(10, 3) = a_b_saved;
-    stateMat.segment(13, 3) = w_b_saved;
+    estimatedMassKg = MissionConstants::kStructuresWetMassKg;
+    estimatedMassFraction = 1.0;
+    gps_update_counter = 0;
+    lidar_update_counter = 0;
+    magnetometer_update_counter = 0;
+    camera_capture_elapsed_s = 0.0;
+    last_camera_frame_id = -1.0;
+    UpdateMassPropertyEstimates();
 }
 
 Eigen::Matrix<double, 16, 1> Navigation::GetNavigation()
@@ -95,7 +301,8 @@ void Navigation::UpdateNavigation()
     w_b = stateMat.segment(13, 3);
 
     Eigen::Matrix3d R = q.toRotationMatrix();
-    Eigen::Vector3d g(0, 0, -9.81);
+    const double g = MissionConstants::kGravity; // m/s^2
+    Eigen::Vector3d g_vec(0, 0, -g);
 
     // Create 2 tuples to hold the the linear acceleration and angular rate data from the imu
     linearAcceleration = imu.GetBodyAcceleration();
@@ -104,14 +311,16 @@ void Navigation::UpdateNavigation()
     Eigen::Vector3d a_m(std::get<0>(linearAcceleration), std::get<1>(linearAcceleration), std::get<2>(linearAcceleration));
     Eigen::Vector3d w_m(std::get<0>(angularRate), std::get<1>(angularRate), std::get<2>(angularRate));
 
+    // std::cout << a_b.transpose() << ", " << w_b.transpose() << "\n";
+
     // Logging for SIL testing
     // dataFile << std::fixed << std::setprecision(6)
     //          << x_e(0) << "," << x_e(1) << "," << x_e(2) << ","
     //          << v_e(0) << "," << v_e(1) << "," << v_e(2) << "\n";
 
     // Nominal State Calculation //
-    x_e += v_e * loopTime + 0.5 * (R * (a_m - a_b) + g) * loopTime * loopTime;
-    v_e += (R * (a_m - a_b) + g) * loopTime;
+    x_e += v_e * loopTime + 0.5 * (R * (a_m - a_b) + g_vec) * loopTime * loopTime;
+    v_e += (R * (a_m - a_b) + g_vec) * loopTime;
 
     // Small-angle quaternion
     Eigen::Vector3d theta = (w_m - w_b) * loopTime;
@@ -149,10 +358,10 @@ void Navigation::UpdateNavigation()
     Fi.block<3, 3>(9, 6) = Eigen::Matrix3d::Identity();
     Fi.block<3, 3>(12, 9) = Eigen::Matrix3d::Identity();
 
-    double sigma_a_n = 0.0316;
-    double sigma_w_n = 0.00224;
-    double sigma_a_w = 0;
-    double sigma_w_w = 0;
+    const double sigma_a_n = MissionConstants::kNavAccelWhiteNoiseSigma;
+    const double sigma_w_n = MissionConstants::kNavGyroWhiteNoiseSigma;
+    const double sigma_a_w = MissionConstants::kNavAccelBiasRandomWalkSigma;
+    const double sigma_w_w = MissionConstants::kNavGyroBiasRandomWalkSigma;
 
     Eigen::MatrixXd Qi = Eigen::MatrixXd::Zero(12, 12);
     Qi.block<3, 3>(0, 0) = sigma_a_n * sigma_a_n * loopTime * loopTime * Eigen::Matrix3d::Identity();
@@ -164,51 +373,60 @@ void Navigation::UpdateNavigation()
     P = Fx * P * Fx.transpose() + Fi * Qi * Fi.transpose();
 
     // Update state estimates with available measurements
-    magnometer_count += 1;
-    if (magnometer_count == 10) // 60 HZ
+
+    // Update magnetometer on fixed cadence
+    ++magnetometer_update_counter;
+    if (magnetometer_update_counter >= kMagnetometerUpdateCadence && false)
     {
         magneticField = magnetometer.GetMagneticField();
         Eigen::Vector3d magneticFieldVector(std::get<0>(magneticField), std::get<1>(magneticField), std::get<2>(magneticField));
         magnetometerUpdate(magneticFieldVector, R);
-        magnometer_count = 0;
+        magnetometer_update_counter = 0; // Reset counter
     }
-    gps_count += 1;
-    if (gps_count == 20 && gps.GPSUsed()) // 1 HZ
+    ++gps_update_counter;
+    if (gps_update_counter == kGPSUpdateCadence)
     {
-        // static auto last_time = std::chrono::high_resolution_clock::now();
-        // auto time_now = std::chrono::high_resolution_clock::now();
-        // unsigned int nanoseconds_since_start = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - last_time).count();
-        // double change_time = nanoseconds_since_start / 1000000000.0;
-        // last_time = time_now;
-        // std::cout << change_time << "\n";
-        // std::cout << "here" << "\n";
-        gps.read_data();
-        std::map<std::string, std::vector<std::string>> hist = gps.retrieve_all_NMEA_sentences();
-        gps.reset_acculumated_messages();
-        gps.set_valid(true);
-        for (const auto &sentence_info : hist)
+        if (gps.GPSUsed())
         {
-            gps.parse_NMEA_type(sentence_info.first, sentence_info.second);
+            gps.Update();
+
+            if (gps.GPSAvailable())
+            {
+                gpsPosition = gps.GetGPSPosition();
+                gpsVelocity = gps.GetGPSVelocity();
+                Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
+                Eigen::Vector2d gpsVelocityVector(std::get<0>(gpsVelocity), std::get<1>(gpsVelocity));
+                gpsUpdate(gpsPositionVector, gpsVelocityVector);
+            }
         }
-        if (gps.GPSAvailable())
-        {
-            gps.convert_coordinate_frame();
-            gpsPosition = gps.GetGPSPosition();
-            Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
-            gpsUpdate(gpsPositionVector);
-            gps.set_valid(false);
-        }
-        gps_count = 0;
+        gps_update_counter = 0;
     }
 
-    if (std::get<0>(camera.CameraAvailable()) > 0.5 && x_e(2) > 2.0)
+    camera_capture_elapsed_s += loopTime;
+    if (camera_capture_elapsed_s >= kCameraCapturePeriodS)
     {
-        cameraDirections = camera.GetUnitVectors();
-        Eigen::VectorXd cameraDirectionsVector(9);
-        cameraDirectionsVector << std::get<0>(cameraDirections), std::get<1>(cameraDirections), std::get<2>(cameraDirections),
-            std::get<3>(cameraDirections), std::get<4>(cameraDirections), std::get<5>(cameraDirections),
-            std::get<6>(cameraDirections), std::get<7>(cameraDirections), std::get<8>(cameraDirections);
-        cameraUpdate(cameraDirectionsVector, R);
+        camera.RequestCapture();
+        camera_capture_elapsed_s -= kCameraCapturePeriodS;
+    }
+
+    const std::vector<Eigen::Vector3d> cameraDirections = camera.GetUnitVectorList();
+    const double camera_frame_id = camera.GetFrameId();
+    if (x_e(2) > 1.0 && camera_frame_id >= 0.0 && camera_frame_id != last_camera_frame_id)
+    {
+        cameraUpdate(cameraDirections, R);
+        last_camera_frame_id = camera_frame_id;
+    }
+
+    // Update lidar on fixed cadence near ground.
+    ++lidar_update_counter;
+    if (lidar_update_counter >= kLidarUpdateCadence && false)
+    {
+        if (x_e(2) < 4.0)
+        {
+            double lidarDistance = std::get<0>(lidar.GetLidarDistance());
+            lidarUpdate(lidarDistance, R);
+        }
+        lidar_update_counter = 0; // Reset counter
     }
 
     Eigen::Vector3d angularRateVector = Eigen::Vector3d(std::get<0>(angularRate), std::get<1>(angularRate), std::get<2>(angularRate));
@@ -217,7 +435,7 @@ void Navigation::UpdateNavigation()
     // Apply pad updates when on the pad (idle mode)
     if (onPad)
     {
-        padUpdatePosition();
+        padUpdateVelocity();
         padUpdateAngularVelocity(w);
     }
 
@@ -237,31 +455,91 @@ void Navigation::magnetometerUpdate(const Eigen::Vector3d &magneticField, const 
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
     H.block<3, 3>(0, 6) = skew(R.transpose() * MissionConstants::kEarthMagField);
     Eigen::Vector3d y_pred = R.transpose() * MissionConstants::kEarthMagField;
-    kalmanUpdate(H, (1e-2) * (1e-2) * Eigen::Matrix3d::Identity(), magneticField, y_pred);
+
+    const double mag_noise = MissionConstants::kSensorMagnetometerNoise;
+    Eigen::MatrixXd V = MissionConstants::kNavMagnetometerNoiseFactor *
+                        mag_noise * mag_noise * Eigen::Matrix3d::Identity();
+
+    kalmanUpdate(H, V, magneticField, y_pred);
 }
 
-void Navigation::gpsUpdate(const Eigen::Vector3d &gpsPosition)
+void Navigation::gpsUpdate(const Eigen::Vector3d &gpsPosition, const Eigen::Vector2d &gpsVelocity)
+{
+    const Eigen::Vector3d sensor_r_gps_orig = MissionConstants::kSensorGPSPosition;
+
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(5, 15);
+    H.block<3, 3>(0, 0) = Eigen::Matrix3d::Identity();
+    H.block<2, 2>(3, 3) = Eigen::Matrix2d::Identity();
+
+    Eigen::VectorXd y = Eigen::VectorXd::Zero(5);
+    y << gpsPosition(0), gpsPosition(1), gpsPosition(2), gpsVelocity(0), gpsVelocity(1);
+
+    Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(5);
+    y_pred << x_e(0) + sensor_r_gps_orig(0), x_e(1) + sensor_r_gps_orig(1), x_e(2) + sensor_r_gps_orig(2), v_e(0), v_e(1);
+
+    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(5, 5);
+    V.block<3, 3>(0, 0) = MissionConstants::kNavGPSPositionNoiseFactor *
+                          MissionConstants::kSensorGPSPositionNoiseM * MissionConstants::kSensorGPSPositionNoiseM *
+                          Eigen::Matrix3d::Identity();
+    V.block<2, 2>(3, 3) = MissionConstants::kNavGPSVelocityNoiseFactor *
+                          MissionConstants::kSensorGPSVelocityNoiseMps * MissionConstants::kSensorGPSVelocityNoiseMps *
+                          Eigen::Matrix2d::Identity();
+
+    // std::cout << "GPS Difference" << (gpsPosition(0) - y_pred(0)) << ", "
+    //           << (gpsPosition(1) - y_pred(1)) << ", "
+    //           << (gpsPosition(2) - y_pred(2)) << "\n";
+
+    kalmanUpdate(H, V, y, y_pred);
+}
+
+void Navigation::lidarUpdate(double lidar, const Eigen::Matrix3d &R)
+{
+    const Eigen::Vector3d sensor_lidar_dir_orig(0.0, 0.0, -1.0);
+    const Eigen::Vector3d sensor_r_lidar_orig(0.2, 0.0, 0.5);
+
+    Eigen::VectorXd y = Eigen::VectorXd::Zero(1);
+    y(0) = lidar;
+
+    // Distance to z=0 plane along the current lidar pointing ray.
+    const Eigen::Vector3d pointing_dir = R * sensor_lidar_dir_orig;
+    const Eigen::Vector3d sensor_loc = x_e + R * sensor_r_lidar_orig;
+    if (std::abs(pointing_dir(2)) < 1e-6)
+    {
+        return;
+    }
+
+    Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(1);
+    y_pred(0) = sensor_loc(2);
+
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(1, 15);
+    H(0, 2) = -1.0 / pointing_dir(2);
+
+    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(1, 1);
+    V(0, 0) = MissionConstants::kNavLidarNoiseFactor *
+              MissionConstants::kSensorLidarNoiseM *
+              MissionConstants::kSensorLidarNoiseM;
+
+    kalmanUpdate(H, V, y, y_pred);
+}
+
+void Navigation::padUpdateVelocity()
 {
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
-    H.block<3, 3>(0, 0) = Eigen::Matrix3d::Identity();
-    kalmanUpdate(H, (3) * (3) * Eigen::Matrix3d::Identity(), gpsPosition, x_e);
+    H.block<3, 3>(0, 3) = Eigen::Matrix3d::Identity();
+    Eigen::Vector3d initialVelocity = Eigen::Vector3d(0, 0, 0);
+    // Zero-velocity update: measurement is zero, prediction is current estimated velocity.
+    const double pad_velocity_sigma = MissionConstants::kNavPadVelocityNoiseMps;
+    kalmanUpdate(H, pad_velocity_sigma * pad_velocity_sigma * Eigen::Matrix3d::Identity(), initialVelocity, v_e);
 }
 
-void Navigation::padUpdatePosition()
-{
-    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
-    H.block<3, 3>(0, 0) = Eigen::Matrix3d::Identity();
-    Eigen::Vector3d initialPosition = Eigen::Vector3d(0, 0, 0.28); // [TODO] Get actual pad position
-    kalmanUpdate(H, (1e-3) * (1e-3) * Eigen::Matrix3d::Identity(), initialPosition, x_e);
-}
-
-void Navigation::padUpdateAngularVelocity(const Eigen::Vector3d &w)
+void Navigation::padUpdateAngularVelocity(const Eigen::Vector3d &angularVelocity)
 {
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
     H.block<3, 3>(0, 12) = Eigen::Matrix3d::Identity();
-    Eigen::Vector3d initialAngularVelocity = Eigen::Vector3d(0, 0, 0);
-    // TODO: replace with sigma_w_n from constants file
-    kalmanUpdate(H, (0.00224) * (0.00224) * Eigen::Matrix3d::Identity(), w, initialAngularVelocity);
+    // On-pad pseudo-measurement model: measured gyro rate ~= gyro bias (true body rate ~= 0).
+    Eigen::Vector3d predictedAngularVelocity = w_b;
+    const double pad_angular_velocity_sigma = MissionConstants::kNavPadAngularVelocityNoiseRadps;
+    kalmanUpdate(H, pad_angular_velocity_sigma * pad_angular_velocity_sigma * Eigen::Matrix3d::Identity(), angularVelocity, predictedAngularVelocity);
 }
 
 void Navigation::SetOnPad(bool isOnPad)
@@ -269,29 +547,104 @@ void Navigation::SetOnPad(bool isOnPad)
     onPad = isOnPad;
 }
 
-void Navigation::cameraUpdate(const Eigen::VectorXd &cameraDirectionsVector, const Eigen::Matrix3d &R)
+void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d> &cameraDirections, const Eigen::Matrix3d &R)
 {
-    int N = MissionConstants::kMarkerData.cols();
-    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3 * N, 15);
-    Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(3 * N);
+    const int N = MissionConstants::kMarkerData.cols();
 
+    const Eigen::Vector3d eul = MissionConstants::kSensorCameraOrientationRad;
+    const Eigen::Matrix3d DCM_bc =
+        (Eigen::AngleAxisd(eul.x(), Eigen::Vector3d::UnitX()).toRotationMatrix() *
+         Eigen::AngleAxisd(eul.y(), Eigen::Vector3d::UnitY()).toRotationMatrix() *
+         Eigen::AngleAxisd(eul.z(), Eigen::Vector3d::UnitZ()).toRotationMatrix());
+
+    std::vector<Eigen::Vector3d> measuredBody;
+    measuredBody.reserve(cameraDirections.size());
+    for (const Eigen::Vector3d &measuredCam : cameraDirections)
+    {
+        if (measuredCam.norm() > 0.5)
+        {
+            measuredBody.push_back((DCM_bc * measuredCam).normalized());
+        }
+    }
+
+    const int M = static_cast<int>(measuredBody.size());
+    if (M == 0)
+    {
+        return;
+    }
+
+    std::vector<PredictedMarker> predictions;
+    predictions.reserve(N);
     for (int i = 0; i < N; ++i)
     {
-        Eigen::Vector3d delta =
-            R.transpose() * (MissionConstants::kMarkerData.col(i) - x_e) + MissionConstants::kSensorCameraPosition;
+        const Eigen::Vector3d delta =
+            R.transpose() * (MissionConstants::kMarkerData.col(i) + MissionConstants::kStructuresGroundOffset - x_e) -
+            MissionConstants::kSensorCameraPosition;
 
-        double d = delta.norm();
-        Eigen::Vector3d rho = delta / d;
-        Eigen::Vector3d u = (MissionConstants::kMarkerData.col(i) - x_e) / d;
-        y_pred.segment<3>(3 * i) = rho;
+        const double d = delta.norm();
+        if (d < 1e-9)
+        {
+            continue;
+        }
 
-        H.block<3, 3>(3 * i, 0) =
-            -R.transpose() * (Eigen::Matrix3d::Identity() - u * u.transpose()) / d;
-
-        H.block<3, 3>(3 * i, 6) =
-            skew(R.transpose() * u);
+        PredictedMarker prediction;
+        prediction.markerIdx = i;
+        prediction.d = d;
+        prediction.rho = delta / d;
+        prediction.u = (R.transpose() * delta) / d;
+        predictions.push_back(prediction);
     }
-    kalmanUpdate(H, (1e-3) * (1e-3) * Eigen::MatrixXd::Identity(3 * N, 3 * N), cameraDirectionsVector, y_pred);
+
+    std::vector<int> assignment;
+    double totalAngularError = std::numeric_limits<double>::infinity();
+    if (!AssignCameraMarkers(measuredBody, predictions, assignment, totalAngularError))
+    {
+        return;
+    }
+
+    std::vector<std::pair<int, int>> matchedPairs;
+    matchedPairs.reserve(static_cast<size_t>(M));
+
+    for (int k = 0; k < M; ++k)
+    {
+        const int predictionIdx = assignment[k];
+        if (predictionIdx < 0 || predictionIdx >= static_cast<int>(predictions.size()))
+        {
+            continue;
+        }
+        matchedPairs.emplace_back(k, predictionIdx);
+    }
+
+    const int K = static_cast<int>(matchedPairs.size());
+
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3 * K, 15);
+    Eigen::VectorXd y = Eigen::VectorXd::Zero(3 * K);
+    Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(3 * K);
+
+    for (int k = 0; k < K; ++k)
+    {
+        const int measurementIdx = matchedPairs[k].first;
+        const int predictionIdx = matchedPairs[k].second;
+        const PredictedMarker &prediction = predictions[predictionIdx];
+        const int row = 3 * k;
+
+        y.segment<3>(row) = measuredBody[measurementIdx];
+        y_pred.segment<3>(row) = prediction.rho;
+        H.block<3, 3>(row, 0) =
+            -R.transpose() * (Eigen::Matrix3d::Identity() - prediction.u * prediction.u.transpose()) / prediction.d;
+        H.block<3, 3>(row, 6) = skew(R.transpose() * prediction.u);
+    }
+
+    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(3 * K, 3 * K);
+    const double cameraNoise = MissionConstants::kNavCameraNoiseFactor *
+                               MissionConstants::kSensorCameraNoise *
+                               MissionConstants::kSensorCameraNoise;
+    for (int k = 0; k < K; ++k)
+    {
+        V.block<3, 3>(3 * k, 3 * k) = cameraNoise * Eigen::Matrix3d::Identity();
+    }
+
+    kalmanUpdate(H, V, y, y_pred);
 }
 
 void Navigation::kalmanUpdate(
@@ -327,6 +680,65 @@ std::tuple<double, double, double> Navigation::GetLinearAcceleration()
 std::tuple<double, double, double> Navigation::GetAngularAcceleration()
 {
     return angularRate;
+}
+
+void Navigation::UpdateMassFractionEstimate(double throttleCommandN)
+{
+    const double wetMassKg = MissionConstants::kStructuresWetMassKg;
+    const double dryMassKg = MissionConstants::kStructuresDryMassKg;
+    const double propellantMassKg = wetMassKg - dryMassKg;
+
+    if (propellantMassKg <= 0.0)
+    {
+        estimatedMassKg = dryMassKg;
+        estimatedMassFraction = 0.0;
+        return;
+    }
+
+    const double commandedThrustN = std::max(0.0, throttleCommandN);
+    const double massFlowRateKgPerS = commandedThrustN * MissionConstants::kThrottleToMassFlowScale;
+
+    estimatedMassKg += massFlowRateKgPerS * loopTime;
+    if (estimatedMassKg < dryMassKg)
+    {
+        estimatedMassKg = dryMassKg;
+    }
+    else if (estimatedMassKg > wetMassKg)
+    {
+        estimatedMassKg = wetMassKg;
+    }
+
+    estimatedMassFraction = (estimatedMassKg - dryMassKg) / propellantMassKg;
+    UpdateMassPropertyEstimates();
+}
+
+void Navigation::UpdateMassPropertyEstimates()
+{
+    const double alpha = std::clamp(estimatedMassFraction, 0.0, 1.0);
+    estimatedCenterOfMassBodyM = MissionConstants::kStructuresDryCenterOfMassBodyM +
+                                 alpha * (MissionConstants::kStructuresWetCenterOfMassBodyM - MissionConstants::kStructuresDryCenterOfMassBodyM);
+    estimatedMomentOfInertiaBodyKgm2 = MissionConstants::kStructuresDryMomentOfInertiaBodyKgm2 +
+                                       alpha * (MissionConstants::kStructuresWetMomentOfInertiaBodyKgm2 - MissionConstants::kStructuresDryMomentOfInertiaBodyKgm2);
+}
+
+double Navigation::GetEstimatedMassFraction()
+{
+    return estimatedMassFraction;
+}
+
+double Navigation::GetEstimatedMassKg()
+{
+    return estimatedMassKg;
+}
+
+Eigen::Vector3d Navigation::GetEstimatedCenterOfMassBodyM()
+{
+    return estimatedCenterOfMassBodyM;
+}
+
+Eigen::Vector3d Navigation::GetEstimatedMomentOfInertiaBodyKgm2()
+{
+    return estimatedMomentOfInertiaBodyKgm2;
 }
 
 std::tuple<double, double, double> Navigation::GetMagneticField()

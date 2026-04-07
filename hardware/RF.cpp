@@ -31,14 +31,18 @@ RF::RF()
     SerialFd = open(MissionConstants::RF_Port, O_RDWR);
     // SerialPort = fopen("./virtual_rf.txt", "w+");
 
-    int flags = fcntl(SerialFd, F_GETFL, 0);
-    fcntl(SerialFd, F_SETFL, flags | O_NONBLOCK);
-
     // If RF through XBEE fails, switch to terminal
     if (SerialFd < 0)
     {
+        // TODO: FIGURE OUT HOW TO INDI RECURSIVE DEPENEDNECY AND USE TELEMTRY LOGGING HERE
+        // Telemetry::GetInstance().Log("Switching to terminal controls");
         std::cout << "Switching to terminal controls" << "\n";
         terminal_switch = true;
+    }
+    else
+    {
+        int flags = fcntl(SerialFd, F_GETFL, 0);
+        fcntl(SerialFd, F_SETFL, flags | O_NONBLOCK);
     }
 }
 

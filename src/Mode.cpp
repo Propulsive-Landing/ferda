@@ -202,7 +202,7 @@ bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igni
     // Helpful when running SIL
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     auto time_now = std::chrono::high_resolution_clock::now();
-    unsigned int nanoseconds_since_start = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - last_time).count();
+    long long nanoseconds_since_start = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - last_time).count();
     double change_time = nanoseconds_since_start / 1000000000.0;
     last_time = time_now;
 

@@ -4,11 +4,17 @@
 
 Camera::Camera() {}
 
-std::tuple<double, double, double, double, double, double, double, double, double> Camera::GetUnitVectors()
+void Camera::RequestCapture()
 {
-    return UDPClient::GetInstance().GetUnitVectors();
+    // Simulation provides camera vectors asynchronously via UDP.
 }
-std::tuple<double> Camera::CameraAvailable()
+
+std::vector<Eigen::Vector3d> Camera::GetUnitVectorList()
 {
-    return UDPClient::GetInstance().GetCameraAvailable();
+    return UDPClient::GetInstance().GetUnitVectorList();
+}
+
+double Camera::GetFrameId()
+{
+    return UDPClient::GetInstance().GetCameraFrameId();
 }

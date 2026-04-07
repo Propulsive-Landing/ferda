@@ -1,6 +1,5 @@
-// Update GPS class for hardware implementation
+// hardware/GPS.cpp
 
-// hardware_simulation/GPS.cpp
 #include "GPS.hpp"
 #include <fcntl.h>
 #include <unistd.h>
@@ -10,13 +9,29 @@
 #include <iomanip>
 #include <cmath>
 #include "MissionConstants.hpp"
+#include "Telemetry.hpp"
 
 GPS::GPS()
 {
+    // Set gps_info values to defaults
+    gps_info.latitude = -1;
+    gps_info.longitude = -1;
+    gps_info.altitude = -1;
+    gps_info.E = -1;
+    gps_info.N = -1;
+    gps_info.U = -1;
+    gps_info.course = -1;
+    gps_info.speed = -1;
+    gps_info.E_velocity = -1;
+    gps_info.N_velocity = -1;
+
+    // Set Valid flag to false in constructor
+    valid = false;
+
     fd = open(MissionConstants::GPS_Port, O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0)
     {
-        std::cerr << "Error opening GPS port" << "\n";
+        Telemetry::GetInstance().Log("Warning: GPS port unavailable, continuing without GPS");
         found_gps = false;
     }
     else
@@ -31,29 +46,46 @@ GPS::GPS()
 
         GPSReceived.open("../logs/GPSReceived" + str + ".txt");
 
-        // Set gps_info values to a default -1
-        gps_info.latitude = -1;
-        gps_info.longitude = -1;
-        gps_info.altitude = -1;
-        gps_info.E = -1;
-        gps_info.N = -1;
-        gps_info.U = -1;
-        gps_info.course = -1;
-        gps_info.speed = -1;
-
-        // Get rid of any garbage values o startup
+        // Get rid of any garbage values on startup
         tcflush(fd, TCIFLUSH);
-        valid = false;
     }
 }
 
 GPS::~GPS()
 {
     GPSReceived.close();
-    int status = close(fd);
-    if (found_gps && status < 0)
+    if (fd >= 0)
     {
-        std::cerr << "Error closing port" << "\n";
+        int status = close(fd);
+        if (status < 0)
+        {
+            std::cerr << "Error closing port" << "\n";
+            exit(-1);
+        }
+    }
+}
+
+void GPS::Update()
+{
+    read_data();
+    std::map<std::string, std::vector<std::string>> hist = retrieve_all_NMEA_sentences();
+    reset_acculumated_messages();
+
+    if (hist.empty())
+    {
+        set_valid(false);
+        return;
+    }
+
+    set_valid(true);
+    for (const auto &sentence_info : hist)
+    {
+        parse_NMEA_type(sentence_info.first, sentence_info.second);
+    }
+
+    if (GPSAvailable())
+    {
+        convert_coordinate_frame();
     }
 }
 
@@ -189,6 +221,7 @@ void GPS::parse_RMC(const std::vector<std::string> &nmea_message_parts)
 
     gps_info.speed = speed;
     gps_info.course = course;
+    convert_speed_course_to_velocity();
 }
 
 void GPS::parse_GGA(const std::vector<std::string> &nmea_message_parts)
@@ -207,6 +240,11 @@ void GPS::parse_GGA(const std::vector<std::string> &nmea_message_parts)
 std::tuple<double, double, double> GPS::GetGPSPosition()
 {
     return std::make_tuple(gps_info.E, gps_info.N, gps_info.U);
+}
+
+std::tuple<double, double> GPS::GetGPSVelocity()
+{
+    return std::make_tuple(gps_info.E_velocity, gps_info.N_velocity);
 }
 
 void GPS::convert_coordinate_frame()
@@ -230,6 +268,15 @@ void GPS::convert_coordinate_frame()
     gps_info.E = E;
     gps_info.N = N;
     gps_info.U = U;
+}
+
+void GPS::convert_speed_course_to_velocity()
+{
+    double speed = gps_info.speed;
+    double course = gps_info.course * MissionConstants::kDeg2Rad;
+
+    gps_info.E_velocity = speed * std::sin(course);
+    gps_info.N_velocity = speed * std::cos(course);
 }
 
 std::map<std::string, std::vector<std::string>> GPS::retrieve_all_NMEA_sentences()
@@ -263,6 +310,12 @@ std::map<std::string, std::vector<std::string>> GPS::retrieve_all_NMEA_sentences
                           gga_times.begin(), gga_times.end(),
                           back_inserter(intersection_results));
 
+    // Safety check
+    if (intersection_results.empty())
+    {
+        return history;
+    }
+
     int max_common_element = intersection_results[intersection_results.size() - 1];
 
     history[MissionConstants::NMEA::RMC::RMC] = rmc_history[max_common_element];
@@ -272,6 +325,11 @@ std::map<std::string, std::vector<std::string>> GPS::retrieve_all_NMEA_sentences
 
 void GPS::read_data()
 {
+    // Safety check
+    if (fd < 0)
+    {
+        return;
+    }
 
     auto now = std::chrono::system_clock::now();
 
@@ -287,9 +345,17 @@ void GPS::read_data()
     oss << std::put_time(&tm, "%d-%m-%Y %H:%M:%S")
         << "." << std::setw(3) << std::setfill('0') << ms;
 
-    // It seems to only send 3 bytes at at time; Might have to do with frequency but probably not
     // Either way, this code fully reads the message and it will only break if buffer exceeds the max size of buffer
+    // which might happeb if the gps settings were not set so we are reading every sentence each 10 times per second
     int bytes_received = read(fd, buffer, sizeof(buffer));
+
+    // Safety check
+    if (bytes_received <= 0)
+    {
+        return;
+    }
+
+    std::cout << "Received " << bytes_received << "\n";
     for (int i = 0; i < bytes_received; ++i)
     {
         char character = buffer[i];
@@ -307,7 +373,7 @@ void GPS::read_data()
         }
     }
 
-    memset(buffer, 0, bytes_received);
+    memset(buffer, 0, static_cast<size_t>(bytes_received));
 }
 
 bool GPS::GPSAvailable()

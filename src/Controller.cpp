@@ -77,7 +77,7 @@ void Controller::AttitudeControl(Navigation &navigation)
     x_control.segment(2, 2) =  theta_error;                    // Roll and pitch error relative to setpoint
     x_control.segment(4, 2) =  velocity_error;                 // Velocity error term
 
-    CalculateInput();
+    CalculateInput(navigation);
 }
 
 // shut down rocket functions
@@ -86,13 +86,19 @@ void Controller::UpdateSafe()
     // TODO. Center TVC, turn off reaction wheel, etc.
 }
 
-void Controller::CalculateInput()
+void Controller::CalculateInput(Navigation &navigation)
 {
     // This calculates u = -Kx
 
-    // TODO: fix hardcded MOI correction factor of 0.03
-    input = -0.03 * angle_controller_gains * x_control;
-    
+    const Eigen::Vector3d estimatedMoiBody = navigation.GetEstimatedMomentOfInertiaBodyKgm2();
+    const Eigen::Vector3d estimatedComBody = navigation.GetEstimatedCenterOfMassBodyM();
+    const double lateralMoi = 0.5 * (estimatedMoiBody(0) + estimatedMoiBody(1));
+    const double thrustForScaling = std::max(std::abs(current_thrust_command_N), MissionConstants::kEngineMinThrust);
+    const double momentArm = std::abs(estimatedComBody(2) - MissionConstants::kEngineThrustLocationBodyM(2));
+    const double controlScale = lateralMoi / (thrustForScaling * momentArm);
+
+    input = -controlScale * angle_controller_gains * x_control;
+
     if (input.norm() > MissionConstants::kMaximumTvcAngle)
     {
         input = input * MissionConstants::kMaximumTvcAngle / input.norm();
@@ -132,14 +138,18 @@ Eigen::Matrix<double, 16, 1> x = navigation.GetNavigation();
                      e_vx, e_vy;
 
     // Compute setpoint angles: [roll_setpoint, pitch_setpoint]
-    // TODO: 4.9 is the thrust over mass. It should be imported in real time
-    setpoint_angles = translation_controller_gains * x_translation * (0.083333);
+    double mass = navigation.GetEstimatedMassKg();
+    double thrust = current_thrust_command_N;
+    if (std::abs(thrust) < 1e-6)
+    {
+        thrust = MissionConstants::kEngineMinThrust;
+    }
+    setpoint_angles = translation_controller_gains * x_translation * (mass / thrust);
 }
 
 void Controller::HeightControl(Navigation& navigation)
 {
-    // TODO: use value from constants file
-    constexpr double g = 9.81;
+    const double g = MissionConstants::kGravity; // m/s^2
 
     Eigen::Matrix<double, 16, 1> x = navigation.GetNavigation();
 
@@ -159,18 +169,25 @@ void Controller::HeightControl(Navigation& navigation)
     height_error_integral += e_z * loopTime;
 
     // Acceleration command
-    
     Eigen::Vector3d height_control_vector = Eigen::Vector3d(height_error_integral, e_z, e_zdot);
-    
     double zddot_cmd = height_controller_gains * height_control_vector + refAccelerationZ;
 
-    //Placeholder mass. TODO: estimate mass over time
-    double mass = 94; // kg
+    // Use navigation's current vehicle mass estimate
+    double mass = navigation.GetEstimatedMassKg(); // kg
 
-    // Convert to force
-    double thrust_cmd = mass * (zddot_cmd + g);
+    // Convert to force and clamp to engine throttle limits
+    double thrust_cmd = (mass * (zddot_cmd + g));
+    if (thrust_cmd < MissionConstants::kEngineMinThrust)
+    {
+        thrust_cmd = MissionConstants::kEngineMinThrust;
+    }
+    else if (thrust_cmd > MissionConstants::kEngineMaxThrust)
+    {
+        thrust_cmd = MissionConstants::kEngineMaxThrust;
+    }
 
-    engine.SetThrust(thrust_cmd); // Newtons
+    current_thrust_command_N = thrust_cmd;
+    engine.SetThrust(thrust_cmd, x.segment<3>(0), x.segment<3>(3)); // Newtons + navigation state
 }
 
 void Controller::Center()
@@ -294,12 +311,12 @@ void Controller::ImportAngleParameters(std::string file_name)
     in.close();
 }
 
-int Controller::GetCurrentIterationIndex()
-{
-    return current_iteration_index;
-}
-
 Eigen::Matrix<double, 2, 1> Controller::GetCurrentTVCCommand()
 {
     return input;
+}
+
+double Controller::GetCurrentThrustCommand()
+{
+    return current_thrust_command_N;
 }

@@ -20,9 +20,6 @@ public:
     void SetHoverTargetAltitude(double alt) { hoverTargetAltitude = alt; }
     void SetHoverDuration(double t) { hoverDurationSeconds = t; }
     void SetVelocities(double slowVel, double fastVel) { slowReferenceVelocity = slowVel; fastReferenceVelocity = fastVel; }
-    void SetAccelDecel(double maxAcc, double maxDecel) { currentMaxAcceleration = maxAcc; currentMaxDeceleration = maxDecel; }
-    void SetCurrentMaxAcceleration(double a);
-    void SetCurrentMaxDeceleration(double d);
 
     void Reset();
 
@@ -37,6 +34,7 @@ public:
     double hoverTargetAltitude;
     double takeoffAltitudeThreshold;
     double descendTransitionAltitude;
+    double accelerationMargin;
 
     double currentMaxAcceleration;
     double currentMaxDeceleration;

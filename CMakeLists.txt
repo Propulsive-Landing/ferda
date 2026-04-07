@@ -50,6 +50,9 @@ elseif(CMAKE_BUILD_TYPE STREQUAL Simulation)
     )
 else()
     target_link_libraries(Ferda Eigen3::Eigen wiringPi PiPCA9685 i2c nlohmann_json::nlohmann_json)
+    find_package(OpenCV REQUIRED)
+    target_include_directories(Ferda PRIVATE ${OpenCV_INCLUDE_DIRS})
+    target_link_libraries(Ferda ${OpenCV_LIBS})
 endif()
 
 

@@ -47,13 +47,18 @@ void Telemetry::HardwareSaveFrame(Navigation &navigation, Controller &controller
         HardwareSaved << std::to_string(navigation.GetNavigation()(i)) << ", ";
     }
 
-    HardwareSaved << std::to_string(std::get<0>(gps.GetGPSPosition())) << ", ";
-    HardwareSaved << std::to_string(std::get<1>(gps.GetGPSPosition())) << ", ";
-    HardwareSaved << std::to_string(std::get<2>(gps.GetGPSPosition())) << ", ";
+    std::tuple<double, double, double> gpsPos = gps.GetGPSPosition();
+    std::tuple<double, double> gpsVel = gps.GetGPSVelocity();
+
+    HardwareSaved << std::to_string(std::get<0>(gpsPos)) << ", ";
+    HardwareSaved << std::to_string(std::get<1>(gpsPos)) << ", ";
+    HardwareSaved << std::to_string(std::get<2>(gpsPos)) << ", ";
+
+    HardwareSaved << std::to_string(std::get<0>(gpsVel)) << ", ";
+    HardwareSaved << std::to_string(std::get<1>(gpsVel)) << ", ";
 
     HardwareSaved << std::to_string(controller.GetCurrentTVCCommand()[0]) << ", ";
     HardwareSaved << std::to_string(controller.GetCurrentTVCCommand()[1]) << ", ";
-    HardwareSaved << std::to_string(controller.GetCurrentIterationIndex());
 
     std::tuple<double, double, double> linAc = navigation.GetLinearAcceleration();
     std::tuple<double, double, double> angAc = navigation.GetAngularAcceleration();
@@ -168,7 +173,7 @@ Telemetry::Telemetry()
     HardwareSaved.open("../logs/data" + str + ".txt");
     SensorSaved.open("../logs/sensors" + str + ".txt");
 
-    HardwareSaved << "Date, x, y, z, vx, vy, vz, q1, q2, q3, q4, ab1, ab2, ab3, wb1, wb2, wb3, E, N, U, ux, uy, K_Matrix_Index \n";
+    HardwareSaved << "Date, x, y, z, vx, vy, vz, q1, q2, q3, q4, ab1, ab2, ab3, wb1, wb2, wb3, E, N, U, E_Vel, N_Vel, ux, uy \n";
     SensorSaved << "Date, accelX, accelY, accelZ, gyroX, gryoY, gyroZ, magx, magy, magz \n";
 
     // TODO Write headers to data file where needed

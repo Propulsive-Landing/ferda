@@ -8,5 +8,5 @@ class Engine
 {
     public:
         Engine() = default;
-        void SetThrust(double thrust_N); 
+    void SetThrust(double thrust_N, const Eigen::Vector3d &position_e, const Eigen::Vector3d &velocity_e);
 };
