@@ -97,7 +97,7 @@ int main()
 
     Telemetry::GetInstance().Log("Starting program...");
 
-    while (mode.Update(navigation, controller, igniter, imu, valveControl, sparkPlug, pressureTransducer, loadCell))
+    while (mode.Update(navigation, controller, gps, igniter, imu, valveControl, sparkPlug, pressureTransducer, loadCell))
     {
     }
 

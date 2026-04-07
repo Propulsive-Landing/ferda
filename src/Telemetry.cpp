@@ -156,7 +156,7 @@ void Telemetry::RfSendLiquidPropulsionData(PressureTransducer &pt, LoadCell &lc)
     RF::GetInstance().SendString(json_msg.dump());
 }
 
-void Telemetry::RunTelemetry(Navigation &navigation, Controller &controller, PressureTransducer &pt, LoadCell &lc, float HardwareSaveDelta, float RFSaveDelta)
+void Telemetry::RunTelemetry(Navigation &navigation, Controller &controller, GPS &gps, PressureTransducer &pt, LoadCell &lc, float HardwareSaveDelta, float RFSaveDelta)
 {
 
     /* Start calculate time change*/
@@ -169,7 +169,7 @@ void Telemetry::RunTelemetry(Navigation &navigation, Controller &controller, Pre
 
     if (std::chrono::duration_cast<std::chrono::milliseconds>(hardware_change_time).count() / 1000.0 >= HardwareSaveDelta)
     {
-        HardwareSaveFrame(navigation, controller);
+        HardwareSaveFrame(navigation, controller, gps);
         last_hardware_time = std::chrono::high_resolution_clock::now();
     }
 

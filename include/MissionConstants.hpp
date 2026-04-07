@@ -120,9 +120,9 @@ namespace MissionConstants
     const int kIgnitionPin = 6;
 
     // ADS1115 constants
-    const int BASE0 100;
-    const int BASE1 100;
-    const int BASE2 100;
+    const int BASE0 = 100;
+    const int BASE1 = 100;
+    const int BASE2 = 100;
 
     // Liquid Propulsion Hardware Pins, TODO: USER EDIT PRE-FLIGHT
     // Valve Servo Pins (PWM)

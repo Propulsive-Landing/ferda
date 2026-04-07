@@ -9,6 +9,7 @@
 #include "SparkPlug.hpp"
 #include "PressureTransducer.hpp"
 #include "LoadCell.hpp"
+#include "GPS.hpp"
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -411,7 +412,7 @@ Mode::Phase Mode::UpdateWaterFlow(Navigation &navigation, ValveControl &valveCon
     return Mode::WaterFlow;
 }
 
-bool Mode::Update(Navigation &navigation, Controller &controller, Igniter &igniter, IMU &imu, ValveControl &valveControl,
+bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igniter &igniter, IMU &imu, ValveControl &valveControl,
                   SparkPlug &sparkPlug, PressureTransducer &pressureTransducer, LoadCell &loadCell)
 {
 
@@ -435,31 +436,31 @@ bool Mode::Update(Navigation &navigation, Controller &controller, Igniter &ignit
     switch (this->eCurrentMode)
     {
     case Calibration:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, pressureTransducer, loadCell, 0.05, 0.08);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
         this->eCurrentMode = UpdateCalibration(navigation, controller, currentTime);
         break;
     case TestTVC:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, pressureTransducer, loadCell, 0.05, 0.08);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
         this->eCurrentMode = UpdateTestTVC(navigation, controller, currentTime);
         break;
     case Idle:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, pressureTransducer, loadCell, 0.05, 0.08);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
         this->eCurrentMode = UpdateIdle(navigation, controller, imu, currentTime);
         break;
     case Launch:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, pressureTransducer, loadCell, 0.05, 0.08);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
         this->eCurrentMode = UpdateLaunch(navigation, controller, igniter, currentTime);
         break;
     case HotfireIdle:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, pressureTransducer, loadCell, 0.05, 0.08);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
         this->eCurrentMode = UpdateHotfireIdle(navigation, valveControl, sparkPlug);
         break;
     case ASITest:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, pressureTransducer, loadCell, 0.05, 0.08);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
         this->eCurrentMode = UpdateASITest(navigation, valveControl, sparkPlug, currentTime);
         break;
     case WaterFlow:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, pressureTransducer, loadCell, 0.05, 0.08);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
         this->eCurrentMode = UpdateWaterFlow(navigation, valveControl, sparkPlug, currentTime);
         break;
     case Safe:

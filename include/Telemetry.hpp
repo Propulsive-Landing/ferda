@@ -14,7 +14,7 @@ private:
     Telemetry();
     ~Telemetry();
 
-    void HardwareSaveFrame(Navigation &navigation, Controller &controller);
+    void HardwareSaveFrame(Navigation &navigation, Controller &controller, GPS &gps);
     void RfSendFrame(Navigation &navigation, Controller &controller);
     void RfSendLiquidPropulsionData(PressureTransducer &pt, LoadCell &lc);
 
@@ -23,7 +23,7 @@ public:
     std::ofstream HardwareSaved;
     std::ofstream SensorSaved;
 
-    void RunTelemetry(Navigation &navigation, Controller &controller, PressureTransducer &pt, LoadCell &lc, float HardwareSaveDelta, float RFSaveDelta);
+    void RunTelemetry(Navigation &navigation, Controller &controller, GPS &gps, PressureTransducer &pt, LoadCell &lc, float HardwareSaveDelta, float RFSaveDelta);
     void Log(std::string message);
 
     static Telemetry &GetInstance()

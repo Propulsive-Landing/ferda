@@ -31,8 +31,7 @@ public:
 
     Mode(Mode::Phase eInitialMode);
     bool Update(Navigation &navigation, Controller &controller, GPS &gps, Igniter &igniter, IMU &imu,
-                ValveControl &valveControl,
-                SparkPlug &sparkPlug, PressureTransducer &pressureTransducer, LoadCell &loadCell);
+                ValveControl &valveControl, SparkPlug &sparkPlug, PressureTransducer &pressureTransducer, LoadCell &loadCell);
     std::string AngleKMatrix;
     std::string HeightKMatrix;
     std::string TranslationKMatrix;
