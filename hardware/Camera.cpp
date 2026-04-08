@@ -329,11 +329,6 @@ bool Camera::InitializeVideoStream()
         gVideoStream.capture.set(cv::CAP_PROP_FPS, targetFps);
         gVideoStream.capture.set(cv::CAP_PROP_BUFFERSIZE, 1.0);
 
-        const double actualFps = gVideoStream.capture.get(cv::CAP_PROP_FPS);
-        if (actualFps > 0.0) {
-            std::cerr << "Camera backend reported FPS " << actualFps << std::endl;
-        }
-
         // Grab one frame at startup so the next request returns a recent image.
         cv::Mat warmupFrame;
         bool warmupSucceeded = false;
