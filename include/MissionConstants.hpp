@@ -69,6 +69,7 @@ namespace MissionConstants
     const bool kSensorCameraUseCapAnyFallback = false;
     const bool kSensorCameraSaveDebugFrames = true;
     const std::string kSensorCameraDebugFrameDirectory = "../images";
+    const std::string kSensorCameraCalibrationFilePath = "../calibration/camera_calibration.json";
     const double kSensorCameraFocalLengthXPx = 1450.0;
     const double kSensorCameraFocalLengthYPx = 1450.0;
     const double kSensorCameraPrincipalPointXPx = 960.0;

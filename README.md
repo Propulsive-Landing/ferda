@@ -152,6 +152,20 @@ Our Custom PCB communicates with various sensors through different protocols whi
    sudo chmod +x fsw_startup.sh
    ```
 
+## Camera Calibration
+
+The camera can now load a persisted OpenCV calibration file at startup. By default it looks for `../calibration/camera_calibration.json` when the executable is run from the `build/` directory.
+
+1. Capture a set of checkerboard images from the camera at the same resolution used for flight.
+2. Build the calibration tool and run it from the `build/` directory:
+   ```bash
+   ./CameraCalibrate ../calibration_images ../calibration/camera_calibration.json 9 6 0.024
+   ```
+   Replace `9 6` with the checkerboard inner-corner count and `0.024` with the square size in meters.
+3. Restart Ferda. If the calibration file is present and valid, the camera uses it for `cv::undistortPoints()`; otherwise it falls back to the current built-in constants.
+
+The calibration output stores the camera matrix, distortion coefficients, image size, checkerboard dimensions, and RMS reprojection error. Keep one file per physical camera if the hardware changes.
+
 ## Software-in-the-Loop Testing
 
 Software-in-the-loop (SIL) testing allows you to connect your flight software to MATLAB's Simulink environment for real-time simulation. Follow the steps below to set up and run the SIL testing environment.

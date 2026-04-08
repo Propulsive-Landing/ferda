@@ -1,5 +1,6 @@
 #include "Camera.hpp"
 
+#include "CameraCalibration.hpp"
 #include "MissionConstants.hpp"
 #include "WhiteCircle.hpp"
 
@@ -21,6 +22,7 @@
 #include <sys/ioctl.h>
 #include <thread>
 #include <string>
+#include <sstream>
 #include <unistd.h>
 #include <utility>
 #include <vector>
@@ -35,6 +37,16 @@ struct VideoStreamState
 };
 
 VideoStreamState gVideoStream;
+
+struct CameraCalibrationState
+{
+    CameraCalibration::Data calibration = CameraCalibration::MakeDefaultCalibration();
+    bool loaded = false;
+    std::filesystem::path sourcePath;
+};
+
+CameraCalibrationState gCameraCalibrationState;
+std::once_flag gCameraCalibrationOnceFlag;
 
 std::string DevicePathForIndex(int deviceIndex)
 {
@@ -165,23 +177,48 @@ DebugFrameLogger& GetDebugFrameLogger()
     return logger;
 }
 
+void LoadCameraCalibration()
+{
+    gCameraCalibrationState.calibration = CameraCalibration::MakeDefaultCalibration();
+    gCameraCalibrationState.sourcePath = CameraCalibration::DefaultCalibrationPath();
+
+    if (!std::filesystem::exists(gCameraCalibrationState.sourcePath)) {
+        std::cerr << "Camera calibration file not found; using built-in defaults: "
+                  << gCameraCalibrationState.sourcePath.string() << std::endl;
+        gCameraCalibrationState.loaded = false;
+        return;
+    }
+
+    std::string errorMessage;
+    if (!CameraCalibration::LoadCalibrationFile(gCameraCalibrationState.sourcePath, gCameraCalibrationState.calibration, &errorMessage)) {
+        std::cerr << "Camera calibration load failed; using built-in defaults: "
+                  << gCameraCalibrationState.sourcePath.string()
+                  << " (" << errorMessage << ")" << std::endl;
+        gCameraCalibrationState.calibration = CameraCalibration::MakeDefaultCalibration();
+        gCameraCalibrationState.loaded = false;
+        return;
+    }
+
+    gCameraCalibrationState.loaded = true;
+    std::cerr << "Camera calibration loaded from " << gCameraCalibrationState.sourcePath.string()
+              << " with RMS reprojection error " << gCameraCalibrationState.calibration.rmsReprojectionError
+              << std::endl;
+}
+
+const CameraCalibration::Data& GetCameraCalibration()
+{
+    std::call_once(gCameraCalibrationOnceFlag, LoadCameraCalibration);
+    return gCameraCalibrationState.calibration;
+}
+
 Eigen::Vector3d PixelToUnitVector(double px, double py)
 {
-    const cv::Matx33d cameraMatrix(
-        MissionConstants::kSensorCameraFocalLengthXPx, 0.0, MissionConstants::kSensorCameraPrincipalPointXPx,
-        0.0, MissionConstants::kSensorCameraFocalLengthYPx, MissionConstants::kSensorCameraPrincipalPointYPx,
-        0.0, 0.0, 1.0);
-    const cv::Vec<double, 5> distortion(
-        MissionConstants::kSensorCameraDistortionK1,
-        MissionConstants::kSensorCameraDistortionK2,
-        MissionConstants::kSensorCameraDistortionP1,
-        MissionConstants::kSensorCameraDistortionP2,
-        MissionConstants::kSensorCameraDistortionK3);
+    const CameraCalibration::Data& calibration = GetCameraCalibration();
 
     std::vector<cv::Point2f> distortedPoints;
     distortedPoints.emplace_back(static_cast<float>(px), static_cast<float>(py));
     std::vector<cv::Point2f> undistortedPoints;
-    cv::undistortPoints(distortedPoints, undistortedPoints, cameraMatrix, distortion);
+    cv::undistortPoints(distortedPoints, undistortedPoints, calibration.cameraMatrix, calibration.distortionCoefficients);
 
     if (undistortedPoints.empty()) {
         return Eigen::Vector3d::Zero();
@@ -197,6 +234,7 @@ Eigen::Vector3d PixelToUnitVector(double px, double py)
 
 Camera::Camera()
 {
+    (void)GetCameraCalibration();
 }
 
 bool Camera::InitializeVideoStream()

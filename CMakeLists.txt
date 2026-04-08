@@ -21,10 +21,13 @@ endif()
 FILE(GLOB CppSources src/*.cpp)
 
 find_package(Eigen3 REQUIRED NO_MODULE)
+find_package(OpenCV REQUIRED)
 
 add_executable(Ferda ${CppSources} ${EXTRA_CODE})
+add_executable(CameraCalibrate tools/CameraCalibrate.cpp)
 
 target_include_directories(Ferda PRIVATE include)
+target_include_directories(CameraCalibrate PRIVATE include ${OpenCV_INCLUDE_DIRS})
 
 if(MSVC)
   target_compile_options(Ferda PRIVATE /W4 /WX)
@@ -50,12 +53,14 @@ elseif(CMAKE_BUILD_TYPE STREQUAL Simulation)
     )
 else()
     target_link_libraries(Ferda Eigen3::Eigen wiringPi PiPCA9685 i2c nlohmann_json::nlohmann_json)
-    find_package(OpenCV REQUIRED)
     target_include_directories(Ferda PRIVATE ${OpenCV_INCLUDE_DIRS})
     target_link_libraries(Ferda ${OpenCV_LIBS})
 endif()
+
+target_link_libraries(CameraCalibrate PRIVATE Eigen3::Eigen nlohmann_json::nlohmann_json ${OpenCV_LIBS})
 
 
 # Add threading library
 find_package(Threads REQUIRED)
 target_link_libraries(Ferda Threads::Threads)
+target_link_libraries(CameraCalibrate PRIVATE Threads::Threads)
