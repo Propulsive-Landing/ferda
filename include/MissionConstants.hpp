@@ -62,6 +62,7 @@ namespace MissionConstants
         ).finished();
 
     // Sensor constants, TODO: USER EDIT PRE-FLIGHT
+    //Note that the intrinsic camera values are set to the default calibration values, but will be overridden if a valid calibration file is found at runtime. So they can be set to nominal values here for development and testing, and then updated with real calibration values once available.
     const double kSensorCameraNoise = 1e-3;
     const int kSensorCameraCaptureTimeoutMs = 1;
     const int kSensorCameraDeviceIndex = 0;
@@ -81,6 +82,7 @@ namespace MissionConstants
     const double kSensorCameraDistortionK3 = 0.0;
     const int kSensorCameraImageWidthPx = 1920;
     const int kSensorCameraImageHeightPx = 1080;
+    const int kSensorCameraTargetFps = 30;
     const int kSensorCameraMaxDetections = 5;
     const int kSensorCameraMarkerMinAreaPx = 2000;
     const double kSensorMagnetometerNoise = 1; // Magnetometer measurement noise (Tesla)

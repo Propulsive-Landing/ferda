@@ -263,6 +263,8 @@ bool Camera::InitializeVideoStream()
         std::make_pair(640, 480),
     };
 
+    const int targetFps = MissionConstants::kSensorCameraTargetFps;
+
     auto tryOpenCapture = [&](int deviceIndex, int width, int height) -> bool {
         gVideoStream.capture.release();
 
@@ -273,7 +275,7 @@ bool Camera::InitializeVideoStream()
             // Native libcamera GStreamer pipeline
             // When only 1 camera is connected on Pi, libcamerasrc generally uses camera-name=/base/axi/... (full path) 
             // OR auto-selects if we simply omit the camera-name argument. Let's omit it so it auto-selects the only available camera!
-            pipeline << "libcamerasrc ! video/x-raw,width=" << width << ",height=" << height << ",format=RGBx"
+            pipeline << "libcamerasrc ! video/x-raw,width=" << width << ",height=" << height << ",framerate=" << targetFps << "/1,format=RGBx"
                      << " ! videoconvert ! video/x-raw,format=BGR ! appsink drop=true max-buffers=1 sync=false";
 
             if (gVideoStream.capture.open(pipeline.str(), cv::CAP_GSTREAMER)) {
@@ -319,11 +321,18 @@ bool Camera::InitializeVideoStream()
         }
 
         std::cerr << "Camera opened on device index " << deviceIndex
-                  << " with requested resolution " << width << "x" << height << std::endl;
+                  << " with requested resolution " << width << "x" << height
+                  << " at " << targetFps << " fps" << std::endl;
 
         gVideoStream.capture.set(cv::CAP_PROP_FRAME_WIDTH, width);
         gVideoStream.capture.set(cv::CAP_PROP_FRAME_HEIGHT, height);
+        gVideoStream.capture.set(cv::CAP_PROP_FPS, targetFps);
         gVideoStream.capture.set(cv::CAP_PROP_BUFFERSIZE, 1.0);
+
+        const double actualFps = gVideoStream.capture.get(cv::CAP_PROP_FPS);
+        if (actualFps > 0.0) {
+            std::cerr << "Camera backend reported FPS " << actualFps << std::endl;
+        }
 
         // Grab one frame at startup so the next request returns a recent image.
         cv::Mat warmupFrame;
