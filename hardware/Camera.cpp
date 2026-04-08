@@ -248,7 +248,7 @@ bool Camera::InitializeVideoStream()
     }
     gVideoStream.activeDeviceIndex = -1;
 
-    const int preferredDeviceIndex = MissionConstants::kSensorCameraDeviceIndex;
+    const int preferredDeviceIndex = MissionConstants::kSensorCameraPreferredDeviceIndex;
     std::vector<int> deviceCandidates;
     deviceCandidates.push_back(preferredDeviceIndex);
     for (int idx = 0; idx <= 5; ++idx) {
@@ -257,10 +257,9 @@ bool Camera::InitializeVideoStream()
         }
     }
 
-    const std::array<std::pair<int, int>, 3> resolutionCandidates = {
-        std::make_pair(MissionConstants::kSensorCameraImageWidthPx, MissionConstants::kSensorCameraImageHeightPx),
-        std::make_pair(1280, 720),
-        std::make_pair(640, 480),
+    const std::pair<int, int> resolutionCandidate = {
+        MissionConstants::kSensorCameraImageWidthPx,
+        MissionConstants::kSensorCameraImageHeightPx,
     };
 
     auto tryOpenCapture = [&](int deviceIndex, int width, int height) -> bool {
@@ -356,10 +355,8 @@ bool Camera::InitializeVideoStream()
             continue;
         }
 
-        for (const auto& resolution : resolutionCandidates) {
-            if (tryOpenCapture(deviceIndex, resolution.first, resolution.second)) {
-                return true;
-            }
+        if (tryOpenCapture(deviceIndex, resolutionCandidate.first, resolutionCandidate.second)) {
+            return true;
         }
     }
 
@@ -381,7 +378,7 @@ void Camera::TryProcessPendingLocalCapture()
 
 bool Camera::CaptureLocalFrameAndProcess(double frameId)
 {
-    auto capture_start_time = std::chrono::steady_clock::now();
+    const auto processing_start_time = std::chrono::steady_clock::now();
 
     if (!InitializeVideoStream()) {
         return false;
@@ -408,10 +405,14 @@ bool Camera::CaptureLocalFrameAndProcess(double frameId)
         return false;
     }
 
+    const auto capture_io_end_time = std::chrono::steady_clock::now();
+
     std::vector<WhiteCircle::MarkerDetection> detections = WhiteCircle::DetectWhiteMarkerCentroids(
         img,
         MissionConstants::kSensorCameraMarkerMinAreaPx,
         MissionConstants::kSensorCameraMaxDetections);
+
+    const auto detection_end_time = std::chrono::steady_clock::now();
 
     // Draw bounding boxes around the detected markers for the saved debug frames
     for (const auto& detection : detections) {
@@ -441,10 +442,22 @@ bool Camera::CaptureLocalFrameAndProcess(double frameId)
 
     UpdateFromPixelList(frameId, pixelList);
 
-    auto capture_end_time = std::chrono::steady_clock::now();
-    double processing_duration_ms = std::chrono::duration<double, std::milli>(capture_end_time - capture_start_time).count();
-    
-    std::cerr << "[Camera TIMING] Frame " << frameId << " processed in " << processing_duration_ms << " ms. ";
+    const auto processing_end_time = std::chrono::steady_clock::now();
+
+    const double capture_io_duration_ms =
+        std::chrono::duration<double, std::milli>(capture_io_end_time - processing_start_time).count();
+    const double detection_duration_ms =
+        std::chrono::duration<double, std::milli>(detection_end_time - capture_io_end_time).count();
+    const double postprocess_duration_ms =
+        std::chrono::duration<double, std::milli>(processing_end_time - detection_end_time).count();
+    const double total_processing_duration_ms =
+        std::chrono::duration<double, std::milli>(processing_end_time - processing_start_time).count();
+
+    std::cerr << "[Camera TIMING] Frame " << frameId
+              << " total=" << total_processing_duration_ms << " ms"
+              << " (capture=" << capture_io_duration_ms << " ms"
+              << ", detect=" << detection_duration_ms << " ms"
+              << ", post=" << postprocess_duration_ms << " ms). ";
     if (latestUnitVectorList.empty()) {
         std::cerr << "Found 0 unit vectors." << std::endl;
     } else {
