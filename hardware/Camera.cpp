@@ -276,7 +276,8 @@ bool Camera::InitializeVideoStream()
             // When only 1 camera is connected on Pi, libcamerasrc generally uses camera-name=/base/axi/... (full path) 
             // OR auto-selects if we simply omit the camera-name argument. Let's omit it so it auto-selects the only available camera!
             pipeline << "libcamerasrc ! video/x-raw,width=" << width << ",height=" << height << ",framerate=" << targetFps << "/1,format=RGBx"
-                     << " ! videoconvert ! video/x-raw,format=BGR ! appsink drop=true max-buffers=1 sync=false";
+                     << " ! videoconvert ! video/x-raw,format=BGR,width=" << width << ",height=" << height << ",framerate=" << targetFps << "/1"
+                     << " ! appsink caps=video/x-raw,format=BGR,width=" << width << ",height=" << height << ",framerate=" << targetFps << "/1 drop=true max-buffers=1 sync=false";
 
             if (gVideoStream.capture.open(pipeline.str(), cv::CAP_GSTREAMER)) {
                 std::cerr << "Camera opened with native GStreamer pipeline at " << width << "x" << height << std::endl;
