@@ -203,6 +203,15 @@ void LoadCameraCalibration()
     std::cerr << "Camera calibration loaded from " << gCameraCalibrationState.sourcePath.string()
               << " with RMS reprojection error " << gCameraCalibrationState.calibration.rmsReprojectionError
               << std::endl;
+
+    // Warn if calibration resolution does not match mission constants
+    if (gCameraCalibrationState.calibration.imageSize.width != MissionConstants::kSensorCameraImageWidthPx ||
+        gCameraCalibrationState.calibration.imageSize.height != MissionConstants::kSensorCameraImageHeightPx) {
+        std::cerr << "WARNING: Camera calibration resolution (" << gCameraCalibrationState.calibration.imageSize.width
+                  << "x" << gCameraCalibrationState.calibration.imageSize.height
+                  << ") does not match mission constants (" << MissionConstants::kSensorCameraImageWidthPx
+                  << "x" << MissionConstants::kSensorCameraImageHeightPx << ")" << std::endl;
+    }
 }
 
 const CameraCalibration::Data& GetCameraCalibration()
