@@ -6,11 +6,8 @@
 // For Raspberry Pi, you'll need an external ADC (e.g., MCP3008 via SPI)
 double LoadCell::ReadSensor(int pin)
 {
-    // Placeholder: Replace with actual ADC reading
-    uint16_t rawVal = 0; // TODO: Read from actual ADC
-
     // Convert to voltage (0.0 to 5.0 volts)
-    float rawVolt = (float)rawVal / 204.6;
+    float rawVolt = (float)rawVal / 32767 * 6.144;
 
     // Normalize from 0.0 to 1.0 (0.0V = 0kg, 5.0V = 1000kg)
     float normalized = rawVolt / 5.0;

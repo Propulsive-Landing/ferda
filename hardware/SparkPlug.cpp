@@ -1,22 +1,23 @@
 #include "SparkPlug.hpp"
 #include "Telemetry.hpp"
 #include <pigpio.h>
+#include <ServoDriver.hpp>
 
 void SparkPlug::TurnOn()
 {
     Telemetry::GetInstance().Log("Turning Spark on");
-    gpioWrite(MissionConstants::kSparkPin, 0); // LOW = ON (relay control)
-    // Set PWM to 2% duty cycle (5/255 for 8-bit PWM, but using 0-100 range)
-    // For pigpio, we need to use gpioPWM which takes 0-255, so 2% = ~5
-    gpioPWM(MissionConstants::kRPMPin, 5); // 2% duty cycle
+    digitalWrite(MissionConstants::kSparkPin, 0); // LOW = ON (relay control)
+    // Set PWM to 2% duty cycle (servo driver which is PCA9685 is 12 bit - 1 so it goes 0-4095
+    // We do 4095*0.02 = 81.9
+    servo_driver.set_pwm(MissionConstants::kRPMPin, 0, 81); // 2% duty cycle
     isOn = true;
 }
 
 void SparkPlug::TurnOff()
 {
     Telemetry::GetInstance().Log("Turning Spark off");
-    gpioWrite(MissionConstants::kSparkPin, 1); // HIGH = OFF
-    gpioPWM(MissionConstants::kRPMPin, 0);     // 0% duty cycle
+    gpioWrite(MissionConstants::kSparkPin, 1);             // HIGH = OFF
+    servo_driver.set_pwm(MissionConstants::kRPMPin, 0, 0); // 0% duty cycle
     isOn = false;
 }
 

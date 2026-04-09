@@ -1,24 +1,13 @@
 #include "PressureTransducer.hpp"
-#include <pigpio.h>
+#include <ads1115.h>
 #include <algorithm>
 
-// TODO: This function needs to be implemented based on your ADC hardware
-// The original Arduino code used analogRead which reads 0-1023 (10-bit)
-// For Raspberry Pi, you'll need an external ADC (e.g., MCP3008 via SPI)
-// This is a placeholder that matches the original conversion logic
 double PressureTransducer::ReadSensor(int pin, double maxPSI)
 {
-    // Placeholder: Replace with actual ADC reading
-    // Example implementation would be:
-    // uint16_t rawVal = readADC(pin); // Read from your ADC hardware
-
-    // For now, return 0.0 - this MUST be implemented for actual hardware
-    uint16_t rawVal = 0; // TODO: Read from actual ADC
+    int rawVal = analogRead(pin);
 
     // Convert to voltage (0.0 to 5.0 volts)
-    // Original: (float)rawVal / 204.6 for 0-1023 range mapped to 0-5V
-    // For 10-bit ADC: 1023 / 5.0 = 204.6
-    float rawVolt = (float)rawVal / 204.6;
+    float rawVolt = (float)rawVal / 32767 * 6.144;
 
     // Clamp voltage to sensor range (0.5V to 4.5V)
     if (rawVolt < 0.5)

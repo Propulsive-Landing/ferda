@@ -120,16 +120,19 @@ namespace MissionConstants
     const int kIgnitionPin = 6;
 
     // ADS1115 constants
-    const int BASE0 = 100;
-    const int BASE1 = 100;
-    const int BASE2 = 100;
+    const int ADS1ADDR = 0x48;
+    const int ADS1BASE = 100;
+    const int ADS2ADDR - 0x49;
+    const int ADS2BASE = 200;
+    const int ADS3ADDR = 0x4A;
+    const int ADS3BASE = 300;
 
     // Liquid Propulsion Hardware Pins, TODO: USER EDIT PRE-FLIGHT
     // Valve Servo Pins (PWM)
-    const int kNitrogenServoPin = 6;
-    const int kPurgeServoPin = 0;
-    const int kMainEthanolServoPin = 11;
-    const int kMainNitrousServoPin = 0;
+    const int kNitrogenServoPin = 6;     // servo driver
+    const int kPurgeServoPin = 0;        // servo driver
+    const int kMainEthanolServoPin = 11; // servo driver
+    const int kMainNitrousServoPin = 0;  // servo driver
 
     // Valve Solenoid Pins (GPIO)
     const int kASIEthanolPin = 0;
@@ -138,19 +141,19 @@ namespace MissionConstants
 
     // Spark Plug Pins
     const int kSparkPin = 0; // Relay control
-    const int kRPMPin = 0;   // PWM output
+    const int kRPMPin = 0;   // PWM output // servo
 
     // Pressure Transducer Pins (Analog)
-    const int kNitrogenLinePTPin = 0;    // A0
-    const int kEthanolTankPTPin = 0;     // A0
-    const int kNitrousLinePTPin = 0;     // A0
-    const int kOxygenLinePTPin = 0;      // A0
-    const int kFuelInletPTPin = 0;       // A0
-    const int kFuelOutletPTPin = 0;      // A0
-    const int kChamberPressurePTPin = 0; // A0
+    const int kNitrogenLinePTPin = ADS1BASE + 0;    // A0
+    const int kEthanolTankPTPin = ADS1BASE + 1;     // A1
+    const int kNitrousLinePTPin = ADS1BASE + 2;     // A2
+    const int kOxygenLinePTPin = ADS1BASE + 3;      // A3
+    const int kFuelInletPTPin = ADS2BASE + 0;       // A0
+    const int kFuelOutletPTPin = ADS2BASE + 1;      // A1
+    const int kChamberPressurePTPin = ADS2BASE + 2; // A2
 
     // Load Cell Pin (Analog)
-    const int kLoadCellPin = 0; // A0
+    const int kLoadCellPin = ADS2BASE + 3; // A3
 
     // Valve Servo Angles
     const int kValveClosedAngle = 179; // degrees
