@@ -122,17 +122,17 @@ namespace MissionConstants
     // ADS1115 constants
     const int ADS1ADDR = 0x48;
     const int ADS1BASE = 100;
-    const int ADS2ADDR - 0x49;
+    const int ADS2ADDR = 0x49;
     const int ADS2BASE = 200;
     const int ADS3ADDR = 0x4A;
     const int ADS3BASE = 300;
 
     // Liquid Propulsion Hardware Pins, TODO: USER EDIT PRE-FLIGHT
     // Valve Servo Pins (PWM)
-    const int kNitrogenServoPin = 6;     // servo driver
-    const int kPurgeServoPin = 0;        // servo driver
-    const int kMainEthanolServoPin = 11; // servo driver
-    const int kMainNitrousServoPin = 0;  // servo driver
+    const int kNitrogenServoPin = 6;     // servo driver row [0-15]
+    const int kPurgeServoPin = 0;        // servo driver row [0-15]
+    const int kMainEthanolServoPin = 11; // servo driver row [0-15]
+    const int kMainNitrousServoPin = 0;  // servo driver row [0-15]
 
     // Valve Solenoid Pins (GPIO)
     const int kASIEthanolPin = 0;
@@ -141,19 +141,19 @@ namespace MissionConstants
 
     // Spark Plug Pins
     const int kSparkPin = 0; // Relay control
-    const int kRPMPin = 0;   // PWM output // servo
+    const int kRPMPin = 0;   // PWM output // servo driver row [0-15]
 
     // Pressure Transducer Pins (Analog)
-    const int kNitrogenLinePTPin = ADS1BASE + 0;    // A0
-    const int kEthanolTankPTPin = ADS1BASE + 1;     // A1
-    const int kNitrousLinePTPin = ADS1BASE + 2;     // A2
-    const int kOxygenLinePTPin = ADS1BASE + 3;      // A3
-    const int kFuelInletPTPin = ADS2BASE + 0;       // A0
-    const int kFuelOutletPTPin = ADS2BASE + 1;      // A1
-    const int kChamberPressurePTPin = ADS2BASE + 2; // A2
+    const int kNitrogenLinePTPin = ADS1BASE + 0;    // First ADS1115 A0
+    const int kEthanolTankPTPin = ADS1BASE + 1;     // First ADS1115  A1
+    const int kNitrousLinePTPin = ADS1BASE + 2;     // First ADS1115 A2
+    const int kOxygenLinePTPin = ADS1BASE + 3;      // First ADS1115  A3
+    const int kFuelInletPTPin = ADS2BASE + 0;       // Second ADS1115 A0
+    const int kFuelOutletPTPin = ADS2BASE + 1;      // Second ADS1115 A1
+    const int kChamberPressurePTPin = ADS2BASE + 2; // Second ADS1115 A2
 
     // Load Cell Pin (Analog)
-    const int kLoadCellPin = ADS2BASE + 3; // A3
+    const int kLoadCellPin = ADS2BASE + 3; // Second ADS1115 A3
 
     // Valve Servo Angles
     const int kValveClosedAngle = 179; // degrees
