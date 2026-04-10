@@ -47,7 +47,7 @@ int main()
     else
     {
         // Set to read up to 6.144 V
-        digitalWrite(MissionConstants::ADS1BASE, 0)
+        digitalWrite(MissionConstants::ADS1BASE, 0);
     }
 
     if (ads1115Setup(ADS2BASE, ADS2ADDR) < 0)
@@ -57,7 +57,7 @@ int main()
     }
     else
     {
-        digitalWrite(MissionConstants::ADS2BASE, 0)
+        digitalWrite(MissionConstants::ADS2BASE, 0);
     }
 
     if (ads1115Setup(ADS3BASE, ADS3ADDR) < 0)
@@ -67,7 +67,7 @@ int main()
     }
     else
     {
-        digitalWrite(MissionConstants::ADS2BASE, 0)
+        digitalWrite(MissionConstants::ADS2BASE, 0);
     }
 
     // Liquid propulsion GPIO setup (solenoid pins)
