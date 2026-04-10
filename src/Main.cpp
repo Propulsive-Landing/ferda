@@ -38,8 +38,11 @@ int main()
     if (wiringPiSetupGpio() < 0)
         throw std::runtime_error("failed to initialize gpio");
 
+    // Set servo driver frequency to 50 hZ
+    servo_driver.set_pwm_freq(50);
+
     // Setup Analog to Digital Converters
-    if (ads1115Setup(ADS1BASE, ADS1ADDR) < 0)
+    if (ads1115Setup(MissionConstants::ADS1BASE, MissionConstants::ADS1ADDR) < 0)
     {
         // TODO: Maybe try to find. a way to use Telemetry to log and ask user if they want to abort
         std::cerr << "Warning: Ads1115 was not found at " << ADS1ADDR;
@@ -50,34 +53,36 @@ int main()
         digitalWrite(MissionConstants::ADS1BASE, 0);
     }
 
-    if (ads1115Setup(ADS2BASE, ADS2ADDR) < 0)
+    if (ads1115Setup(MissionConstants::ADS2BASE, MissionConstants::ADS2ADDR) < 0)
     {
         // TODO: Maybe try to find. a way to use Telemetry to log and ask user if they want to abort
-        std::cerr << "Warning: Ads1115 was not found at " << ADS1ADDR;
+        std::cerr << "Warning: Ads1115 was not found at " << MissionConstants::ADS1ADDR;
     }
     else
     {
+        // Set to read up to 6.144 V
         digitalWrite(MissionConstants::ADS2BASE, 0);
     }
 
-    if (ads1115Setup(ADS3BASE, ADS3ADDR) < 0)
+    if (ads1115Setup(MissionConstants::ADS3BASE, MissionConstants::ADS3ADDR) < 0)
     {
         // TODO: Maybe try to find. a way to use Telemetry to log and ask user if they want to abort
-        std::cerr << "Warning: Ads1115 was not found at " << ADS1ADDR;
+        std::cerr << "Warning: Ads1115 was not found at " << MissionConstants::ADS1ADDR;
     }
     else
     {
-        digitalWrite(MissionConstants::ADS2BASE, 0);
+        // Set to read up to 6.144 V
+        digitalWrite(MissionConstants::ADS3BASE, 0);
     }
 
     // Liquid propulsion GPIO setup (solenoid pins)
-    pinMode(MissionConstants::kASIEthanolPin, PI_OUTPUT);
-    pinMode(MissionConstants::kASIOxygenPin, PI_OUTPUT);
-    pinMode(MissionConstants::kNitrogenBleedPin, PI_OUTPUT);
+    pinMode(MissionConstants::kASIEthanolPin, OUTPUT);
+    pinMode(MissionConstants::kASIOxygenPin, OUTPUT);
+    pinMode(MissionConstants::kNitrogenBleedPin, OUTPUT);
 
     // Spark plug pins
-    pinMode(MissionConstants::kSparkPin, PI_OUTPUT);
-    pinMode(MissionConstants::kRPMPin, PI_OUTPUT);
+    pinMode(MissionConstants::kSparkPin, OUTPUT);
+    pinMode(MissionConstants::kRPMPin, OUTPUT);
 
     // Initialize solenoids to closed state (HIGH for normally-closed, LOW for normally-open)
     digitalWrite(MissionConstants::kASIEthanolPin, 1);     // HIGH = CLOSED
