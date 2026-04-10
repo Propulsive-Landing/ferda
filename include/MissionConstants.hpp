@@ -172,7 +172,9 @@ namespace MissionConstants
     const float timeAtOffset = 0.0;
 
     // IMU constants
-    const int IMU_i2c_addr = 0x28;
+    const int IMU_I2C_ADDR = 0x28;
+    const int CHIP_ID_ADDR = 0x00;
+    const int CHIP_ID = 0xA0;
     const int POWER_MODE = 0x3E;
     const int POWER_NORMAL = 0x00;
     const int OPERATION_MODE = 0x3D;
