@@ -90,7 +90,7 @@ void Telemetry::Log(std::string message)
     json_msg["data_type"] = "string";
     json_msg["payload"] = message;
 
-    RF::GetInstance().SendString(json_msg.dump());
+    RF::GetInstance().SendString(json_msg.dump() + "\n");
 
     std::cout << message << "\n";
 
@@ -133,7 +133,7 @@ void Telemetry::RfSendFrame(Navigation &navigation, Controller &controller)
     // frame.velocity[2] = 9.0; // navigation.GetNavigation()(5, 0);
     // frame.dt = 0.0;
 
-    RF::GetInstance().SendString(json_msg.dump());
+    RF::GetInstance().SendString(json_msg.dump() + "\n");
 }
 
 void Telemetry::RfSendLiquidPropulsionData(PressureTransducer &pt, LoadCell &lc)

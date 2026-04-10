@@ -103,8 +103,6 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
 
         input_line = buffer;
 
-        tcflush(SerialFd, TCIFLUSH);
-
         std::cout << "String:" << input_line << "\n"
                   << std::flush;
 
