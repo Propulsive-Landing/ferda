@@ -2,19 +2,32 @@
 #include <unistd.h>
 
 #include "IMU.hpp"
+#include "Telemetry.hpp"
 
 #include <fstream>
 #include <stdexcept>
+#include <sstream>
+#include <iomanip>
 #include "MissionConstants.hpp"
 
 IMU::IMU()
 {
-    fd = wiringPiI2CSetup(MissionConstants::IMU_i2c_addr);
- 
-    // TODO: Look at acc (0x01) =0xFB, mag (0x02) =0x32, gyro(0x03) =(0x0F) registers-fdefault value using read and see if the defualt vaues match and if not then add boolean flags to disable them in navigation
-    //       primarily do this for magnometer since we will have to use acc and gyro 
+    fd = wiringPiI2CSetup(MissionConstants::IMU_I2C_ADDR);
 
-    // Set power modewiri
+
+    int chip_id = wiringPiI2CReadReg8(fd, MissionConstants::CHIP_ID_ADDR);
+    std::stringstream ss;
+    ss << "0x" << std::uppercase << std::hex << std::setw(2) << std::setfill('0') << MissionConstants::IMU_I2C_ADDR;
+
+    // Check to see if BMO055 is connected since wiringPiI2CSetup just opens up I2c bus
+    if(chip_id != MissionConstants::CHIP_ID)
+    {
+        Telemetry::GetInstance().Log("BMO055 was not detected at address " + ss.str());
+        // TODO: MAYBE ADD CHECK TO SEE IF USER WANTS TO CONTINUE
+        return;
+    }
+    
+    // Set power mode
     wiringPiI2CWriteReg8(fd, MissionConstants::POWER_MODE, MissionConstants::POWER_NORMAL);
     delay(10);
 

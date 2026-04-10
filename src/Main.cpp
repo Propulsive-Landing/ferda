@@ -9,6 +9,7 @@
 #include "Controller.hpp"
 #include "Igniter.hpp"
 #include "Telemetry.hpp"
+#include "RF.hpp"
 
 #include "Mode.hpp"
 #include "MissionConstants.hpp"
@@ -32,20 +33,43 @@
 #include "ServoDriver.hpp"
 #endif
 
+
+// TODO: add a global ctr c handler to turn off all digital pins
+
+
+
 int main()
 {
+    // Set floating point precision for print statements
+    std::cout << std::setprecision(8) << std::fixed;
+
 #ifdef NDEBUG
     if (wiringPiSetupGpio() < 0)
         throw std::runtime_error("failed to initialize gpio");
 
-    // Set servo driver frequency to 50 hZ
-    servo_driver.set_pwm_freq(50);
+    // Setup PCA9685 servo driver
+    try{
+         servo_driver = std::make_unique<PiPCA9685::PCA9685>();
+         servo_driver->set_pwm_freq(50);
+    }
+    catch(...)
+    {
+        // TODO: Log with telemetry
+        std::cout << "Warning: Could not setup PCA9685" << "\n";
+    }
+   
 
     // Setup Analog to Digital Converters
-    if (ads1115Setup(MissionConstants::ADS1BASE, MissionConstants::ADS1ADDR) < 0)
+    ads1115Setup(MissionConstants::ADS1BASE, MissionConstants::ADS1ADDR);
+    struct wiringPiNodeStruct *node1 = wiringPiFindNode(MissionConstants::ADS1BASE);
+    // Attempt to read from config register to see if ADS1115 is connected since ads1115Setup just opens the I2c bus
+    int config_value1 = wiringPiI2CReadReg16(node1->fd, 0x01); // Read config register
+    if (config_value1 < 0)
     {
-        // TODO: Maybe try to find. a way to use Telemetry to log and ask user if they want to abort
-        std::cerr << "Warning: Ads1115 was not found at " << ADS1ADDR;
+        // Log with telemetry
+        std::stringstream ss;
+        ss << "0x" << std::uppercase << std::hex << std::setw(2) << std::setfill('0') << MissionConstants::ADS1ADDR;
+        Telemetry::GetInstance().Log("Warning: Ads1115 was not found at " +  ss.str());
     }
     else
     {
@@ -53,10 +77,16 @@ int main()
         digitalWrite(MissionConstants::ADS1BASE, 0);
     }
 
-    if (ads1115Setup(MissionConstants::ADS2BASE, MissionConstants::ADS2ADDR) < 0)
+    ads1115Setup(MissionConstants::ADS2BASE, MissionConstants::ADS2ADDR);
+    struct wiringPiNodeStruct *node2 = wiringPiFindNode(MissionConstants::ADS2BASE);
+    // Attempt to read from config register to see if ADS1115 is connected since ads1115Setup just opens the I2c bus
+    int config_value2 = wiringPiI2CReadReg16(node2->fd, 0x01); // Read config register
+    if (config_value2 < 0)
     {
-        // TODO: Maybe try to find. a way to use Telemetry to log and ask user if they want to abort
-        std::cerr << "Warning: Ads1115 was not found at " << MissionConstants::ADS1ADDR;
+          // Log with telemetry
+        std::stringstream ss;
+        ss << "0x" << std::uppercase << std::hex << std::setw(2) << std::setfill('0') << MissionConstants::ADS2ADDR;
+        Telemetry::GetInstance().Log("Warning: Ads1115 was not found at " +  ss.str());
     }
     else
     {
@@ -64,10 +94,17 @@ int main()
         digitalWrite(MissionConstants::ADS2BASE, 0);
     }
 
-    if (ads1115Setup(MissionConstants::ADS3BASE, MissionConstants::ADS3ADDR) < 0)
+
+    ads1115Setup(MissionConstants::ADS3BASE, MissionConstants::ADS3ADDR);
+    struct wiringPiNodeStruct *node3 = wiringPiFindNode(MissionConstants::ADS3BASE);
+    // Attempt to read from config register to see if ADS1115 is connected since ads1115Setup just opens the I2c bus
+    int config_value3 = wiringPiI2CReadReg16(node3->fd, 0x01); // Read config register
+    if(config_value3 < 0)
     {
-        // TODO: Maybe try to find. a way to use Telemetry to log and ask user if they want to abort
-        std::cerr << "Warning: Ads1115 was not found at " << MissionConstants::ADS1ADDR;
+        // Log with telemetry
+        std::stringstream ss;
+        ss << "0x" << std::uppercase << std::hex << std::setw(2) << std::setfill('0') << MissionConstants::ADS3ADDR;
+        Telemetry::GetInstance().Log("Warning: Ads1115 was not found at " +  ss.str());
     }
     else
     {
@@ -75,30 +112,33 @@ int main()
         digitalWrite(MissionConstants::ADS3BASE, 0);
     }
 
-    // Liquid propulsion GPIO setup (solenoid pins)
-    pinMode(MissionConstants::kASIEthanolPin, OUTPUT);
-    pinMode(MissionConstants::kASIOxygenPin, OUTPUT);
-    pinMode(MissionConstants::kNitrogenBleedPin, OUTPUT);
+    // TODO: MAYBE ADD USER QUESTON TO SEE IF THEY WANT TO SET PINS EXLCUDING SERVO DRIVER SINCE WE CAN USE A BOOLEAN FOR THAT
 
-    // Spark plug pins
-    pinMode(MissionConstants::kSparkPin, OUTPUT);
-    pinMode(MissionConstants::kRPMPin, OUTPUT);
+    // // Liquid propulsion GPIO setup (solenoid pins)
+    // pinMode(MissionConstants::kASIEthanolPin, OUTPUT);
+    // pinMode(MissionConstants::kASIOxygenPin, OUTPUT);
+    // pinMode(MissionConstants::kNitrogenBleedPin, OUTPUT);
 
-    // Initialize solenoids to closed state (HIGH for normally-closed, LOW for normally-open)
-    digitalWrite(MissionConstants::kASIEthanolPin, 1);     // HIGH = CLOSED
-    digitalWrite(MissionConstants::kASIOxygenPin, 1);      // HIGH = CLOSED
-    digitalWrite(MissionConstants::kNitrogenBleedPin, 0);  // LOW = CLOSED (normally-open valve)
-    digitalWrite(MissionConstants::kSparkPin, 1);          // HIGH = OFF
-    servo_driver.set_pwm(MissionConstants::kRPMPin, 0, 0); // 0% duty cycle
+    // // Spark plug pins
+    // pinMode(MissionConstants::kSparkPin, OUTPUT);
+    // pinMode(MissionConstants::kRPMPin, OUTPUT);
 
-    // Initialize servos to closed position (179 degrees)
-    servo_driver.set_pwm(MissionConstants::kNitrogenServoPin, 0, 500 + (MissionConstants::kValveClosedAngle * 2000 / 180));
-    servo_driver.set_pwm(MissionConstants::kPurgeServoPin, 0, 500 + (MissionConstants::kValveClosedAngle * 2000 / 180));
-    servo_driver.set_pwm(MissionConstants::kMainEthanolServoPin, 0, 500 + (MissionConstants::kValveClosedAngle * 2000 / 180));
-    servo_driver.set_pwm(MissionConstants::kMainNitrousServoPin, 0, 500 + (MissionConstants::kValveClosedAngle * 2000 / 180));
+    // // Initialize solenoids to closed state (HIGH for normally-closed, LOW for normally-open)
+    // digitalWrite(MissionConstants::kASIEthanolPin, 1);     // HIGH = CLOSED
+    // digitalWrite(MissionConstants::kASIOxygenPin, 1);      // HIGH = CLOSED
+    // digitalWrite(MissionConstants::kNitrogenBleedPin, 0);  // LOW = CLOSED (normally-open valve)
+    // digitalWrite(MissionConstants::kSparkPin, 1);          // HIGH = OFF
+
+    
+    //servo_driver->set_pwm(MissionConstants::kRPMPin, 0, 0); // 0% duty cycle
+
+    // // Initialize servos to closed position (179 degrees)
+    // servo_driver->set_pwm(MissionConstants::kNitrogenServoPin, 0, 500 + (MissionConstants::kValveClosedAngle * 2000 / 180));
+    // servo_driver->set_pwm(MissionConstants::kPurgeServoPin, 0, 500 + (MissionConstants::kValveClosedAngle * 2000 / 180));
+    // servo_driver->set_pwm(MissionConstants::kMainEthanolServoPin, 0, 500 + (MissionConstants::kValveClosedAngle * 2000 / 180));
+    // servo_driver->set_pwm(MissionConstants::kMainNitrousServoPin, 0, 500 + (MissionConstants::kValveClosedAngle * 2000 / 180));
 
 #endif
-    std::cout << std::setprecision(8) << std::fixed;
     IMU imu;
     GPS gps;
     Lidar lidar;

@@ -195,10 +195,10 @@ Telemetry::Telemetry()
     HardwareSaved.open("../logs/data" + str + ".txt");
     SensorSaved.open("../logs/sensors" + str + ".txt");
 
+    // TODO: MAYBE ADD LIQUID TO HARDWARE_SAVE_FRAME
+
     HardwareSaved << "Date, x, y, z, vx, vy, vz, q1, q2, q3, q4, ab1, ab2, ab3, wb1, wb2, wb3, E, N, U, E_Vel, N_Vel, ux, uy \n";
     SensorSaved << "Date, accelX, accelY, accelZ, gyroX, gryoY, gyroZ, magx, magy, magz \n";
-
-    // TODO Write headers to data file where needed
 }
 
 Telemetry::~Telemetry()

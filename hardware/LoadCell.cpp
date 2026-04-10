@@ -1,11 +1,11 @@
 #include "LoadCell.hpp"
-#include <pigpio.h>
+#include <wiringPi.h>
 
-// TODO: This function needs to be implemented based on your ADC hardware
-// The original Arduino code used analogRead
-// For Raspberry Pi, you'll need an external ADC (e.g., MCP3008 via SPI)
 double LoadCell::ReadSensor(int pin)
 {
+    // Read raw reading for ADS1115
+    float rawVal = analogRead(pin);
+
     // Convert to voltage (0.0 to 5.0 volts)
     float rawVolt = (float)rawVal / 32767 * 6.144;
 

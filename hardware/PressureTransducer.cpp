@@ -1,9 +1,9 @@
 #include "PressureTransducer.hpp"
-#include <ads1115.h>
-#include <algorithm>
+#include <wiringPi.h>
 
 double PressureTransducer::ReadSensor(int pin, double maxPSI)
 {
+    // Read raw reading for ADS1115
     int rawVal = analogRead(pin);
 
     // Convert to voltage (0.0 to 5.0 volts)

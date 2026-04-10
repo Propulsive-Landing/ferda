@@ -11,22 +11,22 @@ void ValveControl::OpenValve(ValveType valve)
         // set_pwm_freq takes pulse width in microseconds: 500-2500 us for 0-180 degrees
         // 91 degrees = 500 + (91 * 2000 / 180) = ~310 us
         Telemetry::GetInstance().Log("Opening Nitrogen Valve");
-        servo_driver.set_pwm(MissionConstants::kNitrogenServoPin, 0, 500 + (MissionConstants::kValveOpenAngle * 2000 / 180));
+        servo_driver->set_pwm(MissionConstants::kNitrogenServoPin, 0, 500 + (MissionConstants::kValveOpenAngle * 2000 / 180));
         nitrogenOpen = true;
         break;
     case Purge:
         Telemetry::GetInstance().Log("Opening purge Valve");
-        servo_driver.set_pwm(MissionConstants::kPurgeServoPin, 0, 500 + (MissionConstants::kValveOpenAngle * 2000 / 180));
+        servo_driver->set_pwm(MissionConstants::kPurgeServoPin, 0, 500 + (MissionConstants::kValveOpenAngle * 2000 / 180));
         purgeOpen = true;
         break;
     case MainEthanol:
         Telemetry::GetInstance().Log("Opening Main Ethanol Valve");
-        servo_driver.set_pwm(MissionConstants::kMainEthanolServoPin, 0, 500 + (MissionConstants::kValveOpenAngle * 2000 / 180));
+        servo_driver->set_pwm(MissionConstants::kMainEthanolServoPin, 0, 500 + (MissionConstants::kValveOpenAngle * 2000 / 180));
         mainEthanolOpen = true;
         break;
     case MainNitrous:
         Telemetry::GetInstance().Log("Opening Main Nitrous Valve");
-        servo_driver.set_pwm(MissionConstants::kMainNitrousServoPin, 0, 500 + (MissionConstants::kValveOpenAngle * 2000 / 180));
+        servo_driver->set_pwm(MissionConstants::kMainNitrousServoPin, 0, 500 + (MissionConstants::kValveOpenAngle * 2000 / 180));
         mainNitrousOpen = true;
         break;
     case ASIEthanol:
@@ -55,22 +55,22 @@ void ValveControl::CloseValve(ValveType valve)
         // set_pwm takes pulse width in microseconds: 500-2500 us for 0-180 degrees
         // 179 degrees = 500 + (179 * 2000 / 180) = ~510 us
         Telemetry::GetInstance().Log("Closing Nitrogen Valve");
-        servo_driver.set_pwm(MissionConstants::kNitrogenServoPin, 0, 500 + (MissionConstants::kValveClosedAngle * 2000 / 180));
+        servo_driver->set_pwm(MissionConstants::kNitrogenServoPin, 0, 500 + (MissionConstants::kValveClosedAngle * 2000 / 180));
         nitrogenOpen = false;
         break;
     case Purge:
         Telemetry::GetInstance().Log("Closing purge Valve");
-        servo_driver.set_pwm(MissionConstants::kPurgeServoPin, 0, 500 + (MissionConstants::kValveClosedAngle * 2000 / 180));
+        servo_driver->set_pwm(MissionConstants::kPurgeServoPin, 0, 500 + (MissionConstants::kValveClosedAngle * 2000 / 180));
         purgeOpen = false;
         break;
     case MainEthanol:
         Telemetry::GetInstance().Log("Closing Main Ethanol Valve");
-        servo_driver.set_pwm(MissionConstants::kMainEthanolServoPin, 0, 500 + (MissionConstants::kValveClosedAngle * 2000 / 180));
+        servo_driver->set_pwm(MissionConstants::kMainEthanolServoPin, 0, 500 + (MissionConstants::kValveClosedAngle * 2000 / 180));
         mainEthanolOpen = false;
         break;
     case MainNitrous:
         Telemetry::GetInstance().Log("Closing Main Nitrous Valve");
-        servo_driver.set_pwm(MissionConstants::kMainNitrousServoPin, 0, 500 + (MissionConstants::kValveClosedAngle * 2000 / 180));
+        servo_driver->set_pwm(MissionConstants::kMainNitrousServoPin, 0, 500 + (MissionConstants::kValveClosedAngle * 2000 / 180));
         mainNitrousOpen = false;
         break;
     case ASIEthanol:
