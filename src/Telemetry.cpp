@@ -19,28 +19,20 @@ using json = nlohmann::json;
 
 namespace
 {
-void WriteTimestampPrefix(std::ofstream &stream)
+void WriteElapsedSecondsPrefix(
+    std::ofstream &stream,
+    const std::chrono::steady_clock::time_point &startTime)
 {
-    auto now = std::chrono::system_clock::now();
-    auto seconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - seconds).count();
-
-    std::time_t tt = std::chrono::system_clock::to_time_t(seconds);
-    std::tm tm;
-    localtime_r(&tt, &tm);
-
-    std::ostringstream oss;
-    oss << std::put_time(&tm, "%d-%m-%Y %H:%M:%S")
-        << "." << std::setw(3) << std::setfill('0') << ms;
-
-    stream << oss.str() << ", ";
+    const auto now = std::chrono::steady_clock::now();
+    const double elapsedSeconds = std::chrono::duration<double>(now - startTime).count();
+    stream << std::fixed << std::setprecision(3) << elapsedSeconds << ", ";
 }
 }
 
 void Telemetry::HardwareSaveFrame(Navigation &navigation, Controller &controller, GPS &gps)
 {
-    WriteTimestampPrefix(HardwareSaved);
-    WriteTimestampPrefix(SensorSaved);
+    WriteElapsedSecondsPrefix(HardwareSaved, StartTime);
+    WriteElapsedSecondsPrefix(SensorSaved, StartTime);
 
     // Navigation state, U, k matrix current index
     // Write data to file
@@ -79,7 +71,7 @@ void Telemetry::HardwareSaveFrame(Navigation &navigation, Controller &controller
 
 void Telemetry::GPSSaveFrame(GPS &gps)
 {
-    WriteTimestampPrefix(GPSSaved);
+    WriteElapsedSecondsPrefix(GPSSaved, StartTime);
 
     const std::tuple<double, double, double> gpsPos = gps.GetGPSPosition();
     const std::tuple<double, double> gpsVel = gps.GetGPSVelocity();
@@ -184,7 +176,7 @@ void Telemetry::RunTelemetry(Navigation &navigation, Controller &controller, GPS
     }
 }
 
-Telemetry::Telemetry()
+Telemetry::Telemetry() : StartTime(std::chrono::steady_clock::now())
 {
     auto t = std::time(nullptr);
     auto tm = *std::localtime(&t);
@@ -198,9 +190,9 @@ Telemetry::Telemetry()
     SensorSaved.open("../logs/sensors" + str + ".txt");
     GPSSaved.open("../logs/gps" + str + ".txt");
 
-    HardwareSaved << "Date, x, y, z, vx, vy, vz, q1, q2, q3, q4, ab1, ab2, ab3, wb1, wb2, wb3, E, N, U, ux, uy, K_Matrix_Index \n";
-    SensorSaved << "Date, accelX, accelY, accelZ, gyroX, gryoY, gyroZ, magx, magy, magz \n";
-    GPSSaved << "Date, gpsE, gpsN, gpsU, gpsVxE, gpsVyN \n";
+    HardwareSaved << "TimeSeconds, x, y, z, vx, vy, vz, q1, q2, q3, q4, ab1, ab2, ab3, wb1, wb2, wb3, E, N, U, ux, uy, K_Matrix_Index \n";
+    SensorSaved << "TimeSeconds, accelX, accelY, accelZ, gyroX, gryoY, gyroZ, magx, magy, magz \n";
+    GPSSaved << "TimeSeconds, gpsE, gpsN, gpsU, gpsVxE, gpsVyN \n";
 
     // TODO Write headers to data file where needed
 }

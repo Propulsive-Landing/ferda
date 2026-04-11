@@ -1,5 +1,6 @@
 #include <string>
 #include <fstream>
+#include <chrono>
 #include <stdio.h>
 
 #include "Mode.hpp"
@@ -17,6 +18,8 @@ private:
     void RfSendFrame(Navigation &navigation, Controller &controller);
 
 public:
+    std::chrono::steady_clock::time_point StartTime;
+
     std::ofstream Logs;
     std::ofstream HardwareSaved;
     std::ofstream SensorSaved;
