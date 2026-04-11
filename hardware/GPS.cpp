@@ -27,6 +27,22 @@ bool TryParseIntToken(const std::vector<std::string> &parts, size_t index, int *
         return false;
     }
 }
+
+bool TryParseNmeaTimeKey(const std::vector<std::string> &parts, size_t index, int64_t *out)
+{
+    if (index >= parts.size() || parts[index].empty()) {
+        return false;
+    }
+
+    try {
+        // Preserve sub-second precision (hhmmss.ss -> millisecond bucket key).
+        const double time_value = std::stod(parts[index]);
+        *out = static_cast<int64_t>(std::llround(time_value * 1000.0));
+        return true;
+    } catch (const std::exception &) {
+        return false;
+    }
+}
 }
 
 GPS::GPS()
@@ -351,14 +367,14 @@ void GPS::convert_speed_course_to_velocity()
 
 std::map<std::string, std::vector<std::string>> GPS::retrieve_all_NMEA_sentences()
 {
-    std::map<int, std::vector<std::string>> rmc_history;
-    std::map<int, std::vector<std::string>> gga_history;
+    std::map<int64_t, std::vector<std::string>> rmc_history;
+    std::map<int64_t, std::vector<std::string>> gga_history;
 
     std::map<std::string, std::vector<std::string>> history;
 
-    std::vector<int> intersection_results;
-    std::set<int> rmc_times;
-    std::set<int> gga_times;
+    std::vector<int64_t> intersection_results;
+    std::set<int64_t> rmc_times;
+    std::set<int64_t> gga_times;
 
     for (auto &message : acculumated_messages)
     {
@@ -374,8 +390,8 @@ std::map<std::string, std::vector<std::string>> GPS::retrieve_all_NMEA_sentences
             continue;
         }
 
-        int time = 0;
-        if (!TryParseIntToken(nmea_message_parts, MissionConstants::NMEA::TIME_IDX, &time)) {
+        int64_t time = 0;
+        if (!TryParseNmeaTimeKey(nmea_message_parts, MissionConstants::NMEA::TIME_IDX, &time)) {
             continue;
         }
 
@@ -400,7 +416,7 @@ std::map<std::string, std::vector<std::string>> GPS::retrieve_all_NMEA_sentences
         return history;
     }
 
-    int max_common_element = intersection_results[intersection_results.size() - 1];
+    int64_t max_common_element = intersection_results[intersection_results.size() - 1];
 
     history[MissionConstants::NMEA::RMC::RMC] = rmc_history[max_common_element];
     history[MissionConstants::NMEA::GGA::GGA] = gga_history[max_common_element];
