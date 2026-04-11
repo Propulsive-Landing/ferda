@@ -13,12 +13,14 @@ private:
     ~Telemetry();
 
     void HardwareSaveFrame(Navigation &navigation, Controller &controller, GPS &gps);
+    void GPSSaveFrame(GPS &gps);
     void RfSendFrame(Navigation &navigation, Controller &controller);
 
 public:
     std::ofstream Logs;
     std::ofstream HardwareSaved;
     std::ofstream SensorSaved;
+    std::ofstream GPSSaved;
 
     void RunTelemetry(Navigation &navigation, Controller &controller, GPS &gps, float HardwareSaveDelta, float RFSaveDelta);
     void Log(std::string message);

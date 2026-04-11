@@ -24,6 +24,7 @@ GPS::GPS()
     gps_info.speed = -1;
     gps_info.E_velocity = -1;
     gps_info.N_velocity = -1;
+    update_count = 0;
 
     fd = open(MissionConstants::GPS_Port, O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0)
@@ -81,6 +82,7 @@ void GPS::Update()
     if (GPSAvailable())
     {
         convert_coordinate_frame();
+        ++update_count;
     }
 }
 
@@ -385,6 +387,11 @@ void GPS::read_data()
 bool GPS::GPSAvailable()
 {
     return valid;
+}
+
+uint64_t GPS::GetUpdateCount() const
+{
+    return update_count;
 }
 
 void GPS::set_valid(const bool state)

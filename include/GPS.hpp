@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <tuple>
 #include <string>
 #include <termios.h>
@@ -37,6 +38,8 @@ private:
     // Used for validity checking
     bool valid;
 
+    uint64_t update_count;
+
     // GPS only outputs 3 bytes at a time it seems
     char buffer[MissionConstants::MAX_SIZE];
 
@@ -64,4 +67,5 @@ public:
     std::tuple<double, double, double> GetGPSPosition();
     std::tuple<double, double> GetGPSVelocity();
     bool GPSAvailable();
+    uint64_t GetUpdateCount() const;
 };
