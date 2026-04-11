@@ -359,11 +359,19 @@ void Navigation::UpdateNavigation()
 
         if (gps.GPSAvailable())
         {
-            gpsPosition = gps.GetGPSPosition();
-            gpsVelocity = gps.GetGPSVelocity();
-            Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
-            Eigen::Vector2d gpsVelocityVector(std::get<0>(gpsVelocity), std::get<1>(gpsVelocity));
-            gpsUpdate(gpsPositionVector, gpsVelocityVector);
+            if (gps.HasFreshPosition())
+            {
+                gpsPosition = gps.GetGPSPosition();
+                Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
+                gpsPositionUpdate(gpsPositionVector);
+            }
+
+            if (gps.HasFreshVelocity())
+            {
+                gpsVelocity = gps.GetGPSVelocity();
+                Eigen::Vector2d gpsVelocityVector(std::get<0>(gpsVelocity), std::get<1>(gpsVelocity));
+                gpsVelocityUpdate(gpsVelocityVector);
+            }
         }
         gps_update_counter = 0;
     }
@@ -425,31 +433,42 @@ void Navigation::magnetometerUpdate(const Eigen::Vector3d &magneticField, const 
     kalmanUpdate(H, V, magneticField, y_pred);
 }
 
-void Navigation::gpsUpdate(const Eigen::Vector3d& gpsPosition, const Eigen::Vector2d& gpsVelocity)
+void Navigation::gpsPositionUpdate(const Eigen::Vector3d& gpsPosition)
 {
     const Eigen::Vector3d sensor_r_gps_orig = MissionConstants::kSensorGPSPosition;
-    
-    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(5, 15);
+
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
     H.block<3,3>(0,0) = Eigen::Matrix3d::Identity();
-    H.block<2,2>(3,3) = Eigen::Matrix2d::Identity();
 
-    Eigen::VectorXd y = Eigen::VectorXd::Zero(5);
-    y << gpsPosition(0), gpsPosition(1), gpsPosition(2), gpsVelocity(0), gpsVelocity(1);
+    Eigen::VectorXd y = Eigen::VectorXd::Zero(3);
+    y << gpsPosition(0), gpsPosition(1), gpsPosition(2);
 
-    Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(5);
-    y_pred << x_e(0) + sensor_r_gps_orig(0), x_e(1) + sensor_r_gps_orig(1), x_e(2) + sensor_r_gps_orig(2), v_e(0), v_e(1);
+    Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(3);
+    y_pred << x_e(0) + sensor_r_gps_orig(0), x_e(1) + sensor_r_gps_orig(1), x_e(2) + sensor_r_gps_orig(2);
 
-    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(5, 5);
+    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(3, 3);
     V.block<3,3>(0,0) = MissionConstants::kNavGPSPositionNoiseFactor *
                         MissionConstants::kSensorGPSPositionNoiseM * MissionConstants::kSensorGPSPositionNoiseM *
                         Eigen::Matrix3d::Identity();
-    V.block<2,2>(3,3) = MissionConstants::kNavGPSVelocityNoiseFactor *
+
+    kalmanUpdate(H, V, y, y_pred);
+}
+
+void Navigation::gpsVelocityUpdate(const Eigen::Vector2d& gpsVelocity)
+{
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(2, 15);
+    H.block<2,2>(0,3) = Eigen::Matrix2d::Identity();
+
+    Eigen::VectorXd y = Eigen::VectorXd::Zero(2);
+    y << gpsVelocity(0), gpsVelocity(1);
+
+    Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(2);
+    y_pred << v_e(0), v_e(1);
+
+    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(2, 2);
+    V.block<2,2>(0,0) = MissionConstants::kNavGPSVelocityNoiseFactor *
                         MissionConstants::kSensorGPSVelocityNoiseMps * MissionConstants::kSensorGPSVelocityNoiseMps *
                         Eigen::Matrix2d::Identity();
-
-    //std::cout << "GPS Difference" << (gpsPosition(0) - y_pred(0)) << ", " 
-    //          << (gpsPosition(1) - y_pred(1)) << ", " 
-    //          << (gpsPosition(2) - y_pred(2)) << "\n";
 
     kalmanUpdate(H, V, y, y_pred);
 }

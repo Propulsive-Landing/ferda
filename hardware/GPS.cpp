@@ -45,6 +45,12 @@ GPS::GPS()
     update_count = 0;
 
     valid = false;
+    fresh_position = false;
+    fresh_velocity = false;
+    has_last_rmc_time = false;
+    has_last_gga_time = false;
+    last_rmc_time = 0.0;
+    last_gga_time = 0.0;
 
     fd = open(MissionConstants::GPS_Port, O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0)
@@ -82,25 +88,45 @@ GPS::~GPS()
 
 void GPS::Update()
 {
+    fresh_position = false;
+    fresh_velocity = false;
+
     read_data();
-    std::map<std::string, std::vector<std::string>> hist = retrieve_all_NMEA_sentences();
+    bool parsed_valid_sentence = false;
+
+    for (const std::string &raw_message : acculumated_messages)
+    {
+        std::vector<std::string> nmea_message_parts = break_message_down(raw_message);
+        if (nmea_message_parts.empty()) {
+            continue;
+        }
+
+        const std::string nmea_type = determine_NMEA_type(nmea_message_parts);
+        if (nmea_type != MissionConstants::NMEA::RMC::RMC &&
+            nmea_type != MissionConstants::NMEA::GGA::GGA) {
+            continue;
+        }
+
+        if (parse_NMEA_type(nmea_type, nmea_message_parts)) {
+            parsed_valid_sentence = true;
+        }
+    }
+
     reset_acculumated_messages();
 
-    if (hist.empty())
+    set_valid(parsed_valid_sentence);
+    if (!GPSAvailable())
     {
-        set_valid(false);
         return;
     }
 
-    set_valid(true);
-    for (const auto &sentence_info : hist)
-    {
-        parse_NMEA_type(sentence_info.first, sentence_info.second);
-    }
-
-    if (GPSAvailable())
+    if (fresh_position)
     {
         convert_coordinate_frame();
+    }
+
+    if (fresh_position || fresh_velocity)
+    {
         ++update_count;
     }
 }
@@ -178,64 +204,60 @@ std::string GPS::determine_NMEA_type(const std::vector<std::string> &nmea_messag
     return nmea_message_parts[MissionConstants::NMEA::MESSAGE_TYPE_IDX];
 }
 
-void GPS::parse_NMEA_type(const std::string nmea_message_type, const std::vector<std::string> &nmea_message_parts)
+bool GPS::parse_NMEA_type(const std::string nmea_message_type, const std::vector<std::string> &nmea_message_parts)
 {
-    if (valid && nmea_message_type == MissionConstants::NMEA::RMC::RMC)
+    if (nmea_message_type == MissionConstants::NMEA::RMC::RMC)
     {
         std::cout << "Got RMC output type " << "\n";
         if (nmea_message_parts.size() <= static_cast<size_t>(MissionConstants::NMEA::RMC::STATUS_IDX) ||
             nmea_message_parts[MissionConstants::NMEA::RMC::STATUS_IDX].empty()) {
-            valid = false;
             std::cout << "RMC sentence missing status, skipping" << "\n";
-            return;
+            return false;
         }
 
         std::string status = nmea_message_parts[MissionConstants::NMEA::RMC::STATUS_IDX];
         char status_character = static_cast<char>(status[0]);
         if (status_character == MissionConstants::NMEA::RMC::BAD_STATUS_CHARACTER)
         {
-            valid = false;
             std::cout << "Data is not valid, failed to update GPS_info" << "\n";
+            return false;
         }
-        else
-        {
-            try {
-                parse_RMC(nmea_message_parts);
-            } catch (const std::exception &e) {
-                valid = false;
-                std::cout << "RMC parse failed: " << e.what() << "\n";
-            }
+
+        try {
+            return parse_RMC(nmea_message_parts);
+        } catch (const std::exception &e) {
+            std::cout << "RMC parse failed: " << e.what() << "\n";
+            return false;
         }
     }
-    else if (valid && nmea_message_type == MissionConstants::NMEA::GGA::GGA)
+
+    if (nmea_message_type == MissionConstants::NMEA::GGA::GGA)
     {
         std::cout << "Got GGA output type " << "\n";
-        std::string status = nmea_message_parts[MissionConstants::NMEA::GGA::STATUS_IDX];
         int status_int = 0;
         if (!TryParseIntToken(nmea_message_parts, MissionConstants::NMEA::GGA::STATUS_IDX, &status_int)) {
-            valid = false;
             std::cout << "GGA sentence missing/invalid status, skipping" << "\n";
-            return;
+            return false;
         }
 
         if (status_int == MissionConstants::NMEA::GGA::BAD_STATUS_NUMBER)
         {
-            valid = false;
             std::cout << "Data is not valid, failed to update GPS_info" << "\n";
+            return false;
         }
-        else
-        {
-            try {
-                parse_GGA(nmea_message_parts);
-            } catch (const std::exception &e) {
-                valid = false;
-                std::cout << "GGA parse failed: " << e.what() << "\n";
-            }
+
+        try {
+            return parse_GGA(nmea_message_parts);
+        } catch (const std::exception &e) {
+            std::cout << "GGA parse failed: " << e.what() << "\n";
+            return false;
         }
     }
+
+    return false;
 }
 
-void GPS::parse_RMC(const std::vector<std::string> &nmea_message_parts)
+bool GPS::parse_RMC(const std::vector<std::string> &nmea_message_parts)
 {
     if (nmea_message_parts.size() <= static_cast<size_t>(MissionConstants::NMEA::RMC::COURSE_IDX) ||
         nmea_message_parts.size() <= static_cast<size_t>(MissionConstants::NMEA::RMC::SPEED_IDX) ||
@@ -250,7 +272,13 @@ void GPS::parse_RMC(const std::vector<std::string> &nmea_message_parts)
         throw std::invalid_argument("RMC sentence missing required fields");
     }
 
-    float time = stof(nmea_message_parts[MissionConstants::NMEA::TIME_IDX]);
+    const double time = std::stod(nmea_message_parts[MissionConstants::NMEA::TIME_IDX]);
+    if (has_last_rmc_time && std::abs(time - last_rmc_time) < 1e-6) {
+        return false;
+    }
+    has_last_rmc_time = true;
+    last_rmc_time = time;
+
     char latitude_direction = static_cast<char>(nmea_message_parts[MissionConstants::NMEA::RMC::LATITUDE_DIRECTION_IDX][0]);
     float latitude = convert_latitude(nmea_message_parts[MissionConstants::NMEA::RMC::LATITUDE_IDX], latitude_direction);
     char longitude_direction = static_cast<char>(nmea_message_parts[MissionConstants::NMEA::RMC::LONGITUDE_DIRECTION_IDX][0]);
@@ -274,9 +302,12 @@ void GPS::parse_RMC(const std::vector<std::string> &nmea_message_parts)
     gps_info.speed = speed;
     gps_info.course = course;
     convert_speed_course_to_velocity();
+    fresh_position = true;
+    fresh_velocity = true;
+    return true;
 }
 
-void GPS::parse_GGA(const std::vector<std::string> &nmea_message_parts)
+bool GPS::parse_GGA(const std::vector<std::string> &nmea_message_parts)
 {
     if (nmea_message_parts.size() <= static_cast<size_t>(MissionConstants::NMEA::GGA::ALTITUDE_INDEX) ||
         nmea_message_parts[MissionConstants::NMEA::TIME_IDX].empty() ||
@@ -284,7 +315,13 @@ void GPS::parse_GGA(const std::vector<std::string> &nmea_message_parts)
         throw std::invalid_argument("GGA sentence missing required fields");
     }
 
-    float time = stof(nmea_message_parts[MissionConstants::NMEA::TIME_IDX]);
+    const double time = std::stod(nmea_message_parts[MissionConstants::NMEA::TIME_IDX]);
+    if (has_last_gga_time && std::abs(time - last_gga_time) < 1e-6) {
+        return false;
+    }
+    has_last_gga_time = true;
+    last_gga_time = time;
+
     float altitude = stof(nmea_message_parts[MissionConstants::NMEA::GGA::ALTITUDE_INDEX]);
 
     // Sanity check:
@@ -293,6 +330,8 @@ void GPS::parse_GGA(const std::vector<std::string> &nmea_message_parts)
     std::cout << "\n";
 
     gps_info.altitude = altitude;
+    fresh_position = true;
+    return true;
 }
 
 std::tuple<double, double, double> GPS::GetGPSPosition()
@@ -347,64 +386,6 @@ void GPS::convert_speed_course_to_velocity()
 
     gps_info.E_velocity = speed * std::sin(course);
     gps_info.N_velocity = speed * std::cos(course);
-}
-
-std::map<std::string, std::vector<std::string>> GPS::retrieve_all_NMEA_sentences()
-{
-    std::map<int, std::vector<std::string>> rmc_history;
-    std::map<int, std::vector<std::string>> gga_history;
-
-    std::map<std::string, std::vector<std::string>> history;
-
-    std::vector<int> intersection_results;
-    std::set<int> rmc_times;
-    std::set<int> gga_times;
-
-    for (auto &message : acculumated_messages)
-    {
-        std::cout << message;
-        std::vector<std::string> nmea_message_parts = break_message_down(message);
-        if (nmea_message_parts.empty()) {
-            continue;
-        }
-
-        std::string NMEA_type = determine_NMEA_type(nmea_message_parts);
-        if (NMEA_type != MissionConstants::NMEA::RMC::RMC &&
-            NMEA_type != MissionConstants::NMEA::GGA::GGA) {
-            continue;
-        }
-
-        int time = 0;
-        if (!TryParseIntToken(nmea_message_parts, MissionConstants::NMEA::TIME_IDX, &time)) {
-            continue;
-        }
-
-        if (NMEA_type == MissionConstants::NMEA::RMC::RMC)
-        {
-            rmc_history[time] = nmea_message_parts;
-            rmc_times.insert(time);
-        }
-        else if (NMEA_type == MissionConstants::NMEA::GGA::GGA)
-        {
-            gga_history[time] = nmea_message_parts;
-            gga_times.insert(time);
-        }
-    }
-    std::cout << "\n";
-    std::set_intersection(rmc_times.begin(), rmc_times.end(),
-                          gga_times.begin(), gga_times.end(),
-                          back_inserter(intersection_results));
-
-    if (intersection_results.empty())
-    {
-        return history;
-    }
-
-    int max_common_element = intersection_results[intersection_results.size() - 1];
-
-    history[MissionConstants::NMEA::RMC::RMC] = rmc_history[max_common_element];
-    history[MissionConstants::NMEA::GGA::GGA] = gga_history[max_common_element];
-    return history;
 }
 
 void GPS::read_data()
@@ -463,6 +444,16 @@ void GPS::read_data()
 bool GPS::GPSAvailable()
 {
     return valid;
+}
+
+bool GPS::HasFreshPosition() const
+{
+    return fresh_position;
+}
+
+bool GPS::HasFreshVelocity() const
+{
+    return fresh_velocity;
 }
 
 uint64_t GPS::GetUpdateCount() const

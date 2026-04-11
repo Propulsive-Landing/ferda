@@ -26,6 +26,16 @@ bool GPS::GPSAvailable()
     return true; 
 }
 
+bool GPS::HasFreshPosition() const
+{
+    return true;
+}
+
+bool GPS::HasFreshVelocity() const
+{
+    return true;
+}
+
 uint64_t GPS::GetUpdateCount() const
 {
     return update_count;

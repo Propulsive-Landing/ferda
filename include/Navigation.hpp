@@ -31,7 +31,8 @@ private:
     std::tuple<double, double> gpsVelocity;
     bool gpsAvailable;
     void magnetometerUpdate(const Eigen::Vector3d& magneticField, const Eigen::Matrix3d& R);
-    void gpsUpdate(const Eigen::Vector3d& gpsPosition, const Eigen::Vector2d& gpsVelocity);
+    void gpsPositionUpdate(const Eigen::Vector3d& gpsPosition);
+    void gpsVelocityUpdate(const Eigen::Vector2d& gpsVelocity);
     void lidarUpdate(double lidar, const Eigen::Matrix3d& R);
     void cameraUpdate(const std::vector<Eigen::Vector3d>& cameraDirections, const Eigen::Matrix3d& R);
     std::ofstream dataFile;
