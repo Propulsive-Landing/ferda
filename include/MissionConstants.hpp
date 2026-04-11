@@ -200,8 +200,6 @@ namespace MissionConstants
     const int MAX_SIZE = 1000;
     inline const char *GPS_Port = "/dev/ttyUSB0";
 
-    // inline const char *GPS_Port = "/dev/cu.usbserial-110";
-
     namespace NMEA
     {
         const int MESSAGE_TYPE_STARTING_STRING_INDEX = 3;
