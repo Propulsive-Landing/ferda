@@ -352,8 +352,9 @@ void Navigation::UpdateNavigation()
         magnetometer_update_counter = 0; // Reset counter
     }
     ++gps_update_counter;
-    if (gps_update_counter == kGPSUpdateCadence && false)
+    if (gps_update_counter == kGPSUpdateCadence)
     {
+
         gps.Update();
 
         if (gps.GPSAvailable())
@@ -368,7 +369,7 @@ void Navigation::UpdateNavigation()
     }
 
     camera_capture_elapsed_s += loopTime;
-    if (camera_capture_elapsed_s >= kCameraCapturePeriodS) {
+    if (camera_capture_elapsed_s >= kCameraCapturePeriodS && false) {
         camera.RequestCapture();
         camera_capture_elapsed_s -= kCameraCapturePeriodS;
     }

@@ -57,6 +57,8 @@ void Telemetry::HardwareSaveFrame(Navigation &navigation, Controller &controller
     std::tuple<double, double, double> linAc = navigation.GetLinearAcceleration();
     std::tuple<double, double, double> angAc = navigation.GetAngularAcceleration();
     std::tuple<double, double, double> mag = navigation.GetMagneticField();
+    std::tuple<double, double, double> gpsPos = gps.GetGPSPosition();
+    std::tuple<double, double> gpsVel = gps.GetGPSVelocity();
 
     SensorSaved << std::to_string(std::get<0>(linAc)) << ", ";
     SensorSaved << std::to_string(std::get<1>(linAc)) << ", ";
@@ -66,7 +68,12 @@ void Telemetry::HardwareSaveFrame(Navigation &navigation, Controller &controller
     SensorSaved << std::to_string(std::get<2>(angAc)) << ",";
     SensorSaved << std::to_string(std::get<0>(mag)) << ", ";
     SensorSaved << std::to_string(std::get<1>(mag)) << ", ";
-    SensorSaved << std::to_string(std::get<2>(mag));
+    SensorSaved << std::to_string(std::get<2>(mag)) << ", ";
+    SensorSaved << std::to_string(std::get<0>(gpsPos)) << ", ";
+    SensorSaved << std::to_string(std::get<1>(gpsPos)) << ", ";
+    SensorSaved << std::to_string(std::get<2>(gpsPos)) << ", ";
+    SensorSaved << std::to_string(std::get<0>(gpsVel)) << ", ";
+    SensorSaved << std::to_string(std::get<1>(gpsVel));
 
     HardwareSaved << "\n"
                   << std::flush;
@@ -168,7 +175,7 @@ Telemetry::Telemetry()
     SensorSaved.open("../logs/sensors" + str + ".txt");
 
     HardwareSaved << "Date, x, y, z, vx, vy, vz, q1, q2, q3, q4, ab1, ab2, ab3, wb1, wb2, wb3, E, N, U, ux, uy, K_Matrix_Index \n";
-    SensorSaved << "Date, accelX, accelY, accelZ, gyroX, gryoY, gyroZ, magx, magy, magz \n";
+    SensorSaved << "Date, accelX, accelY, accelZ, gyroX, gryoY, gyroZ, magx, magy, magz, gpsE, gpsN, gpsU, gpsVxE, gpsVyN \n";
 
     // TODO Write headers to data file where needed
 }
