@@ -435,8 +435,6 @@ void Navigation::magnetometerUpdate(const Eigen::Vector3d &magneticField, const 
 
 void Navigation::gpsPositionUpdate(const Eigen::Vector3d& gpsPosition)
 {
-    const Eigen::Vector3d sensor_r_gps_orig = MissionConstants::kSensorGPSPosition;
-
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
     H.block<3,3>(0,0) = Eigen::Matrix3d::Identity();
 
@@ -444,7 +442,7 @@ void Navigation::gpsPositionUpdate(const Eigen::Vector3d& gpsPosition)
     y << gpsPosition(0), gpsPosition(1), gpsPosition(2);
 
     Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(3);
-    y_pred << x_e(0) + sensor_r_gps_orig(0), x_e(1) + sensor_r_gps_orig(1), x_e(2) + sensor_r_gps_orig(2);
+    y_pred << x_e(0), x_e(1), x_e(2);
 
     Eigen::MatrixXd V = Eigen::MatrixXd::Zero(3, 3);
     V.block<3,3>(0,0) = MissionConstants::kNavGPSPositionNoiseFactor *
