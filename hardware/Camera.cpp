@@ -246,6 +246,37 @@ Eigen::Vector3d PixelToUnitVector(double px, double py)
         1.0);
     return ray.normalized();
 }
+
+bool UnitVectorToPixel(const Eigen::Vector3d& unitVectorCamera, cv::Point2d& pixel)
+{
+    if (unitVectorCamera.z() <= 1e-6) {
+        return false;
+    }
+
+    const CameraCalibration::Data& calibration = GetCameraCalibration();
+
+    std::vector<cv::Point3f> objectPoints;
+    objectPoints.emplace_back(
+        static_cast<float>(unitVectorCamera.x() / unitVectorCamera.z()),
+        static_cast<float>(unitVectorCamera.y() / unitVectorCamera.z()),
+        1.0f);
+
+    std::vector<cv::Point2f> imagePoints;
+    cv::projectPoints(
+        objectPoints,
+        cv::Vec3d(0.0, 0.0, 0.0),
+        cv::Vec3d(0.0, 0.0, 0.0),
+        calibration.cameraMatrix,
+        calibration.distortionCoefficients,
+        imagePoints);
+
+    if (imagePoints.empty()) {
+        return false;
+    }
+
+    pixel = imagePoints.front();
+    return true;
+}
 }
 
 Camera::Camera()
@@ -606,4 +637,113 @@ void Camera::AnnotateDebugFrameMatches(
     }
 
     GetDebugFrameLogger().Enqueue(frameId, labeledFrame, "matched");
+}
+
+void Camera::AnnotateDebugFrameExpectedVsTrue(
+    double frameId,
+    const std::vector<std::pair<int, Eigen::Vector3d>>& expectedMarkerBodyDirections)
+{
+    if (!MissionConstants::kSensorCameraSaveDebugFrames) {
+        return;
+    }
+
+    cv::Mat labeledFrame;
+    std::vector<cv::Point2d> centroids;
+    {
+        std::lock_guard<std::mutex> lock(gLatestDebugFrameMutex);
+        if (gLatestDebugFrame.empty() || frameId != gLatestDebugFrameId) {
+            return;
+        }
+        labeledFrame = gLatestDebugFrame.clone();
+        centroids = gLatestDetectionCentroids;
+    }
+
+    if (centroids.empty()) {
+        cv::putText(
+            labeledFrame,
+            "true: no detections",
+            cv::Point(20, 35),
+            cv::FONT_HERSHEY_SIMPLEX,
+            0.7,
+            cv::Scalar(0, 0, 255),
+            2,
+            cv::LINE_AA);
+    } else {
+        for (size_t i = 0; i < centroids.size(); ++i) {
+            const cv::Point2d& centroid = centroids[i];
+            cv::drawMarker(
+                labeledFrame,
+                centroid,
+                cv::Scalar(0, 255, 0),
+                cv::MARKER_CROSS,
+                14,
+                2,
+                cv::LINE_AA);
+
+            std::ostringstream trueLabel;
+            trueLabel << "true m" << i;
+            cv::putText(
+                labeledFrame,
+                trueLabel.str(),
+                cv::Point(static_cast<int>(centroid.x) + 10, static_cast<int>(centroid.y) + 20),
+                cv::FONT_HERSHEY_SIMPLEX,
+                0.5,
+                cv::Scalar(0, 255, 0),
+                2,
+                cv::LINE_AA);
+        }
+    }
+
+    const Eigen::Vector3d eul = MissionConstants::kSensorCameraOrientationRad;
+    const Eigen::Matrix3d DCM_bc =
+        (Eigen::AngleAxisd(eul.x(), Eigen::Vector3d::UnitX()).toRotationMatrix() *
+         Eigen::AngleAxisd(eul.y(), Eigen::Vector3d::UnitY()).toRotationMatrix() *
+         Eigen::AngleAxisd(eul.z(), Eigen::Vector3d::UnitZ()).toRotationMatrix());
+    const Eigen::Matrix3d DCM_cb = DCM_bc.transpose();
+
+    if (expectedMarkerBodyDirections.empty()) {
+        cv::putText(
+            labeledFrame,
+            "expected: none",
+            cv::Point(20, 65),
+            cv::FONT_HERSHEY_SIMPLEX,
+            0.7,
+            cv::Scalar(255, 0, 0),
+            2,
+            cv::LINE_AA);
+    }
+
+    for (const auto& marker : expectedMarkerBodyDirections) {
+        const int markerIdx = marker.first;
+        const Eigen::Vector3d bodyDirection = marker.second;
+        const Eigen::Vector3d cameraDirection = (DCM_cb * bodyDirection).normalized();
+
+        cv::Point2d expectedPixel;
+        if (!UnitVectorToPixel(cameraDirection, expectedPixel)) {
+            continue;
+        }
+
+        cv::drawMarker(
+            labeledFrame,
+            expectedPixel,
+            cv::Scalar(255, 0, 0),
+            cv::MARKER_TILTED_CROSS,
+            16,
+            2,
+            cv::LINE_AA);
+
+        std::ostringstream expectedLabel;
+        expectedLabel << "exp id" << markerIdx;
+        cv::putText(
+            labeledFrame,
+            expectedLabel.str(),
+            cv::Point(static_cast<int>(expectedPixel.x) + 10, static_cast<int>(expectedPixel.y) - 10),
+            cv::FONT_HERSHEY_SIMPLEX,
+            0.5,
+            cv::Scalar(255, 0, 0),
+            2,
+            cv::LINE_AA);
+    }
+
+    GetDebugFrameLogger().Enqueue(frameId, labeledFrame, "expected_vs_true");
 }

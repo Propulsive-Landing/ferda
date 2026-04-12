@@ -543,12 +543,6 @@ void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d>& cameraDirectio
         }
     }
 
-    const int M = static_cast<int>(measuredBody.size());
-    if (M == 0) {
-        camera.AnnotateDebugFrameMatches(frameId, {});
-        return;
-    }
-
     std::vector<PredictedMarker> predictions;
     predictions.reserve(N);
     for (int i = 0; i < N; ++i) {
@@ -567,6 +561,19 @@ void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d>& cameraDirectio
         prediction.rho = delta / d;
         prediction.u = (R.transpose() * delta) / d;
         predictions.push_back(prediction);
+    }
+
+    std::vector<std::pair<int, Eigen::Vector3d>> expectedMarkerBodyDirections;
+    expectedMarkerBodyDirections.reserve(predictions.size());
+    for (const auto& prediction : predictions) {
+        expectedMarkerBodyDirections.emplace_back(prediction.markerIdx, prediction.rho);
+    }
+    camera.AnnotateDebugFrameExpectedVsTrue(frameId, expectedMarkerBodyDirections);
+
+    const int M = static_cast<int>(measuredBody.size());
+    if (M == 0) {
+        camera.AnnotateDebugFrameMatches(frameId, {});
+        return;
     }
 
     if (!predictions.empty()) {
