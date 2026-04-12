@@ -506,8 +506,8 @@ void Navigation::padUpdateVelocity()
     H.block<3,3>(0,3) = Eigen::Matrix3d::Identity();
     Eigen::Vector3d initialVelocity = Eigen::Vector3d(0, 0, 0);
     // Zero-velocity update: measurement is zero, prediction is current estimated velocity.
-    const double pad_velocity_sigma = MissionConstants::kNavPadVelocityNoiseMps;
-    kalmanUpdate(H, pad_velocity_sigma * pad_velocity_sigma * Eigen::Matrix3d::Identity(), initialVelocity, v_e);
+    const double pad_velocity_variance = MissionConstants::kNavInitialVelocityVariance;
+    kalmanUpdate(H, pad_velocity_variance * Eigen::Matrix3d::Identity(), initialVelocity, v_e);
 }
 
 void Navigation::padUpdateAngularVelocity(const Eigen::Vector3d& angularVelocity)
@@ -516,8 +516,8 @@ void Navigation::padUpdateAngularVelocity(const Eigen::Vector3d& angularVelocity
     H.block<3, 3>(0, 12) = Eigen::Matrix3d::Identity();
     // On-pad pseudo-measurement model: measured gyro rate ~= gyro bias (true body rate ~= 0).
     Eigen::Vector3d predictedAngularVelocity = w_b;
-    const double pad_angular_velocity_sigma = MissionConstants::kNavPadAngularVelocityNoiseRadps;
-    kalmanUpdate(H, pad_angular_velocity_sigma * pad_angular_velocity_sigma * Eigen::Matrix3d::Identity(), angularVelocity, predictedAngularVelocity);
+    const double pad_angular_velocity_variance = kNavGyroWhiteNoiseSigma * kNavGyroWhiteNoiseSigma;
+    kalmanUpdate(H, pad_angular_velocity_variance * Eigen::Matrix3d::Identity(), angularVelocity, predictedAngularVelocity);
 }
 
 void Navigation::SetOnPad(bool isOnPad)
