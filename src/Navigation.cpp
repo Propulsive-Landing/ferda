@@ -377,7 +377,7 @@ void Navigation::UpdateNavigation()
     }
 
     camera_capture_elapsed_s += loopTime;
-    if (camera_capture_elapsed_s >= kCameraCapturePeriodS && false) {
+    if (camera_capture_elapsed_s >= kCameraCapturePeriodS) {
         camera.RequestCapture();
         camera_capture_elapsed_s -= kCameraCapturePeriodS;
     }
@@ -568,6 +568,17 @@ void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d>& cameraDirectio
         predictions.push_back(prediction);
     }
 
+    if (!predictions.empty()) {
+        std::cerr << "[NAV] Expected marker unit vectors:";
+        for (const auto& prediction : predictions) {
+            std::cerr << " [marker " << prediction.markerIdx
+                      << " -> [" << prediction.rho.transpose() << "]]";
+        }
+        std::cerr << std::endl;
+    } else {
+        std::cerr << "[NAV] Expected marker unit vectors: none" << std::endl;
+    }
+
     std::vector<int> assignment;
     double totalAngularError = std::numeric_limits<double>::infinity();
     if (!AssignCameraMarkers(measuredBody, predictions, assignment, totalAngularError)) {
@@ -591,8 +602,15 @@ void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d>& cameraDirectio
             const int measurementIdx = matchedPair.first;
             const int predictionIdx = matchedPair.second;
             const PredictedMarker& prediction = predictions[predictionIdx];
+            const Eigen::Vector3d measuredDirection = measuredBody[measurementIdx];
+            const double angularErrorRad = AngularErrorRad(measuredDirection, prediction.rho);
             std::cerr << " [measurement " << measurementIdx
-                      << " -> marker " << prediction.markerIdx << "]";
+                      << " -> marker " << prediction.markerIdx
+                      << ", measured=[" << measuredDirection.transpose() << "]"
+                      << ", expected=[" << prediction.rho.transpose() << "]"
+                      << ", error_rad=" << angularErrorRad
+                      << ", error_deg=" << angularErrorRad * MissionConstants::kRad2Deg
+                      << "]";
         }
         std::cerr << std::endl;
     }
