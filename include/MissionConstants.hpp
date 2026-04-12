@@ -54,9 +54,9 @@ namespace MissionConstants
     const double kNavInitialGyroBiasVariance = 1e-6;
     inline const Eigen::Matrix<double, 3, 4> kMarkerData =
         (Eigen::Matrix<double, 3, 4>() <<
-            -0.0711, 0.0711, -0.0711, 0.0711,
-            0.0711, 0.0711, -0.0711, -0.0711,
-            0.0, 0.0, 0.0, 0.0
+            -0.089, 0.089, -0.089, 0.089,
+             0.089, 0.089, -0.089, -0.089,
+             0.0, 0.0, 0.0, 0.0
         ).finished();
 
     // Sensor constants, TODO: USER EDIT PRE-FLIGHT
