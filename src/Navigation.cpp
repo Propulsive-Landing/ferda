@@ -516,7 +516,7 @@ void Navigation::padUpdateAngularVelocity(const Eigen::Vector3d& angularVelocity
     H.block<3, 3>(0, 12) = Eigen::Matrix3d::Identity();
     // On-pad pseudo-measurement model: measured gyro rate ~= gyro bias (true body rate ~= 0).
     Eigen::Vector3d predictedAngularVelocity = w_b;
-    const double pad_angular_velocity_variance = kNavGyroWhiteNoiseSigma * kNavGyroWhiteNoiseSigma;
+    const double pad_angular_velocity_variance = MissionConstants::kNavGyroWhiteNoiseSigma * MissionConstants::kNavGyroWhiteNoiseSigma;
     kalmanUpdate(H, pad_angular_velocity_variance * Eigen::Matrix3d::Identity(), angularVelocity, predictedAngularVelocity);
 }
 
