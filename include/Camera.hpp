@@ -14,6 +14,9 @@ public:
     void RequestCapture();
     std::vector<Eigen::Vector3d> GetUnitVectorList();
     double GetFrameId();
+    void AnnotateDebugFrameMatches(
+        double frameId,
+        const std::vector<std::pair<int, int>>& measurementToMarkerMatches);
 
 private:
     std::vector<Eigen::Vector3d> latestUnitVectorList;

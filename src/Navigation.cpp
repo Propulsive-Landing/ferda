@@ -384,8 +384,8 @@ void Navigation::UpdateNavigation()
 
     const std::vector<Eigen::Vector3d> cameraDirections = camera.GetUnitVectorList();
     const double camera_frame_id = camera.GetFrameId();
-    if (x_e(2) > 1.0 && camera_frame_id >= 0.0 && camera_frame_id != last_camera_frame_id) {
-        cameraUpdate(cameraDirections, R);
+    if (camera_frame_id >= 0.0 && camera_frame_id != last_camera_frame_id) {
+        cameraUpdate(cameraDirections, R, camera_frame_id);
         last_camera_frame_id = camera_frame_id;
     }
 
@@ -525,7 +525,7 @@ void Navigation::SetOnPad(bool isOnPad)
     onPad = isOnPad;
 }
 
-void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d>& cameraDirections, const Eigen::Matrix3d& R)
+void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d>& cameraDirections, const Eigen::Matrix3d& R, double frameId)
 {
     const int N = MissionConstants::kMarkerData.cols();
 
@@ -545,6 +545,7 @@ void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d>& cameraDirectio
 
     const int M = static_cast<int>(measuredBody.size());
     if (M == 0) {
+        camera.AnnotateDebugFrameMatches(frameId, {});
         return;
     }
 
@@ -582,6 +583,7 @@ void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d>& cameraDirectio
     std::vector<int> assignment;
     double totalAngularError = std::numeric_limits<double>::infinity();
     if (!AssignCameraMarkers(measuredBody, predictions, assignment, totalAngularError)) {
+        camera.AnnotateDebugFrameMatches(frameId, {});
         return;
     }
 
@@ -595,6 +597,15 @@ void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d>& cameraDirectio
         }
         matchedPairs.emplace_back(k, predictionIdx);
     }
+
+    std::vector<std::pair<int, int>> measurementToMarkerMatches;
+    measurementToMarkerMatches.reserve(matchedPairs.size());
+    for (const auto& matchedPair : matchedPairs) {
+        const int measurementIdx = matchedPair.first;
+        const int predictionIdx = matchedPair.second;
+        measurementToMarkerMatches.emplace_back(measurementIdx, predictions[predictionIdx].markerIdx);
+    }
+    camera.AnnotateDebugFrameMatches(frameId, measurementToMarkerMatches);
 
     if (!matchedPairs.empty()) {
         std::cerr << "[NAV] Matched marker pairs:";

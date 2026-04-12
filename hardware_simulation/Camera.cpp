@@ -18,3 +18,11 @@ double Camera::GetFrameId()
 {
     return UDPClient::GetInstance().GetCameraFrameId();
 }
+
+void Camera::AnnotateDebugFrameMatches(
+    double frameId,
+    const std::vector<std::pair<int, int>>& measurementToMarkerMatches)
+{
+    (void)frameId;
+    (void)measurementToMarkerMatches;
+}

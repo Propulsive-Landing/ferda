@@ -83,6 +83,7 @@ struct DebugFrameItem
 {
     double frameId = -1.0;
     cv::Mat frame;
+    std::string suffix;
 };
 
 class DebugFrameLogger
@@ -105,7 +106,7 @@ public:
         }
     }
 
-    void Enqueue(double frameId, const cv::Mat& frame)
+    void Enqueue(double frameId, const cv::Mat& frame, const std::string& suffix = "")
     {
         if (!MissionConstants::kSensorCameraSaveDebugFrames) {
             return;
@@ -115,7 +116,7 @@ public:
         if (queue.size() >= kMaxQueueDepth) {
             queue.pop_front();
         }
-        queue.push_back(DebugFrameItem{frameId, frame.clone()});
+        queue.push_back(DebugFrameItem{frameId, frame.clone(), suffix});
         condition.notify_one();
     }
 
@@ -154,6 +155,7 @@ private:
             std::ostringstream filename;
             filename << debugDir.string() << "/"
                      << "frame_" << std::setw(6) << std::setfill('0') << static_cast<int>(item.frameId)
+                     << (item.suffix.empty() ? "" : std::string("_") + item.suffix)
                      << ".jpg";
 
             if (!cv::imwrite(filename.str(), item.frame)) {
@@ -176,6 +178,11 @@ DebugFrameLogger& GetDebugFrameLogger()
     static DebugFrameLogger logger;
     return logger;
 }
+
+std::mutex gLatestDebugFrameMutex;
+double gLatestDebugFrameId = -1.0;
+cv::Mat gLatestDebugFrame;
+std::vector<cv::Point2d> gLatestDetectionCentroids;
 
 void LoadCameraCalibration()
 {
@@ -423,8 +430,12 @@ bool Camera::CaptureLocalFrameAndProcess(double frameId)
 
     const auto detection_end_time = std::chrono::steady_clock::now();
 
+    std::vector<cv::Point2d> detectionCentroids;
+    detectionCentroids.reserve(detections.size());
+
     // Draw bounding boxes around the detected markers for the saved debug frames
-    for (const auto& detection : detections) {
+    for (size_t i = 0; i < detections.size(); ++i) {
+        const auto& detection = detections[i];
         // Approximate a radius based on the pixel area of the circle
         int radius = static_cast<int>(std::sqrt(detection.areaPx / 3.14159265));
         
@@ -439,6 +450,30 @@ bool Camera::CaptureLocalFrameAndProcess(double frameId)
         // Draw the box in green, and a small red cross at the exact centroid
         cv::rectangle(img, bbox, cv::Scalar(0, 255, 0), 2);
         cv::drawMarker(img, detection.centroidPx, cv::Scalar(0, 0, 255), cv::MARKER_CROSS, 10, 1);
+
+        std::ostringstream measurementLabel;
+        measurementLabel << "m" << i;
+        const cv::Point labelPosition(
+            static_cast<int>(detection.centroidPx.x) + 8,
+            static_cast<int>(detection.centroidPx.y) - 8);
+        cv::putText(
+            img,
+            measurementLabel.str(),
+            labelPosition,
+            cv::FONT_HERSHEY_SIMPLEX,
+            0.5,
+            cv::Scalar(0, 255, 255),
+            2,
+            cv::LINE_AA);
+
+        detectionCentroids.push_back(detection.centroidPx);
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(gLatestDebugFrameMutex);
+        gLatestDebugFrameId = frameId;
+        gLatestDebugFrame = img.clone();
+        gLatestDetectionCentroids = detectionCentroids;
     }
 
     GetDebugFrameLogger().Enqueue(frameId, img);
@@ -512,4 +547,63 @@ double Camera::GetFrameId()
 {
     TryProcessPendingLocalCapture();
     return latestFrameId;
+}
+
+void Camera::AnnotateDebugFrameMatches(
+    double frameId,
+    const std::vector<std::pair<int, int>>& measurementToMarkerMatches)
+{
+    if (!MissionConstants::kSensorCameraSaveDebugFrames) {
+        return;
+    }
+
+    cv::Mat labeledFrame;
+    std::vector<cv::Point2d> centroids;
+    {
+        std::lock_guard<std::mutex> lock(gLatestDebugFrameMutex);
+        if (gLatestDebugFrame.empty() || frameId != gLatestDebugFrameId) {
+            return;
+        }
+        labeledFrame = gLatestDebugFrame.clone();
+        centroids = gLatestDetectionCentroids;
+    }
+
+    if (measurementToMarkerMatches.empty()) {
+        cv::putText(
+            labeledFrame,
+            "No marker matches",
+            cv::Point(20, 35),
+            cv::FONT_HERSHEY_SIMPLEX,
+            0.8,
+            cv::Scalar(0, 0, 255),
+            2,
+            cv::LINE_AA);
+    }
+
+    for (const auto& match : measurementToMarkerMatches) {
+        const int measurementIdx = match.first;
+        const int markerIdx = match.second;
+        if (measurementIdx < 0 || measurementIdx >= static_cast<int>(centroids.size())) {
+            continue;
+        }
+
+        std::ostringstream matchLabel;
+        matchLabel << "m" << measurementIdx << " -> id" << markerIdx;
+
+        const cv::Point labelPosition(
+            static_cast<int>(centroids[measurementIdx].x) + 8,
+            static_cast<int>(centroids[measurementIdx].y) + 18);
+
+        cv::putText(
+            labeledFrame,
+            matchLabel.str(),
+            labelPosition,
+            cv::FONT_HERSHEY_SIMPLEX,
+            0.5,
+            cv::Scalar(0, 165, 255),
+            2,
+            cv::LINE_AA);
+    }
+
+    GetDebugFrameLogger().Enqueue(frameId, labeledFrame, "matched");
 }

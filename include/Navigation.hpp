@@ -34,7 +34,7 @@ private:
     void gpsPositionUpdate(const Eigen::Vector3d& gpsPosition);
     void gpsVelocityUpdate(const Eigen::Vector2d& gpsVelocity);
     void lidarUpdate(double lidar, const Eigen::Matrix3d& R);
-    void cameraUpdate(const std::vector<Eigen::Vector3d>& cameraDirections, const Eigen::Matrix3d& R);
+    void cameraUpdate(const std::vector<Eigen::Vector3d>& cameraDirections, const Eigen::Matrix3d& R, double frameId);
     std::ofstream dataFile;
     bool onPad = true; // Flag to indicate if rocket is on the pad (idle mode)
     double estimatedMassKg = 0.0;
