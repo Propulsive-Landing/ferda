@@ -585,6 +585,18 @@ void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d>& cameraDirectio
         matchedPairs.emplace_back(k, predictionIdx);
     }
 
+    if (!matchedPairs.empty()) {
+        std::cerr << "[NAV] Matched marker pairs:";
+        for (const auto& matchedPair : matchedPairs) {
+            const int measurementIdx = matchedPair.first;
+            const int predictionIdx = matchedPair.second;
+            const PredictedMarker& prediction = predictions[predictionIdx];
+            std::cerr << " [measurement " << measurementIdx
+                      << " -> marker " << prediction.markerIdx << "]";
+        }
+        std::cerr << std::endl;
+    }
+
     const int K = static_cast<int>(matchedPairs.size());
 
     Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3 * K, 15);
