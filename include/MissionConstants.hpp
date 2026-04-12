@@ -34,7 +34,7 @@ namespace MissionConstants
     const Eigen::Vector3d kStructuresDryCenterOfMassBodyM = Eigen::Vector3d(0.0, 0.0, -0.5);
     const Eigen::Vector3d kStructuresWetMomentOfInertiaBodyKgm2 = Eigen::Vector3d(30.0, 30.0, 0.44);
     const Eigen::Vector3d kStructuresDryMomentOfInertiaBodyKgm2 = Eigen::Vector3d(20.0, 20.0, 0.34);
-    const Eigen::Vector3d kStructuresGroundOffset = Eigen::Vector3d(0.0, 0.0, -1.0); // Position of the ground relative to the rocket's origin (in meters)
+    const Eigen::Vector3d kStructuresGroundOffset = Eigen::Vector3d(0.0, 0.0, -0.74); // Position of the ground relative to the rocket's origin (in meters)
     
     // Navigation constants
     const double kNavMagnetometerNoiseFactor = 1.0;
@@ -52,11 +52,11 @@ namespace MissionConstants
     const double kNavInitialAttitudeVariance = 1e-1;
     const double kNavInitialAccelBiasVariance = 0.5;
     const double kNavInitialGyroBiasVariance = 1e-6;
-    inline const Eigen::Matrix<double, 3, 3> kMarkerData =
-        (Eigen::Matrix<double, 3, 3>() <<
-            2.0, 2.0, 5.0,
-            1.7320508075688774, -1.7320508075688774, 0.0,
-            0.0,  0.0,  0.0
+    inline const Eigen::Matrix<double, 3, 4> kMarkerData =
+        (Eigen::Matrix<double, 3, 4>() <<
+            -0.0711, 0.0711, -0.0711, 0.0711,
+            0.0711, 0.0711, -0.0711, -0.0711,
+            0.0, 0.0, 0.0, 0.0
         ).finished();
 
     // Sensor constants, TODO: USER EDIT PRE-FLIGHT
@@ -66,7 +66,7 @@ namespace MissionConstants
     const int kSensorCameraPreferredDeviceIndex = 0;
     const bool kSensorCameraUseGStreamer = true;
     const bool kSensorCameraUseCapAnyFallback = false;
-    const bool kSensorCameraSaveDebugFrames = false;
+    const bool kSensorCameraSaveDebugFrames = true;
     const std::string kSensorCameraDebugFrameDirectory = "../images";
     const std::string kSensorCameraCalibrationFilePath = "../calibration/camera_calibration.json";
     const double kSensorCameraFocalLengthXPx = 1450.0;
@@ -86,8 +86,8 @@ namespace MissionConstants
     const double kSensorGPSPositionNoiseM = 3.0;
     const double kSensorGPSVelocityNoiseMps = 0.1;
     const double kSensorLidarNoiseM = 0.005;
-    const Eigen::Vector3d kSensorCameraPosition = Eigen::Vector3d(0.2, 0.0, -1); // Position of the camera in the body frame (in meters)
-    const Eigen::Vector3d kSensorCameraOrientationRad = Eigen::Vector3d(0.0, 2.3561944901923448, 0.0); // XYZ Euler orientation from camera frame to body frame
+    const Eigen::Vector3d kSensorCameraPosition = Eigen::Vector3d(0.0, 0.0, 0.0); // Position of the camera in the body frame (in meters)
+    const Eigen::Vector3d kSensorCameraOrientationRad = Eigen::Vector3d(3.141592653589793, 0.0, -1.5707963267948966); // XYZ Euler orientation from camera frame to body frame
     const Eigen::Vector3d kSensorMagnetometerPosition = Eigen::Vector3d(0.0, 0.0, 0.0); // Position of magnetometer in the body frame (in meters)
 
     // Guidance constants, TODO: USER EDIT PRE-FLIGHT
