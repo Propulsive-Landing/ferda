@@ -194,11 +194,11 @@ namespace MissionConstants
     const int RAD = 0x02;
 
     // RF consants
-    inline const char *RF_Port = "/dev/ttyUSB1";
+    inline const char *RF_Port = "/dev/ttyUSB0";
 
     // GPS constants
     const int MAX_SIZE = 1000;
-    inline const char *GPS_Port = "/dev/ttyUSB0";
+    inline const char *GPS_Port = "/dev/ttyUSB1";
 
     namespace NMEA
     {

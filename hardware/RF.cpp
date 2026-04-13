@@ -63,13 +63,46 @@ void RF::SendString(std::string text)
 
     if (!terminal_switch)
     {
-        write(SerialFd, text.c_str(), sizeof(char) * text.size());
+        const char* data = text.c_str();
+        size_t totalBytes = text.size();
+        size_t bytesWritten = 0;
+
+        while (bytesWritten < totalBytes)
+        {
+            ssize_t bytes = write(
+                SerialFd,
+                data + bytesWritten,
+                totalBytes - bytesWritten
+            );
+
+            if (bytes > 0)
+            {
+                bytesWritten += static_cast<size_t>(bytes);
+            }
+            else if (bytes == -1)
+            {
+                if (errno == EINTR)
+                {
+                    continue; // interrupted, retry
+                }
+                else if (errno == EAGAIN || errno == EWOULDBLOCK)
+                {
+                    continue; // would block, retry (or add sleep if needed)
+                }
+                else
+                {
+                    perror("write failed");
+                    break; // or throw if you prefer
+                }
+            }
+        }
+
+        std::cout << "Wrote " << bytesWritten << " / " << totalBytes << "\n";
     }
 
     // write time to file
     this->RFSent << std::put_time(std::localtime(&in_time_t), "%c") << ",";
-    this->RFSent << text << "\n"
-                 << std::flush;
+    this->RFSent << text << "\n" << std::flush;
 }
 
 RF::Command RF::GetCommand() // Will check for commands and return the received command. Non-blocking.
