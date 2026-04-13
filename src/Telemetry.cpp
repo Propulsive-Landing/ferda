@@ -152,8 +152,8 @@ void Telemetry::RfSendLiquidPropulsionData(PressureTransducer &pt, LoadCell &lc)
         pt.ReadPSI(PressureTransducer::ChamberPressure), // 0-1000 PSI
         lc.ReadLBS()                                     // Load cell in pounds
     };
-
-    RF::GetInstance().SendString(json_msg.dump()+ "\n");
+ d
+    RF::GetInstance().SendString(json_msg.dump() + "\n");
 }
 
 void Telemetry::RunTelemetry(Navigation &navigation, Controller &controller, GPS &gps, PressureTransducer &pt, LoadCell &lc, float HardwareSaveDelta, float RFSaveDelta)
