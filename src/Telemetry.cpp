@@ -100,7 +100,7 @@ void Telemetry::Log(std::string message)
          << std::flush;
 }
 
-void Telemetry::RfSendFrame(Navigation &navigation, Controller &controller)
+void Telemetry::RfSendFrame(Navigation &navigation, Controller &controller, PressureTransducer &pt, LoadCell &lc)
 {
     json json_msg;
     json_msg["data_type"] = "telem";
@@ -121,28 +121,6 @@ void Telemetry::RfSendFrame(Navigation &navigation, Controller &controller)
 
         // dt.
         0.0,
-    };
-
-    // frame.euler[0] = 1.0;// navigation.GetNavigation()(0, 0);
-    // frame.euler[1] = 2.0; // navigation.GetNavigation()(1, 0);
-    // frame.euler[2] = 3.0; // navigation.GetNavigation()(2, 0);
-    // frame.input[0] = 5.0; // controller.input(0);
-    // frame.input[1] = 6.0; // controller.input(1);
-    // frame.velocity[0] = 7.0; // navigation.GetNavigation()(3, 0);
-    // frame.velocity[1] = 8.0; // navigation.GetNavigation()(4, 0);
-    // frame.velocity[2] = 9.0; // navigation.GetNavigation()(5, 0);
-    // frame.dt = 0.0;
-
-    RF::GetInstance().SendString(json_msg.dump() + "\n");
-}
-
-void Telemetry::RfSendLiquidPropulsionData(PressureTransducer &pt, LoadCell &lc)
-{
-    // Match the original hotfire.ino data structure
-    // Original struct: header (uint32_t), 8 floats, footer (uint32_t)
-    json json_msg;
-    json_msg["data_type"] = "liquid_telem";
-    json_msg["payload"] = {
         pt.ReadPSI(PressureTransducer::NitrogenLine),    // 0-1000 PSI
         pt.ReadPSI(PressureTransducer::EthanolTank),     // 0-1000 PSI
         pt.ReadPSI(PressureTransducer::NitrousLine),     // 0-1000 PSI
@@ -152,9 +130,11 @@ void Telemetry::RfSendLiquidPropulsionData(PressureTransducer &pt, LoadCell &lc)
         pt.ReadPSI(PressureTransducer::ChamberPressure), // 0-1000 PSI
         lc.ReadLBS()                                     // Load cell in pounds
     };
- d
+
+
     RF::GetInstance().SendString(json_msg.dump() + "\n");
 }
+
 
 void Telemetry::RunTelemetry(Navigation &navigation, Controller &controller, GPS &gps, PressureTransducer &pt, LoadCell &lc, float HardwareSaveDelta, float RFSaveDelta)
 {
@@ -176,8 +156,7 @@ void Telemetry::RunTelemetry(Navigation &navigation, Controller &controller, GPS
     // Log navigational sensors in RFSendFrame() and Log liquid engine sensors in RfSendLiquidPropulsionData()
     if (std::chrono::duration_cast<std::chrono::milliseconds>(rf_change_time).count() / 1000.0 >= RFSaveDelta)
     {
-        RfSendFrame(navigation, controller);
-        RfSendLiquidPropulsionData(pt, lc);
+        RfSendFrame(navigation, controller, pt, lc);
         last_rf_time = std::chrono::high_resolution_clock::now();
     }
 }

@@ -15,8 +15,7 @@ private:
     ~Telemetry();
 
     void HardwareSaveFrame(Navigation &navigation, Controller &controller, GPS &gps);
-    void RfSendFrame(Navigation &navigation, Controller &controller);
-    void RfSendLiquidPropulsionData(PressureTransducer &pt, LoadCell &lc);
+    void RfSendFrame(Navigation &navigation, Controller &controller, PressureTransducer &pt, LoadCell &lc);
 
 public:
     std::ofstream Logs;
