@@ -97,7 +97,6 @@ void RF::SendString(std::string text)
             }
         }
 
-        std::cout << "Wrote " << bytesWritten << " / " << totalBytes << "\n";
     }
 
     // write time to file

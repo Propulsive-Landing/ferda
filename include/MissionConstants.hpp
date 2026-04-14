@@ -116,6 +116,10 @@ namespace MissionConstants
     const int kTvcXPin = 19;
     const int kTvcYPin = 18;
 
+    // Servo Driver Contants
+    inline const float MAX_TICKS = 4095;
+    inline const float SERVO_PERIOD = 20000; // (us)
+
     // Ignition constants, TODO: USER EDIT PRE-FlIGHT
     const int kIgnitionPin = 6;
 
@@ -194,11 +198,11 @@ namespace MissionConstants
     const int RAD = 0x02;
 
     // RF consants
-    inline const char *RF_Port = "/dev/ttyUSB0";
+    inline const char *RF_Port = "/dev/ttyUSB1";
 
     // GPS constants
     const int MAX_SIZE = 1000;
-    inline const char *GPS_Port = "/dev/ttyUSB1";
+    inline const char *GPS_Port = "/dev/ttyUSB0";
 
     namespace NMEA
     {
