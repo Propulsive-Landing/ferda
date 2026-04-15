@@ -7,6 +7,7 @@
 #include <sys/poll.h>
 #include <fstream>
 #include <tuple>
+#include <cstdint>
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -16,28 +17,22 @@ using json = nlohmann::json;
 #include "Telemetry.hpp"
 #include "MissionConstants.hpp"
 
+namespace
+{
+    void WriteElapsedSecondsPrefix(
+        std::ofstream &stream,
+        const std::chrono::steady_clock::time_point &startTime)
+    {
+        const auto now = std::chrono::steady_clock::now();
+        const double elapsedSeconds = std::chrono::duration<double>(now - startTime).count();
+        stream << std::fixed << std::setprecision(3) << elapsedSeconds << ", ";
+    }
+}
+
 void Telemetry::HardwareSaveFrame(Navigation &navigation, Controller &controller, GPS &gps)
 {
-    // write time to hardware file
-    auto time_now = std::chrono::system_clock::now();
-    auto in_time_t = std::chrono::system_clock::to_time_t(time_now);
-
-    auto now = std::chrono::system_clock::now();
-
-    auto seconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - seconds).count();
-
-    std::time_t tt = std::chrono::system_clock::to_time_t(seconds);
-
-    std::tm tm;
-    localtime_r(&tt, &tm); // thread-safe on Linux
-
-    std::ostringstream oss;
-    oss << std::put_time(&tm, "%d-%m-%Y %H:%M:%S")
-        << "." << std::setw(3) << std::setfill('0') << ms;
-
-    HardwareSaved << oss.str() << ", ";
-    SensorSaved << oss.str() << ", ";
+    WriteElapsedSecondsPrefix(HardwareSaved, StartTime);
+    WriteElapsedSecondsPrefix(SensorSaved, StartTime);
 
     // Navigation state, U, k matrix current index
     // Write data to file
@@ -78,6 +73,21 @@ void Telemetry::HardwareSaveFrame(Navigation &navigation, Controller &controller
                   << std::flush;
     SensorSaved << "\n"
                 << std::flush;
+}
+
+void Telemetry::GPSSaveFrame(GPS &gps)
+{
+    WriteElapsedSecondsPrefix(GPSSaved, StartTime);
+
+    const std::tuple<double, double, double> gpsPos = gps.GetGPSPosition();
+    const std::tuple<double, double> gpsVel = gps.GetGPSVelocity();
+
+    GPSSaved << std::to_string(std::get<0>(gpsPos)) << ", ";
+    GPSSaved << std::to_string(std::get<1>(gpsPos)) << ", ";
+    GPSSaved << std::to_string(std::get<2>(gpsPos)) << ", ";
+    GPSSaved << std::to_string(std::get<0>(gpsVel)) << ", ";
+    GPSSaved << std::to_string(std::get<1>(gpsVel)) << "\n"
+             << std::flush;
 }
 
 void Telemetry::Log(std::string message)
@@ -131,10 +141,8 @@ void Telemetry::RfSendFrame(Navigation &navigation, Controller &controller, Pres
         lc.ReadLBS()                                     // Load cell in pounds
     };
 
-
     RF::GetInstance().SendString(json_msg.dump() + "\n");
 }
-
 
 void Telemetry::RunTelemetry(Navigation &navigation, Controller &controller, GPS &gps, PressureTransducer &pt, LoadCell &lc, float HardwareSaveDelta, float RFSaveDelta)
 {
@@ -145,7 +153,19 @@ void Telemetry::RunTelemetry(Navigation &navigation, Controller &controller, GPS
 
     static auto last_rf_time = std::chrono::high_resolution_clock::now();
     auto rf_change_time = std::chrono::high_resolution_clock::now() - last_rf_time;
+
+    static uint64_t last_gps_update_count = 0;
     /* End calculate time change*/
+
+    const uint64_t gps_update_count = gps.GetUpdateCount();
+    if (gps_update_count != last_gps_update_count)
+    {
+        if (gps.GPSAvailable() && gps.GPSUsed())
+        {
+            GPSSaveFrame(gps);
+        }
+        last_gps_update_count = gps_update_count;
+    }
 
     if (std::chrono::duration_cast<std::chrono::milliseconds>(hardware_change_time).count() / 1000.0 >= HardwareSaveDelta)
     {
@@ -161,7 +181,7 @@ void Telemetry::RunTelemetry(Navigation &navigation, Controller &controller, GPS
     }
 }
 
-Telemetry::Telemetry()
+Telemetry::Telemetry() : StartTime(std::chrono::steady_clock::now())
 {
     auto t = std::time(nullptr);
     auto tm = *std::localtime(&t);
@@ -173,8 +193,11 @@ Telemetry::Telemetry()
     Logs.open("../logs/logs" + str + ".txt");
     HardwareSaved.open("../logs/data" + str + ".txt");
     SensorSaved.open("../logs/sensors" + str + ".txt");
+    GPSSaved.open("../logs/gps" + str + ".txt");
 
-    // TODO: MAYBE ADD LIQUID TO HARDWARE_SAVE_FRAME
+    HardwareSaved << "TimeSeconds, x, y, z, vx, vy, vz, q1, q2, q3, q4, ab1, ab2, ab3, wb1, wb2, wb3, E, N, U, ux, uy, K_Matrix_Index \n";
+    SensorSaved << "TimeSeconds, accelX, accelY, accelZ, gyroX, gryoY, gyroZ, magx, magy, magz \n";
+    GPSSaved << "TimeSeconds, gpsE, gpsN, gpsU, gpsVxE, gpsVyN \n";
 
     HardwareSaved << "Date, x, y, z, vx, vy, vz, q1, q2, q3, q4, ab1, ab2, ab3, wb1, wb2, wb3, E, N, U, E_Vel, N_Vel, ux, uy \n";
     SensorSaved << "Date, accelX, accelY, accelZ, gyroX, gryoY, gyroZ, magx, magy, magz \n";
@@ -184,4 +207,6 @@ Telemetry::~Telemetry()
 {
     Logs.close();
     HardwareSaved.close();
+    SensorSaved.close();
+    GPSSaved.close();
 }

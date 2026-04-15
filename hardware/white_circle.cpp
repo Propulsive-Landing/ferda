@@ -24,9 +24,9 @@ std::vector<MarkerDetection> DetectWhiteMarkerCentroids(
     cv::Mat redMask;
     cv::Mat blueMask;
     cv::Mat greenMask;
-    cv::compare(channels[2], 125, redMask, cv::CMP_GT);
-    cv::compare(channels[0], 175, blueMask, cv::CMP_GT);
-    cv::compare(channels[1], 175, greenMask, cv::CMP_GT);
+    cv::compare(channels[2], 150, redMask, cv::CMP_GT);
+    cv::compare(channels[0], 190, blueMask, cv::CMP_GT);
+    cv::compare(channels[1], 190, greenMask, cv::CMP_GT);
 
     cv::Mat colorMask;
     cv::bitwise_and(redMask, blueMask, colorMask);

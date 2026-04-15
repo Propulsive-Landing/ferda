@@ -2,11 +2,14 @@
 #include "GPS.hpp"
 #include "UDPClient.hpp"
 
-GPS::GPS() {}
+GPS::GPS() : update_count(0) {}
 
 GPS::~GPS() {}
 
-void GPS::Update() {}
+void GPS::Update()
+{
+    ++update_count;
+}
 
 std::tuple<double, double, double> GPS::GetGPSPosition()
 {
@@ -21,4 +24,24 @@ std::tuple<double, double> GPS::GetGPSVelocity()
 bool GPS::GPSAvailable()
 {
     return true;
+}
+
+bool GPS::GPSUsed()
+{
+    return found_gps;
+}
+
+bool GPS::HasFreshPosition() const
+{
+    return true;
+}
+
+bool GPS::HasFreshVelocity() const
+{
+    return true;
+}
+
+uint64_t GPS::GetUpdateCount() const
+{
+    return update_count;
 }

@@ -388,15 +388,24 @@ void Navigation::UpdateNavigation()
     {
         if (gps.GPSUsed())
         {
+
             gps.Update();
 
             if (gps.GPSAvailable())
             {
-                gpsPosition = gps.GetGPSPosition();
-                gpsVelocity = gps.GetGPSVelocity();
-                Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
-                Eigen::Vector2d gpsVelocityVector(std::get<0>(gpsVelocity), std::get<1>(gpsVelocity));
-                gpsUpdate(gpsPositionVector, gpsVelocityVector);
+                if (gps.HasFreshPosition())
+                {
+                    gpsPosition = gps.GetGPSPosition();
+                    Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
+                    gpsPositionUpdate(gpsPositionVector);
+                }
+
+                if (gps.HasFreshVelocity())
+                {
+                    gpsVelocity = gps.GetGPSVelocity();
+                    Eigen::Vector2d gpsVelocityVector(std::get<0>(gpsVelocity), std::get<1>(gpsVelocity));
+                    gpsVelocityUpdate(gpsVelocityVector);
+                }
             }
         }
         gps_update_counter = 0;
@@ -411,9 +420,9 @@ void Navigation::UpdateNavigation()
 
     const std::vector<Eigen::Vector3d> cameraDirections = camera.GetUnitVectorList();
     const double camera_frame_id = camera.GetFrameId();
-    if (x_e(2) > 1.0 && camera_frame_id >= 0.0 && camera_frame_id != last_camera_frame_id)
+    if (camera_frame_id >= 0.0 && camera_frame_id != last_camera_frame_id)
     {
-        cameraUpdate(cameraDirections, R);
+        cameraUpdate(cameraDirections, R, camera_frame_id);
         last_camera_frame_id = camera_frame_id;
     }
 
@@ -463,31 +472,40 @@ void Navigation::magnetometerUpdate(const Eigen::Vector3d &magneticField, const 
     kalmanUpdate(H, V, magneticField, y_pred);
 }
 
-void Navigation::gpsUpdate(const Eigen::Vector3d &gpsPosition, const Eigen::Vector2d &gpsVelocity)
+void Navigation::gpsPositionUpdate(const Eigen::Vector3d &gpsPosition)
 {
-    const Eigen::Vector3d sensor_r_gps_orig = MissionConstants::kSensorGPSPosition;
-
-    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(5, 15);
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
     H.block<3, 3>(0, 0) = Eigen::Matrix3d::Identity();
-    H.block<2, 2>(3, 3) = Eigen::Matrix2d::Identity();
 
-    Eigen::VectorXd y = Eigen::VectorXd::Zero(5);
-    y << gpsPosition(0), gpsPosition(1), gpsPosition(2), gpsVelocity(0), gpsVelocity(1);
+    Eigen::VectorXd y = Eigen::VectorXd::Zero(3);
+    y << gpsPosition(0), gpsPosition(1), gpsPosition(2);
 
-    Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(5);
-    y_pred << x_e(0) + sensor_r_gps_orig(0), x_e(1) + sensor_r_gps_orig(1), x_e(2) + sensor_r_gps_orig(2), v_e(0), v_e(1);
+    Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(3);
+    y_pred << x_e(0), x_e(1), x_e(2);
 
-    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(5, 5);
+    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(3, 3);
     V.block<3, 3>(0, 0) = MissionConstants::kNavGPSPositionNoiseFactor *
                           MissionConstants::kSensorGPSPositionNoiseM * MissionConstants::kSensorGPSPositionNoiseM *
                           Eigen::Matrix3d::Identity();
-    V.block<2, 2>(3, 3) = MissionConstants::kNavGPSVelocityNoiseFactor *
+
+    kalmanUpdate(H, V, y, y_pred);
+}
+
+void Navigation::gpsVelocityUpdate(const Eigen::Vector2d &gpsVelocity)
+{
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(2, 15);
+    H.block<2, 2>(0, 3) = Eigen::Matrix2d::Identity();
+
+    Eigen::VectorXd y = Eigen::VectorXd::Zero(2);
+    y << gpsVelocity(0), gpsVelocity(1);
+
+    Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(2);
+    y_pred << v_e(0), v_e(1);
+
+    Eigen::MatrixXd V = Eigen::MatrixXd::Zero(2, 2);
+    V.block<2, 2>(0, 0) = MissionConstants::kNavGPSVelocityNoiseFactor *
                           MissionConstants::kSensorGPSVelocityNoiseMps * MissionConstants::kSensorGPSVelocityNoiseMps *
                           Eigen::Matrix2d::Identity();
-
-    // std::cout << "GPS Difference" << (gpsPosition(0) - y_pred(0)) << ", "
-    //           << (gpsPosition(1) - y_pred(1)) << ", "
-    //           << (gpsPosition(2) - y_pred(2)) << "\n";
 
     kalmanUpdate(H, V, y, y_pred);
 }
@@ -528,8 +546,8 @@ void Navigation::padUpdateVelocity()
     H.block<3, 3>(0, 3) = Eigen::Matrix3d::Identity();
     Eigen::Vector3d initialVelocity = Eigen::Vector3d(0, 0, 0);
     // Zero-velocity update: measurement is zero, prediction is current estimated velocity.
-    const double pad_velocity_sigma = MissionConstants::kNavPadVelocityNoiseMps;
-    kalmanUpdate(H, pad_velocity_sigma * pad_velocity_sigma * Eigen::Matrix3d::Identity(), initialVelocity, v_e);
+    const double pad_velocity_variance = MissionConstants::kNavInitialVelocityVariance;
+    kalmanUpdate(H, pad_velocity_variance * Eigen::Matrix3d::Identity(), initialVelocity, v_e);
 }
 
 void Navigation::padUpdateAngularVelocity(const Eigen::Vector3d &angularVelocity)
@@ -538,8 +556,8 @@ void Navigation::padUpdateAngularVelocity(const Eigen::Vector3d &angularVelocity
     H.block<3, 3>(0, 12) = Eigen::Matrix3d::Identity();
     // On-pad pseudo-measurement model: measured gyro rate ~= gyro bias (true body rate ~= 0).
     Eigen::Vector3d predictedAngularVelocity = w_b;
-    const double pad_angular_velocity_sigma = MissionConstants::kNavPadAngularVelocityNoiseRadps;
-    kalmanUpdate(H, pad_angular_velocity_sigma * pad_angular_velocity_sigma * Eigen::Matrix3d::Identity(), angularVelocity, predictedAngularVelocity);
+    const double pad_angular_velocity_variance = MissionConstants::kNavGyroWhiteNoiseSigma * MissionConstants::kNavGyroWhiteNoiseSigma;
+    kalmanUpdate(H, pad_angular_velocity_variance * Eigen::Matrix3d::Identity(), angularVelocity, predictedAngularVelocity);
 }
 
 void Navigation::SetOnPad(bool isOnPad)
@@ -547,7 +565,7 @@ void Navigation::SetOnPad(bool isOnPad)
     onPad = isOnPad;
 }
 
-void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d> &cameraDirections, const Eigen::Matrix3d &R)
+void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d> &cameraDirections, const Eigen::Matrix3d &R, double frameId)
 {
     const int N = MissionConstants::kMarkerData.cols();
 
@@ -565,12 +583,6 @@ void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d> &cameraDirectio
         {
             measuredBody.push_back((DCM_bc * measuredCam).normalized());
         }
-    }
-
-    const int M = static_cast<int>(measuredBody.size());
-    if (M == 0)
-    {
-        return;
     }
 
     std::vector<PredictedMarker> predictions;
@@ -595,10 +607,41 @@ void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d> &cameraDirectio
         predictions.push_back(prediction);
     }
 
+    std::vector<std::pair<int, Eigen::Vector3d>> expectedMarkerBodyDirections;
+    expectedMarkerBodyDirections.reserve(predictions.size());
+    for (const auto &prediction : predictions)
+    {
+        expectedMarkerBodyDirections.emplace_back(prediction.markerIdx, prediction.rho);
+    }
+    camera.AnnotateDebugFrameExpectedVsTrue(frameId, expectedMarkerBodyDirections);
+
+    const int M = static_cast<int>(measuredBody.size());
+    if (M == 0)
+    {
+        camera.AnnotateDebugFrameMatches(frameId, {});
+        return;
+    }
+
+    if (!predictions.empty())
+    {
+        std::cerr << "[NAV] Expected marker unit vectors:";
+        for (const auto &prediction : predictions)
+        {
+            std::cerr << " [marker " << prediction.markerIdx
+                      << " -> [" << prediction.rho.transpose() << "]]";
+        }
+        std::cerr << std::endl;
+    }
+    else
+    {
+        std::cerr << "[NAV] Expected marker unit vectors: none" << std::endl;
+    }
+
     std::vector<int> assignment;
     double totalAngularError = std::numeric_limits<double>::infinity();
     if (!AssignCameraMarkers(measuredBody, predictions, assignment, totalAngularError))
     {
+        camera.AnnotateDebugFrameMatches(frameId, {});
         return;
     }
 
@@ -613,6 +656,37 @@ void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d> &cameraDirectio
             continue;
         }
         matchedPairs.emplace_back(k, predictionIdx);
+    }
+
+    std::vector<std::pair<int, int>> measurementToMarkerMatches;
+    measurementToMarkerMatches.reserve(matchedPairs.size());
+    for (const auto &matchedPair : matchedPairs)
+    {
+        const int measurementIdx = matchedPair.first;
+        const int predictionIdx = matchedPair.second;
+        measurementToMarkerMatches.emplace_back(measurementIdx, predictions[predictionIdx].markerIdx);
+    }
+    camera.AnnotateDebugFrameMatches(frameId, measurementToMarkerMatches);
+
+    if (!matchedPairs.empty())
+    {
+        std::cerr << "[NAV] Matched marker pairs:";
+        for (const auto &matchedPair : matchedPairs)
+        {
+            const int measurementIdx = matchedPair.first;
+            const int predictionIdx = matchedPair.second;
+            const PredictedMarker &prediction = predictions[predictionIdx];
+            const Eigen::Vector3d measuredDirection = measuredBody[measurementIdx];
+            const double angularErrorRad = AngularErrorRad(measuredDirection, prediction.rho);
+            std::cerr << " [measurement " << measurementIdx
+                      << " -> marker " << prediction.markerIdx
+                      << ", measured=[" << measuredDirection.transpose() << "]"
+                      << ", expected=[" << prediction.rho.transpose() << "]"
+                      << ", error_rad=" << angularErrorRad
+                      << ", error_deg=" << angularErrorRad * MissionConstants::kRad2Deg
+                      << "]";
+        }
+        std::cerr << std::endl;
     }
 
     const int K = static_cast<int>(matchedPairs.size());

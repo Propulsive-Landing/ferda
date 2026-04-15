@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <tuple>
 #include <string>
 #include <termios.h>
@@ -36,22 +37,28 @@ private:
 
     // Used for validity checking
     bool valid;
+    bool fresh_position;
+    bool fresh_velocity;
+    bool has_last_rmc_time;
+    bool has_last_gga_time;
+    double last_rmc_time;
+    double last_gga_time;
+
+    uint64_t update_count;
 
     // Used as a flag to see if GPS is plugged in
     bool found_gps;
 
-    // GPS only outputs 3 bytes at a time it seems
     char buffer[MissionConstants::MAX_SIZE];
 
     std::string get_message();
     std::vector<std::string> get_acculumated_messages();
     void reset_acculumated_messages();
-    std::map<std::string, std::vector<std::string>> retrieve_all_NMEA_sentences();
     std::string determine_NMEA_type(const std::vector<std::string> &nmea_message_parts);
-    void parse_NMEA_type(const std::string nmea_message_type, const std::vector<std::string> &nmea_message_parts);
+    bool parse_NMEA_type(const std::string nmea_message_type, const std::vector<std::string> &nmea_message_parts);
     std::vector<std::string> break_message_down(const std::string &message);
-    void parse_RMC(const std::vector<std::string> &message);
-    void parse_GGA(const std::vector<std::string> &message);
+    bool parse_RMC(const std::vector<std::string> &message);
+    bool parse_GGA(const std::vector<std::string> &message);
     void read_data();
     float convert_latitude(const std::string &latitude, const char &latitude_direction);
     float convert_longitude(const std::string &longitude, const char &longitude_direction);
@@ -68,4 +75,7 @@ public:
     std::tuple<double, double> GetGPSVelocity();
     bool GPSAvailable();
     bool GPSUsed();
+    bool HasFreshPosition() const;
+    bool HasFreshVelocity() const;
+    uint64_t GetUpdateCount() const;
 };
