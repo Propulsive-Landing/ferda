@@ -1,0 +1,414 @@
+#include <iostream>
+#include <fstream>
+#include <wiringPi.h>
+#include <signal.h>
+#include <cmath>
+#include <ads1115.h>
+#include <PiPCA9685/PCA9685.h>
+#include "MissionConstants.hpp"
+
+#define RPWM 0
+#define LPWM 1
+
+#define ADS_BASE 100
+#define SENSOR_PIN_0 (ADS_BASE + 0)           // PLACEHOLDER: X-axis actuator sensor
+#define SENSOR_PIN_1 (ADS_BASE + 1)           // PLACEHOLDER: Y-axis actuator sensor
+
+PiPCA9685::PCA9685 pca;
+
+float extensionLength;
+
+int maxReading;
+int minReading;
+
+float mapFloat(float x, float in_min, float in_max, float out_min, float out_max);
+
+float readPositionInches(int actuator_index)
+{
+    // Read position from specified actuator (0 or 1)
+    // Both actuators use the same calibration range (min/max readings)
+    int sensorPin = (actuator_index == 0) ? SENSOR_PIN_0 : SENSOR_PIN_1;
+    
+    int sensorVal = analogRead(sensorPin);
+    return mapFloat(
+        (float)sensorVal,
+        (float)minReading,
+        (float)maxReading,
+        0.0f,
+        MissionConstants::kTvcStrokeLengthInches
+    );
+}
+
+// Legacy function for backward compatibility (defaults to actuator 0)
+float readPositionInches()
+{
+    return readPositionInches(0);
+}
+
+// ----------------------
+// Motor Control
+// ----------------------
+void driveActuator(int direction, int speed)
+{
+    switch(direction)
+    {
+        case 1: // extend
+            pca.set_pwm(RPWM, 0, speed);
+            pca.set_pwm(LPWM, 0, 0);
+            break;
+
+        case 0: // stop
+            pca.set_pwm(RPWM, 0, 0);
+            pca.set_pwm(LPWM, 0, 0);
+            break;
+
+        case -1: // retract
+            pca.set_pwm(RPWM, 0, 0);
+            pca.set_pwm(LPWM, 0, speed);
+            break;
+    }
+}
+
+// ----------------------
+// Linear chirp velocity command
+// v(t) = Vmax * sin(2*pi*(f0*t + 0.5*k*t^2))
+// ----------------------
+void applyLinearChirpVelocityCommand(float durationSec,
+                                     float startFreqHz,
+                                     float endFreqHz,
+                                     int maxSpeed,
+                                     int controlPeriodMs = 20)
+{
+    if (durationSec <= 0.0f || controlPeriodMs <= 0)
+    {
+        std::cout << "Invalid chirp timing parameters\n";
+        return;
+    }
+
+    if (maxSpeed < 0) maxSpeed = 0;
+    if (maxSpeed > 4095) maxSpeed = 4095;
+
+    std::ofstream logFile("chirp_velocity_log.csv", std::ios::app);
+    if (!logFile)
+    {
+        std::cout << "Failed to open chirp_velocity_log.csv\n";
+        return;
+    }
+    if (logFile.tellp() == 0)
+    {
+        logFile << "time,velocity_command,position\n";
+    }
+
+    const float pi = 3.14159265358979323846f;
+    const float k = (endFreqHz - startFreqHz) / durationSec;
+    const unsigned int startMs = millis();
+
+    while (true)
+    {
+        float t = (millis() - startMs) / 1000.0f;
+        if (t >= durationSec)
+        {
+            break;
+        }
+
+        float phase = 2.0f * pi *
+                      (startFreqHz * t + 0.5f * k * t * t);
+        float velocityCmd = std::sin(phase); // normalized [-1, 1]
+
+        int direction = 0;
+        if (velocityCmd > 0.0f)
+        {
+            direction = 1;
+        }
+        else if (velocityCmd < 0.0f)
+        {
+            direction = -1;
+        }
+
+        int speedCmd = static_cast<int>(std::abs(velocityCmd) * maxSpeed);
+        driveActuator(direction, speedCmd);
+
+        float position = readPositionInches();
+        logFile << t << "," << velocityCmd << "," << position << "\n";
+
+        delay(controlPeriodMs);
+    }
+
+    driveActuator(0, 0);
+}
+
+// ----------------------
+// Velocity step command
+// Applies a constant signed velocity command for a fixed duration.
+// stepAmplitude should be in [-1, 1].
+// ----------------------
+void applyVelocityStepCommand(float durationSec,
+                              float stepAmplitude,
+                              int maxSpeed,
+                              int controlPeriodMs = 20)
+{
+    if (durationSec <= 0.0f || controlPeriodMs <= 0)
+    {
+        std::cout << "Invalid step timing parameters\n";
+        return;
+    }
+
+    if (maxSpeed < 0) maxSpeed = 0;
+    if (maxSpeed > 4095) maxSpeed = 4095;
+
+    std::ofstream logFile("step_velocity_log.csv", std::ios::app);
+    if (!logFile)
+    {
+        std::cout << "Failed to open step_velocity_log.csv\n";
+        return;
+    }
+    if (logFile.tellp() == 0)
+    {
+        logFile << "time,velocity_command,position\n";
+    }
+
+    if (stepAmplitude > 1.0f) stepAmplitude = 1.0f;
+    if (stepAmplitude < -1.0f) stepAmplitude = -1.0f;
+
+    int direction = 0;
+    if (stepAmplitude > 0.0f)
+    {
+        direction = 1;
+    }
+    else if (stepAmplitude < 0.0f)
+    {
+        direction = -1;
+    }
+
+    int speedCmd = static_cast<int>(std::abs(stepAmplitude) * maxSpeed);
+
+    const unsigned int startMs = millis();
+    while (true)
+    {
+        float t = (millis() - startMs) / 1000.0f;
+        if (t >= durationSec)
+        {
+            break;
+        }
+
+        driveActuator(direction, speedCmd);
+        float position = readPositionInches();
+        logFile << t << "," << stepAmplitude << "," << position << "\n";
+        delay(controlPeriodMs);
+    }
+
+    driveActuator(0, 0);
+}
+
+// ----------------------
+// Move to limit (auto-calibration)
+// ----------------------
+int moveToLimit(int direction)
+{
+    int prev = 0;
+    int curr = 0;
+
+    do
+    {
+        prev = curr;
+
+        driveActuator(direction, MissionConstants::kTvcMaxMotorSpeed);
+        delay(200);
+
+        curr = analogRead(SENSOR_PIN_0);
+
+        float voltage = (curr / 32767.0) * 6.144;
+        std::cout << "Raw: " << curr << " Voltage: " << voltage << "\n";
+
+    } while (abs(curr - prev) > 10); // tolerance for noise
+
+    driveActuator(0, 0);
+    return curr;
+}
+
+// ----------------------
+// Float mapping
+// ----------------------
+float mapFloat(float x, float in_min, float in_max, float out_min, float out_max)
+{
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+// ----------------------
+// Display position
+// ----------------------
+void displayOutput()
+{
+    int sensorVal = analogRead(SENSOR_PIN_0);
+
+    extensionLength = mapFloat(
+        (float)sensorVal,
+        (float)minReading,
+        (float)maxReading,
+        0.0,
+        MissionConstants::kTvcStrokeLengthInches
+    );
+
+    std::cout << "ADC: " << sensorVal
+              << "\tPosition: "
+              << extensionLength << " inches\n";
+}
+
+// ----------------------
+// Move to specific position (NEW)
+// ----------------------
+void moveToPosition(float targetInches)
+{
+    int tolerance = 15;
+
+    int targetADC = mapFloat(
+        targetInches,
+        0.0,
+        MissionConstants::kTvcStrokeLengthInches,
+        (float)minReading,
+        (float)maxReading
+    );
+
+    std::cout << "Target ADC: " << targetADC << "\n";
+
+    int sensorVal = analogRead(SENSOR_PIN_0);
+
+    while (abs(sensorVal - targetADC) > tolerance)
+    
+    {
+        int error = abs(sensorVal - targetADC);
+        std::cout << "Error " << error << "\n";
+
+        // slow down near target
+        int dynamicSpeed = (error > 500) ? MissionConstants::kTvcMaxMotorSpeed : MissionConstants::kTvcMaxMotorSpeed / 2;
+
+        if (sensorVal < targetADC)
+        {
+            driveActuator(-1, dynamicSpeed);
+        }
+        else
+        {
+            driveActuator(1, dynamicSpeed);
+        }
+
+        displayOutput();
+        delay(20);
+
+        sensorVal = analogRead(SENSOR_PIN);
+
+        // safety limits
+        // if (sensorVal <= maxReading || sensorVal >= minReading)
+        // {
+        //     std::cout << "Hit safety limit\n";
+        //     break;
+        // }
+    }
+
+    driveActuator(0, 0);
+    std::cout << "Target reached\n";
+}
+
+// ----------------------
+// CTRL+C safety
+// ----------------------
+void signalHandler(int sig)
+{
+    driveActuator(0, 0);
+    std::cout << "Aborting\n";
+    exit(sig);
+}
+
+// ----------------------
+// MAIN
+// ----------------------
+int main()
+{
+    signal(SIGINT, signalHandler);
+
+    std::string answer;
+    while (answer != "Start")
+    {
+        std::cout << "Enter Start to begin: ";
+        std::getline(std::cin, answer);
+    }
+
+    wiringPiSetup();
+
+    // ADS1115 setup
+    ads1115Setup(ADS_BASE, 0x48);
+
+    // 🔥 REQUIRED CONFIG
+    digitalWrite(ADS_BASE + 0, 0); // 6.144V range
+    digitalWrite(ADS_BASE + 1, 6); // 860 SPS
+
+    // PCA9685 setup
+    pca.set_pwm_freq(1000);
+
+    std::cout << "Calibrating...\n";
+
+    maxReading = moveToLimit(1);   // extend
+    std::cout << "Max: " << maxReading << "\n";
+
+    minReading = moveToLimit(-1);  // retract
+    std::cout << "Min: " << minReading << "\n";
+
+    // ----------------------
+    // User-selected test modes
+    // ----------------------
+    while (true)
+    {
+        std::string mode;
+        std::cout << "\nEnter test mode (position/chirp/step/quit): ";
+        std::cin >> mode;
+
+        if (mode == "quit")
+        {
+            break;
+        }
+        else if (mode == "position")
+        {
+            float target;
+            std::cout << "Enter target position (0 - "
+                      << strokeLength << " inches): ";
+            std::cin >> target;
+
+            if (target < 0) target = 0;
+            if (target > strokeLength) target = strokeLength;
+
+            moveToPosition(target);
+        }
+        else if (mode == "chirp")
+        {
+            float durationSec;
+            float startFreqHz;
+            float endFreqHz;
+            int maxSpeed;
+            int controlPeriodMs;
+
+            std::cout << "Enter duration (s), start freq (Hz), end freq (Hz), max speed (0-4095), control period (ms): ";
+            std::cin >> durationSec >> startFreqHz >> endFreqHz >> maxSpeed >> controlPeriodMs;
+
+            applyLinearChirpVelocityCommand(durationSec, startFreqHz, endFreqHz, maxSpeed, controlPeriodMs);
+        }
+        else if (mode == "step")
+        {
+            float durationSec;
+            float stepAmplitude;
+            int maxSpeed;
+            int controlPeriodMs;
+
+            std::cout << "Enter duration (s), step amplitude (-1 to 1), max speed (0-4095), control period (ms): ";
+            std::cin >> durationSec >> stepAmplitude >> maxSpeed >> controlPeriodMs;
+
+            applyVelocityStepCommand(durationSec, stepAmplitude, maxSpeed, controlPeriodMs);
+        }
+        else
+        {
+            std::cout << "Unknown mode. Choose position, chirp, step, or quit.\n";
+        }
+
+        delay(500);
+    }
+
+    return 0;
+}

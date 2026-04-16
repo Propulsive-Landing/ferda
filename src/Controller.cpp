@@ -34,6 +34,7 @@ void Controller::UpdateTestTVC(double testTime)
 
     tvc.SetTVCX(input(0));
     tvc.SetTVCY(input(1));
+    tvc.UpdateActuatorPositions();
 }
 
 void Controller::UpdateLaunch(Navigation &navigation, double current_time)
@@ -108,6 +109,7 @@ void Controller::CalculateInput(Navigation &navigation)
     // [TODO] Move to hardware tvc_angles = TvcMath(input);
     tvc.SetTVCX(input(0));
     tvc.SetTVCY(input(1));
+    tvc.UpdateActuatorPositions();
 }
 
 void Controller::TranslationControl(Navigation &navigation)
@@ -198,6 +200,7 @@ void Controller::Center()
     // [TODO] Move to hardware tvc_angles = TvcMath(input);
     tvc.SetTVCX(input(0));
     tvc.SetTVCY(input(1));
+    tvc.UpdateActuatorPositions();
 }
 
 void Controller::ImportHeightParameters(std::string file_name)
