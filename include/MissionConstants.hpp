@@ -129,8 +129,8 @@ namespace MissionConstants
     const double kTvcZeroExtensionInches = 14.972;      // Actuator length when fully retracted (used to convert from absolute length to extension length)
     const double kTvcMinLengthInches = 1.0;             // Minimum actuator extension
     const double kTvcMaxLengthInches = 3.0;             // Maximum actuator extension
-    const int kTvcPotentiometerMinReading = 3500;       // ADC reading at minimum extension (retracted)
-    const int kTvcPotentiometerMaxReading = 19000;      // ADC reading at maximum extension (extended)
+    const int kTvcPotentiometerMinReading = 26054;       // ADC reading at minimum extension (retracted)
+    const int kTvcPotentiometerMaxReading = 2498;      // ADC reading at maximum extension (extended)
     const int kTvcActuator0RpwmChannel = 0;             // PCA9685 RPWM channel for actuator 0 (X)
     const int kTvcActuator0LpwmChannel = 1;             // PCA9685 LPWM channel for actuator 0 (X)
     const int kTvcActuator1RpwmChannel = 2;             // PCA9685 RPWM channel for actuator 1 (Y)
