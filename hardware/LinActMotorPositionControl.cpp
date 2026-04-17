@@ -3,6 +3,7 @@
 #include <wiringPi.h>
 #include <signal.h>
 #include <cmath>
+#include <mutex>
 #include <ads1115.h>
 #include <PiPCA9685/PCA9685.h>
 #include "MissionConstants.hpp"
@@ -13,10 +14,26 @@
 #define SENSOR_PIN_1 (ADS_BASE + 1)           // PLACEHOLDER: Y-axis actuator sensor
 
 PiPCA9685::PCA9685 pca;
-pca.set_pwm_freq(1000); // Set frequency to 1000 Hz for motor control
-ads1115Setup(ADS_BASE, 0x48); // Initialize ADS1115 at I2C address 0x48
-digitalWrite(SENSOR_PIN_0, 0); // sets to 6.144V
-digitalWrite(SENSOR_PIN_1, 6);
+
+namespace
+{
+std::once_flag gActuatorHardwareInitOnce;
+
+void InitializeActuatorHardware()
+{
+    pca.set_pwm_freq(1000); // Set frequency to 1000 Hz for motor control
+
+    if (ads1115Setup(ADS_BASE, 0x48) < 0)
+    {
+        std::cerr << "WARNING: ads1115Setup failed for actuator position sensing" << std::endl;
+    }
+}
+
+void EnsureActuatorHardwareInitialized()
+{
+    std::call_once(gActuatorHardwareInitOnce, InitializeActuatorHardware);
+}
+}
 
 
 float extensionLength;
@@ -28,6 +45,8 @@ float mapFloat(float x, float in_min, float in_max, float out_min, float out_max
 
 float readPositionInches(int actuator_index)
 {
+    EnsureActuatorHardwareInitialized();
+
     // Read position from specified actuator (0 or 1)
     // Both actuators use the same calibration range (min/max readings)
     int sensorPin = (actuator_index == 0) ? SENSOR_PIN_0 : SENSOR_PIN_1;
@@ -53,6 +72,8 @@ float readPositionInches()
 // ----------------------
 void driveActuator(int actuator_index, int direction, int speed)
 {
+    EnsureActuatorHardwareInitialized();
+
     int rpwmChannel = MissionConstants::kTvcActuator0RpwmChannel;
     int lpwmChannel = MissionConstants::kTvcActuator0LpwmChannel;
 
