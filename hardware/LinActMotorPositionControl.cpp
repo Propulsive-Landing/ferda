@@ -86,16 +86,23 @@ void driveActuator(int actuator_index, int direction, int speed)
     switch(direction)
     {
         case 1: // extend
+            
+            std::cout << "Driving actuator " << actuator_index << " to extend at speed " << speed << std::endl;
+        
             pca.set_pwm(rpwmChannel, 0, speed);
             pca.set_pwm(lpwmChannel, 0, 0);
             break;
 
         case 0: // stop
+
+            std::cout << "Stopping actuator " << actuator_index << " to extend at speed " << speed << std::endl;
+
             pca.set_pwm(rpwmChannel, 0, 0);
             pca.set_pwm(lpwmChannel, 0, 0);
             break;
 
         case -1: // retract
+            std::cout << "Retracting actuator " << actuator_index << " to retract at speed " << speed << std::endl;
             pca.set_pwm(rpwmChannel, 0, 0);
             pca.set_pwm(lpwmChannel, 0, speed);
             break;
