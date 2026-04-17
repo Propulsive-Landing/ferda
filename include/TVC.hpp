@@ -15,6 +15,8 @@ private:
     Eigen::Vector2d current_actuator_lengths;  // [length_x, length_y] in inches
     double stored_angle_x_rad = 0.0;           // Stored gimbal angle X [rad]
     double stored_angle_y_rad = 0.0;           // Stored gimbal angle Y [rad]
+    int last_speed_command_x = 0;
+    int last_speed_command_y = 0;
 
     // PiPCA9685::PCA9685 dev;
 

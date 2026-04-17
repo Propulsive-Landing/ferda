@@ -15,6 +15,7 @@ public:
     {
         Calibration,
         TestTVC,
+        ChirpTVC,
         Idle,
         Launch,
         Land,
@@ -38,6 +39,7 @@ private:
 
     Mode::Phase UpdateCalibration(Navigation &navigation, Controller &controller, double currentTime);
     Mode::Phase UpdateTestTVC(Navigation &navigation, Controller &controller, double currentTime);
+    Mode::Phase UpdateChirpTVC(Navigation &navigation, Controller &controller, double currentTime);
     Mode::Phase UpdateIdle(Navigation &navigation, Controller &controller, IMU &imu, double currentTime);
     Mode::Phase UpdateLaunch(Navigation &navigation, Controller &controller, Igniter &igniter, double current_time);
     Mode::Phase UpdateSafeMode(Navigation &navigation, Controller &controller, double currentTime);

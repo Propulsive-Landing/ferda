@@ -7,10 +7,8 @@
 #include <MissionConstants.hpp>
 #include <iostream>
 #include <string>
-
-// Forward declarations from LinActMotorPositionControl.cpp
-extern float readPositionInches();
-extern void driveActuator(int direction, int speed);
+#include "Telemetry.hpp"
+#include "LinActMotorPositionControl.hpp"
 
 void TVC::AnglesToActuatorLengths(double angle_x_rad, double angle_y_rad,
                                   double& length_x, double& length_y)
@@ -93,11 +91,20 @@ void TVC::ProportionalPositionControl(int actuator_index)
         direction = -1; // Retract
     }
 
-    int speed_cmd = static_cast<int>(std::abs(velocity_command) * max_motor_speed);
-    speed_cmd = std::clamp(speed_cmd, 0, max_motor_speed);
+    int speed_cmd = static_cast<int>(std::abs(velocity_command) * MissionConstants::kTvcMaxMotorSpeed);
+    speed_cmd = std::clamp(speed_cmd, 0, MissionConstants::kTvcMaxMotorSpeed);
+
+    if (actuator_index == 0)
+    {
+        last_speed_command_x = speed_cmd;
+    }
+    else
+    {
+        last_speed_command_y = speed_cmd;
+    }
 
     // Send velocity command to motor
-    driveActuator(direction, speed_cmd);
+    driveActuator(actuator_index, direction, speed_cmd);
 }
 
 void TVC::SetTVCX(double angle_rad)
@@ -127,4 +134,13 @@ void TVC::UpdateActuatorPositions()
     // Run proportional position control for each actuator
     ProportionalPositionControl(0);
     ProportionalPositionControl(1);
+
+    Telemetry::GetInstance().LogActuatorFrame(stored_angle_x_rad,
+                                              stored_angle_y_rad,
+                                              desired_actuator_lengths(0),
+                                              desired_actuator_lengths(1),
+                                              current_actuator_lengths(0),
+                                              current_actuator_lengths(1),
+                                              last_speed_command_x,
+                                              last_speed_command_y);
 }

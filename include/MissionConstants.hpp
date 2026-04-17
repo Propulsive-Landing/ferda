@@ -123,12 +123,23 @@ namespace MissionConstants
     const Eigen::Vector3d kTvcEngineMountPoint1 = Eigen::Vector3d(0.5, -0.5, 0.0);
     
     // Linear Actuator Control Parameters
-    const double kTvcPositionControlGain = 800.0;      // Proportional gain (PWM/inch)
-    const int kTvcMaxMotorSpeed = 3000;                 // Max PWM speed (0-4095)
+    const double kTvcPositionControlGain = 400.0;      // Proportional gain (PWM/inch)
+    const int kTvcMaxMotorSpeed = 4000;                 // Max PWM speed (0-4095)
     const double kTvcStrokeLengthInches = 4.0;          // Actuator stroke length
     const double kTvcZeroExtensionInches = 10.0;        // Actuator length when fully retracted (used to convert from absolute length to extension length)
     const double kTvcMinLengthInches = 2.0;             // Minimum actuator extension
     const double kTvcMaxLengthInches = 3.0;             // Maximum actuator extension
+    const int kTvcPotentiometerMinReading = 3500;       // ADC reading at minimum extension (retracted)
+    const int kTvcPotentiometerMaxReading = 19000;      // ADC reading at maximum extension (extended)
+    const int kTvcActuator0RpwmChannel = 0;             // PCA9685 RPWM channel for actuator 0 (X)
+    const int kTvcActuator0LpwmChannel = 1;             // PCA9685 LPWM channel for actuator 0 (X)
+    const int kTvcActuator1RpwmChannel = 2;             // PCA9685 RPWM channel for actuator 1 (Y)
+    const int kTvcActuator1LpwmChannel = 3;             // PCA9685 LPWM channel for actuator 1 (Y)
+    const float kTvcChirpDurationSec = 10.0f;
+    const float kTvcChirpStartFreqHz = 0.2f;
+    const float kTvcChirpEndFreqHz = 2.0f;
+    const int kTvcChirpMaxSpeed = kTvcMaxMotorSpeed;
+    const int kTvcChirpControlPeriodMs = 20;
     
     // Ignition constants, TODO: USER EDIT PRE-FlIGHT
     const int kIgnitionPin = 6;

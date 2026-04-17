@@ -5,6 +5,7 @@
 #include "MissionConstants.hpp"
 #include "Telemetry.hpp"
 #include "RF.hpp"
+#include "LinActMotorPositionControl.hpp"
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -42,7 +43,13 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
         controller.tvc.SetTVCX(XTVC);
+        controller.tvc.UpdateActuatorPositions();
         return Mode::Calibration;
+    }
+    if (command == RF::Command::ChirpTVC)
+    {
+        Telemetry::GetInstance().Log("Switching mode from calibration to chirp tvc");
+        return Mode::ChirpTVC;
     }
     if (command == RF::Command::IncrementYTVC)
     {
@@ -52,6 +59,7 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
         controller.tvc.SetTVCY(YTVC);
+        controller.tvc.UpdateActuatorPositions();
         return Mode::Calibration;
     }
 
@@ -63,6 +71,7 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
         controller.tvc.SetTVCX(XTVC);
+        controller.tvc.UpdateActuatorPositions();
         return Mode::Calibration;
     }
     if (command == RF::Command::DecrementYTVC)
@@ -73,6 +82,7 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
         controller.tvc.SetTVCY(YTVC);
+        controller.tvc.UpdateActuatorPositions();
         return Mode::Calibration;
     }
 
@@ -129,6 +139,15 @@ Mode::Phase Mode::UpdateTestTVC(Navigation &navigation, Controller &controller, 
     return Mode::TestTVC;
 }
 
+Mode::Phase Mode::UpdateChirpTVC(Navigation &navigation, Controller &controller, double currentTime)
+{
+    Telemetry::GetInstance().Log("Starting fixed-parameter chirp TVC test");
+    RunChirpTVCMode();
+    Telemetry::GetInstance().Log("Finished chirp TVC test");
+    controller.Center();
+    return Mode::Idle;
+}
+
 Mode::Phase Mode::UpdateIdle(Navigation &navigation, Controller &controller, IMU &imu, double currentTime)
 {
     // Enable pad updates while on the pad
@@ -149,6 +168,11 @@ Mode::Phase Mode::UpdateIdle(Navigation &navigation, Controller &controller, IMU
         navigation.SetOnPad(false); // Disable pad updates during flight
         navigation.reset();
         return Mode::Launch;
+    }
+    else if (command == RF::Command::ChirpTVC)
+    {
+        Telemetry::GetInstance().Log("Switching mode from idle to chirp tvc");
+        return Mode::ChirpTVC;
     }
 
     return Mode::Idle;
@@ -222,6 +246,9 @@ bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igni
     case TestTVC:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, 0.05, 0.08);
         this->eCurrentMode = UpdateTestTVC(navigation, controller, currentTime);
+        break;
+    case ChirpTVC:
+        this->eCurrentMode = UpdateChirpTVC(navigation, controller, currentTime);
         break;
     case Idle:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, 0.05, 0.08);

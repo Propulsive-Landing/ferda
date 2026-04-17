@@ -25,6 +25,7 @@ public:
         ABORT,
         Startup,
         TestTVC,
+        ChirpTVC,
         GoIdle,
         Ignite,
         Release,
@@ -49,6 +50,8 @@ public:
             ParsedCommand = RF::Command::Startup;
         else if (input_line == "TestTVC")
             ParsedCommand = RF::Command::TestTVC;
+        else if (input_line == "ChirpTVC")
+            ParsedCommand = RF::Command::ChirpTVC;
         else if (input_line == "GoIdle")
             ParsedCommand = RF::Command::GoIdle;
         else if (input_line == "Ignite")
