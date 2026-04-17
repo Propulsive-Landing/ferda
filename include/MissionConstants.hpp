@@ -117,17 +117,17 @@ namespace MissionConstants
     const int kTvcYPin = 18;
     
     // Linear Actuator TVC Geometry (in inches, relative to u-joint origin)
-    const Eigen::Vector3d kTvcVehicleMountPoint0 = Eigen::Vector3d(-1.5, 0.0, 1.0);
-    const Eigen::Vector3d kTvcVehicleMountPoint1 = Eigen::Vector3d(1.5, 0.0, 1.0);
-    const Eigen::Vector3d kTvcEngineMountPoint0 = Eigen::Vector3d(-0.5, -0.5, 0.0);
-    const Eigen::Vector3d kTvcEngineMountPoint1 = Eigen::Vector3d(0.5, -0.5, 0.0);
+    const Eigen::Vector3d kTvcVehicleMountPoint0 = Eigen::Vector3d(4.183, 0.0, 5.563);
+    const Eigen::Vector3d kTvcVehicleMountPoint1 = Eigen::Vector3d(0, 4.183, 5.563);
+    const Eigen::Vector3d kTvcEngineMountPoint0 = Eigen::Vector3d(2.755, 0.0, -11.078);
+    const Eigen::Vector3d kTvcEngineMountPoint1 = Eigen::Vector3d(0.0, 2.755, -11.078);
     
     // Linear Actuator Control Parameters
     const double kTvcPositionControlGain = 400.0;      // Proportional gain (PWM/inch)
     const int kTvcMaxMotorSpeed = 4000;                 // Max PWM speed (0-4095)
     const double kTvcStrokeLengthInches = 4.0;          // Actuator stroke length
-    const double kTvcZeroExtensionInches = 10.0;        // Actuator length when fully retracted (used to convert from absolute length to extension length)
-    const double kTvcMinLengthInches = 2.0;             // Minimum actuator extension
+    const double kTvcZeroExtensionInches = 14.972;      // Actuator length when fully retracted (used to convert from absolute length to extension length)
+    const double kTvcMinLengthInches = 1.0;             // Minimum actuator extension
     const double kTvcMaxLengthInches = 3.0;             // Maximum actuator extension
     const int kTvcPotentiometerMinReading = 3500;       // ADC reading at minimum extension (retracted)
     const int kTvcPotentiometerMaxReading = 19000;      // ADC reading at maximum extension (extended)
@@ -136,8 +136,8 @@ namespace MissionConstants
     const int kTvcActuator1RpwmChannel = 2;             // PCA9685 RPWM channel for actuator 1 (Y)
     const int kTvcActuator1LpwmChannel = 3;             // PCA9685 LPWM channel for actuator 1 (Y)
     const float kTvcChirpDurationSec = 10.0f;
-    const float kTvcChirpStartFreqHz = 0.2f;
-    const float kTvcChirpEndFreqHz = 2.0f;
+    const float kTvcChirpStartFreqHz = 1.0f;
+    const float kTvcChirpEndFreqHz = 15.0f;
     const int kTvcChirpMaxSpeed = kTvcMaxMotorSpeed;
     const int kTvcChirpControlPeriodMs = 20;
     
