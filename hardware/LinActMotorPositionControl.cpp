@@ -13,6 +13,11 @@
 #define SENSOR_PIN_1 (ADS_BASE + 1)           // PLACEHOLDER: Y-axis actuator sensor
 
 PiPCA9685::PCA9685 pca;
+pca.set_pwm_freq(1000); // Set frequency to 1000 Hz for motor control
+ads1115Setup(ADS_BASE, 0x48); // Initialize ADS1115 at I2C address 0x48
+digitalWrite(SENSOR_PIN_0, 0); // sets to 6.144V
+digitalWrite(SENSOR_PIN_1, 6);
+
 
 float extensionLength;
 
