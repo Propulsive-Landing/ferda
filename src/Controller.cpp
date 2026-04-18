@@ -25,8 +25,8 @@ void Controller::Start(double current_time)
 void Controller::UpdateTestTVC(double testTime)
 {
 
-    double angleA = sin(testTime) * MissionConstants::kMaximumTvcAngle; // Rad
-    double angleB = cos(testTime) * MissionConstants::kMaximumTvcAngle; // Rad
+    double angleA = 0 * sin(testTime) * MissionConstants::kMaximumTvcAngle; // Rad
+    double angleB = 0 * cos(testTime) * MissionConstants::kMaximumTvcAngle; // Rad
 
     input(0) = angleA;
     input(1) = angleB;

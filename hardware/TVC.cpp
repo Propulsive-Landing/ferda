@@ -133,7 +133,7 @@ void TVC::UpdateActuatorPositions()
 
     // Run proportional position control for each actuator
     ProportionalPositionControl(0);
-    ProportionalPositionControl(1);
+    //ProportionalPositionControl(1);
 
     Telemetry::GetInstance().LogActuatorFrame(stored_angle_x_rad,
                                               stored_angle_y_rad,
