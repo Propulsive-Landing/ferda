@@ -11,7 +11,7 @@
 #include "LinActMotorPositionControl.hpp"
 
 void TVC::AnglesToActuatorLengths(double angle_x_rad, double angle_y_rad,
-                                  double& length_x, double& length_y)
+                                  double &length_x, double &length_y)
 {
     // Convert gimbal angles to linear actuator lengths using mechanical geometry.
     // Origin: TVC u-joint
@@ -34,7 +34,7 @@ void TVC::AnglesToActuatorLengths(double angle_x_rad, double angle_y_rad,
 
     Eigen::Vector3d rotation_vector(angle_x_rad, angle_y_rad, 0.0);
     double rotation_angle = rotation_vector.norm();
-    
+
     Eigen::Matrix3d R;
     if (rotation_angle > 1e-10)
     {
@@ -58,7 +58,7 @@ void TVC::AnglesToActuatorLengths(double angle_x_rad, double angle_y_rad,
     Eigen::Vector3d vector_1 = vehicle_mount_1 - engine_mount_1_rotated;
 
     // Convert from absolute length to extension length by subtracting the minimum length (when fully retracted)
-    length_x = vector_0.norm() - MissionConstants::kTvcZeroExtensionInches;  
+    length_x = vector_0.norm() - MissionConstants::kTvcZeroExtensionInches;
     length_y = vector_1.norm() - MissionConstants::kTvcZeroExtensionInches;
 
     // Clamp to valid actuator range
@@ -81,10 +81,10 @@ void TVC::ProportionalPositionControl(int actuator_index)
     velocity_command = std::clamp(velocity_command, -1.0, 1.0);
 
     // Convert normalized velocity to motor direction and speed
-    int direction = 0;  // 0 = stop, 1 = extend, -1 = retract
-    if (velocity_command > 0.01)      // Deadband to avoid chatter
+    int direction = 0;           // 0 = stop, 1 = extend, -1 = retract
+    if (velocity_command > 0.01) // Deadband to avoid chatter
     {
-        direction = 1;  // Extend
+        direction = 1; // Extend
     }
     else if (velocity_command < -0.01)
     {
@@ -129,11 +129,11 @@ void TVC::UpdateActuatorPositions()
 
     // Read current actuator positions from sensors
     current_actuator_lengths(0) = readPositionInches(0);
-    current_actuator_lengths(1) = readPositionInches(1); 
+    current_actuator_lengths(1) = readPositionInches(1);
 
     // Run proportional position control for each actuator
     ProportionalPositionControl(0);
-    //ProportionalPositionControl(1);
+    ProportionalPositionControl(1);
 
     Telemetry::GetInstance().LogActuatorFrame(stored_angle_x_rad,
                                               stored_angle_y_rad,
