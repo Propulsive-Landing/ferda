@@ -29,7 +29,6 @@ private:
     std::tuple<double, double, double> magneticField;
     std::tuple<double, double, double> gpsPosition;
     std::tuple<double, double> gpsVelocity;
-    bool gpsAvailable;
     void magnetometerUpdate(const Eigen::Vector3d &magneticField, const Eigen::Matrix3d &R);
     void gpsPositionUpdate(const Eigen::Vector3d &gpsPosition);
     void gpsVelocityUpdate(const Eigen::Vector2d &gpsVelocity);
@@ -62,12 +61,10 @@ public:
     void padUpdateAngularVelocity(const Eigen::Vector3d &angularVelocity);
     void SetOnPad(bool isOnPad); // Set whether rocket is on the pad
     Eigen::Vector3d GetAngularVelocity();
-    std::tuple<double, double, double> ComputeAngularRollingAverage(std::vector<double> d_theta_now);
     Eigen::Vector3d x_e, v_e;
     Eigen::Quaterniond q;
     Eigen::Vector3d a_b, w_b;
     Eigen::Vector3d w;
-    Eigen::Matrix3d CreateRotationalMatrix(double phi, double theta, double psi);
     Eigen::Matrix3d skew(const Eigen::Vector3d &v);
     void kalmanUpdate(
         const Eigen::MatrixXd &H,

@@ -17,4 +17,5 @@ public:
     int16_t read16LE(int fd, int reg);                        // Helper: Read 16-bit little-endian
 protected:
     int fd; // File pointer
+    bool IMUFound;
 };

@@ -14,19 +14,23 @@ IMU::IMU()
 {
     fd = wiringPiI2CSetup(MissionConstants::IMU_I2C_ADDR);
 
-
     int chip_id = wiringPiI2CReadReg8(fd, MissionConstants::CHIP_ID_ADDR);
     std::stringstream ss;
     ss << "0x" << std::uppercase << std::hex << std::setw(2) << std::setfill('0') << MissionConstants::IMU_I2C_ADDR;
 
     // Check to see if BMO055 is connected since wiringPiI2CSetup just opens up I2c bus
-    if(chip_id != MissionConstants::CHIP_ID)
+    if (chip_id != MissionConstants::CHIP_ID)
     {
-        Telemetry::GetInstance().Log("BMO055 was not detected at address " + ss.str());
+        Telemetry::GetInstance().Log("Warning: BMO055 was not detected at address " + ss.str());
         // TODO: MAYBE ADD CHECK TO SEE IF USER WANTS TO CONTINUE
+        IMUFound = false;
         return;
     }
-    
+    else
+    {
+        IMUFound = true;
+    }
+
     // Set power mode
     wiringPiI2CWriteReg8(fd, MissionConstants::POWER_MODE, MissionConstants::POWER_NORMAL);
     delay(10);
@@ -42,17 +46,19 @@ IMU::IMU()
 int16_t IMU::read16LE(int fd, int reg)
 {
     uint8_t buffer[2];
-    
+
     // Write register address to set read position
-    if (write(fd, &reg, 1) != 1) {
+    if (write(fd, &reg, 1) != 1)
+    {
         return 0;
     }
-    
+
     // Read 2 consecutive bytes in a single atomic I2C transaction
-    if (read(fd, buffer, 2) != 2) {
+    if (read(fd, buffer, 2) != 2)
+    {
         return 0;
     }
-    
+
     return (int16_t)((buffer[1] << 8) | buffer[0]);
 }
 

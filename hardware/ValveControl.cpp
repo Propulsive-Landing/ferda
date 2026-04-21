@@ -1,7 +1,7 @@
 #include "ValveControl.hpp"
 #include "Telemetry.hpp"
 #include <wiringPi.h>
-#include "ServoDriver.hpp"
+#include "PCA9685Driver.hpp"
 
 void ValveControl::OpenValve(ValveType valve)
 {
@@ -15,7 +15,7 @@ void ValveControl::OpenValve(ValveType valve)
         // float pulse = 1500.0 + ((angle -90)/ 90.0) * 1000.0;
         // int ticks = (pulse / 20000.0) * 4096.0;
         Telemetry::GetInstance().Log("Opening Nitrogen Valve");
-  
+
         servo_driver->set_pwm(MissionConstants::kNitrogenServoPin, 0, ticks);
         nitrogenOpen = true;
         break;

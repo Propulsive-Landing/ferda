@@ -4,12 +4,12 @@
 #include "Navigation.hpp"
 #include "MissionConstants.hpp"
 #include "Telemetry.hpp"
-#include "RF.hpp"
 #include "ValveControl.hpp"
 #include "SparkPlug.hpp"
 #include "PressureTransducer.hpp"
 #include "LoadCell.hpp"
 #include "GPS.hpp"
+#include "LinActMotorPositionControl.hpp"
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -25,11 +25,62 @@ void Mode::UploadKmatrices()
     TranslationKMatrix = "../Translation.csv";
 }
 
-Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controller, double currentTime)
+void Mode::CheckForToggleSensorCommands(RF::Command &command, GPS &gps, Camera &camera,
+                                        Magnetometer &magnetometer)
+{
+    if (command == RF::Command::CameraOn)
+    {
+        Telemetry::GetInstance().Log("Switching Camera on");
+        camera.setUseCamera(true);
+    }
+    else if (command == RF::Command::CameraOff)
+    {
+        Telemetry::GetInstance().Log("Switching Camera off");
+        camera.setUseCamera(false);
+    }
+    else if (command == RF::Command::GPSPositionOn)
+    {
+        Telemetry::GetInstance().Log("Switching GPS Position on");
+        gps.SetUseGPSPosition(true);
+    }
+    else if (command == RF::Command::GPSPositionOff)
+    {
+        Telemetry::GetInstance().Log("Switching GPS Position off");
+        gps.SetUseGPSPosition(false);
+    }
+    else if (command == RF::Command::GPSVelocityOn)
+    {
+        Telemetry::GetInstance().Log("Switching GPS Velocity on");
+        gps.SetUseGPSVelocity(true);
+    }
+    else if (command == RF::Command::GPSVelocityOff)
+    {
+        Telemetry::GetInstance().Log("Switching GPS Velocity off");
+        gps.SetUseGPSVelocity(false);
+    }
+    else if (command == RF::Command::MagnetometerOn)
+    {
+        Telemetry::GetInstance().Log("Switching Magnometer on");
+        magnetometer.setUseMagnometer(true);
+    }
+    else if (command == RF::Command::MagnetometerOff)
+    {
+        Telemetry::GetInstance().Log("Switching Magnometer off");
+        magnetometer.setUseMagnometer(false);
+    }
+}
+
+Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controller,
+                                    GPS &gps, Camera &camera, Magnetometer &magnetometer,
+                                    double currentTime)
 {
     static float XTVC = 0.0;
     static float YTVC = 0.0;
     RF::Command command = RF::GetInstance().GetCommand();
+
+    // Check for sensor toggle commands
+    CheckForToggleSensorCommands(command, gps, camera, magnetometer);
+
     if (command == RF::Command::IncrementXTVC)
     {
         XTVC += 0.01;
@@ -38,9 +89,15 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
         controller.tvc.SetTVCX(XTVC);
+        controller.tvc.UpdateActuatorPositions();
         return Mode::Calibration;
     }
-    if (command == RF::Command::IncrementYTVC)
+    else if (command == RF::Command::ChirpTVC)
+    {
+        Telemetry::GetInstance().Log("Switching mode from calibration to chirp tvc");
+        return Mode::ChirpTVC;
+    }
+    else if (command == RF::Command::IncrementYTVC)
     {
         YTVC += 0.01;
         std::ostringstream os;
@@ -48,10 +105,11 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
         controller.tvc.SetTVCY(YTVC);
+        controller.tvc.UpdateActuatorPositions();
         return Mode::Calibration;
     }
 
-    if (command == RF::Command::DecrementXTVC)
+    else if (command == RF::Command::DecrementXTVC)
     {
         XTVC -= 0.01;
         std::ostringstream os;
@@ -59,9 +117,10 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
         controller.tvc.SetTVCX(XTVC);
+        controller.tvc.UpdateActuatorPositions();
         return Mode::Calibration;
     }
-    if (command == RF::Command::DecrementYTVC)
+    else if (command == RF::Command::DecrementYTVC)
     {
         YTVC -= 0.01;
         std::ostringstream os;
@@ -69,10 +128,11 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
         controller.tvc.SetTVCY(YTVC);
+        controller.tvc.UpdateActuatorPositions();
         return Mode::Calibration;
     }
 
-    if (command == RF::Command::TestTVC)
+    else if (command == RF::Command::TestTVC)
     {
         Telemetry::GetInstance().Log("Switching mode from calibration to test tvc");
         UploadKmatrices();
@@ -101,15 +161,18 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
     return Mode::Calibration;
 }
 
-Mode::Phase Mode::UpdateTestTVC(Navigation &navigation, Controller &controller, double currentTime)
+Mode::Phase Mode::UpdateTestTVC(Navigation &navigation, Controller &controller,
+                                GPS &gps, Camera &camera, Magnetometer &magnetometer,
+                                double currentTime)
 {
-
     static double startTime = currentTime;
     double seconds_since_start = currentTime - startTime;
 
     controller.UpdateTestTVC(seconds_since_start);
 
     RF::Command command = RF::GetInstance().GetCommand();
+    // Check for sensor toggle commands
+    CheckForToggleSensorCommands(command, gps, camera, magnetometer);
     if (command == RF::Command::ABORT)
     {
         Telemetry::GetInstance().Log("ABORT, EXITING");
@@ -125,7 +188,18 @@ Mode::Phase Mode::UpdateTestTVC(Navigation &navigation, Controller &controller, 
     return Mode::TestTVC;
 }
 
-Mode::Phase Mode::UpdateIdle(Navigation &navigation, Controller &controller, IMU &imu, double currentTime)
+Mode::Phase Mode::UpdateChirpTVC(Navigation &navigation, Controller &controller, double currentTime)
+{
+    Telemetry::GetInstance().Log("Starting fixed-parameter chirp TVC test");
+    RunChirpTVCMode();
+    Telemetry::GetInstance().Log("Finished chirp TVC test");
+    controller.Center();
+    return Mode::Idle;
+}
+
+Mode::Phase Mode::UpdateIdle(Navigation &navigation, Controller &controller, IMU &imu,
+                             GPS &gps, Camera &camera, Magnetometer &magnetometer,
+                             double currentTime)
 {
     // Enable pad updates while on the pad
     navigation.SetOnPad(true);
@@ -134,6 +208,9 @@ Mode::Phase Mode::UpdateIdle(Navigation &navigation, Controller &controller, IMU
 
     // launch when we get the command
     RF::Command command = RF::GetInstance().GetCommand();
+    // Check for sensor toggle commands
+    CheckForToggleSensorCommands(command, gps, camera, magnetometer);
+
     if (command == RF::Command::ABORT)
     {
         Telemetry::GetInstance().Log("ABORT, EXITING");
@@ -151,11 +228,16 @@ Mode::Phase Mode::UpdateIdle(Navigation &navigation, Controller &controller, IMU
         Telemetry::GetInstance().Log("Switching mode from idle to HotfireIdle");
         return Mode::HotfireIdle;
     }
+    else if (command == RF::Command::ChirpTVC)
+    {
+        Telemetry::GetInstance().Log("Switching mode from idle to chirp tvc");
+        return Mode::ChirpTVC;
+    }
 
     return Mode::Idle;
 }
 
-Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, Igniter &igniter, double currentTime)
+Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, Igniter &igniter, float currentTime)
 {
     // Manage ignition and controller start on first call, then delegate launch behavior
     static double startTime = currentTime;
@@ -195,11 +277,13 @@ Mode::Phase Mode::UpdateSafeMode(Navigation &navigation, Controller &controller,
 }
 
 // Liquid Propulsion State Implementations
-Mode::Phase Mode::UpdateHotfireIdle(Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug)
+Mode::Phase Mode::UpdateHotfireIdle(Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug, GPS &gps, Camera &camera, Magnetometer &magnetometer)
 {
     navigation.UpdateNavigation();
 
     RF::Command command = RF::GetInstance().GetCommand();
+    // Check for sensor toggle commands
+    CheckForToggleSensorCommands(command, gps, camera, magnetometer);
 
     if (command == RF::Command::ABORT)
     {
@@ -412,8 +496,9 @@ Mode::Phase Mode::UpdateWaterFlow(Navigation &navigation, ValveControl &valveCon
     return Mode::WaterFlow;
 }
 
-bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igniter &igniter, IMU &imu, ValveControl &valveControl,
-                  SparkPlug &sparkPlug, PressureTransducer &pressureTransducer, LoadCell &loadCell)
+bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igniter &igniter, IMU &imu,
+                  Magnetometer &magnetometer, ValveControl &valveControl, SparkPlug &sparkPlug,
+                  PressureTransducer &pressureTransducer, LoadCell &loadCell, Camera &camera)
 {
 
     // Track total elapsed time and delta time
@@ -437,15 +522,18 @@ bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igni
     {
     case Calibration:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
-        this->eCurrentMode = UpdateCalibration(navigation, controller, currentTime);
+        this->eCurrentMode = UpdateCalibration(navigation, controller, gps, camera, magnetometer, currentTime);
         break;
     case TestTVC:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
-        this->eCurrentMode = UpdateTestTVC(navigation, controller, currentTime);
+        this->eCurrentMode = UpdateTestTVC(navigation, controller, gps, camera, magnetometer, currentTime);
+        break;
+    case ChirpTVC:
+        this->eCurrentMode = UpdateChirpTVC(navigation, controller, currentTime);
         break;
     case Idle:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
-        this->eCurrentMode = UpdateIdle(navigation, controller, imu, currentTime);
+        this->eCurrentMode = UpdateIdle(navigation, controller, imu, gps, camera, magnetometer, currentTime);
         break;
     case Launch:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
@@ -453,7 +541,7 @@ bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igni
         break;
     case HotfireIdle:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
-        this->eCurrentMode = UpdateHotfireIdle(navigation, valveControl, sparkPlug);
+        this->eCurrentMode = UpdateHotfireIdle(navigation, valveControl, sparkPlug, gps, camera, magnetometer);
         break;
     case ASITest:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);

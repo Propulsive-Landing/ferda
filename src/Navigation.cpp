@@ -393,14 +393,16 @@ void Navigation::UpdateNavigation()
 
             if (gps.GPSAvailable())
             {
-                if (gps.HasFreshPosition())
+                // Make Sure GPS position is new and is toggled to be used
+                if (gps.HasFreshPosition() && gps.GetUseGPSPosition())
                 {
                     gpsPosition = gps.GetGPSPosition();
                     Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
                     gpsPositionUpdate(gpsPositionVector);
                 }
 
-                if (gps.HasFreshVelocity())
+                // Make Sure GPS velocity is new and is toggled to be used
+                if (gps.HasFreshVelocity() && gps.GetUseGPSVelocity())
                 {
                     gpsVelocity = gps.GetGPSVelocity();
                     Eigen::Vector2d gpsVelocityVector(std::get<0>(gpsVelocity), std::get<1>(gpsVelocity));
@@ -411,19 +413,28 @@ void Navigation::UpdateNavigation()
         gps_update_counter = 0;
     }
 
+    // TODO: GO OVER TOGGLE LOGIC FOR CAMREA BELOW TO MAKE SURE IT IS RIGHT
     camera_capture_elapsed_s += loopTime;
-    if (camera_capture_elapsed_s >= kCameraCapturePeriodS && false)
+    if (camera_capture_elapsed_s >= kCameraCapturePeriodS)
     {
-        camera.RequestCapture();
+        // Only continue the process if Camera is toggled to be on
+        if (camera.getUseCamera())
+        {
+            camera.RequestCapture();
+        }
         camera_capture_elapsed_s -= kCameraCapturePeriodS;
     }
 
-    const std::vector<Eigen::Vector3d> cameraDirections = camera.GetUnitVectorList();
-    const double camera_frame_id = camera.GetFrameId();
-    if (camera_frame_id >= 0.0 && camera_frame_id != last_camera_frame_id)
+    // Only continue the process if Camera is toggled to be on
+    if (camera.getUseCamera())
     {
-        cameraUpdate(cameraDirections, R, camera_frame_id);
-        last_camera_frame_id = camera_frame_id;
+        const std::vector<Eigen::Vector3d> cameraDirections = camera.GetUnitVectorList();
+        const double camera_frame_id = camera.GetFrameId();
+        if (camera_frame_id >= 0.0 && camera_frame_id != last_camera_frame_id)
+        {
+            cameraUpdate(cameraDirections, R, camera_frame_id);
+            last_camera_frame_id = camera_frame_id;
+        }
     }
 
     // Update lidar on fixed cadence near ground.

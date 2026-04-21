@@ -62,6 +62,8 @@ GPS::GPS()
     {
         Telemetry::GetInstance().Log("Warning: GPS port unavailable, continuing without GPS");
         found_gps = false;
+        useGPSPosition = false;
+        useGPSVelocity = false;
     }
     else
     {

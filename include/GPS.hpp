@@ -48,6 +48,9 @@ private:
 
     // Used as a flag to see if GPS is plugged in
     bool found_gps;
+    // Toggles used in ground control to determine whether to use GPS Velocity and Position in Fusion algorithm
+    bool useGPSVelocity;
+    bool useGPSPosition;
 
     char buffer[MissionConstants::MAX_SIZE];
 
@@ -77,5 +80,10 @@ public:
     bool GPSUsed();
     bool HasFreshPosition() const;
     bool HasFreshVelocity() const;
+    bool GetUseGPSVelocity() { return useGPSVelocity; }
+    bool GetUseGPSPosition() { return useGPSPosition; }
+    void SetUseGPSVelocity(const bool &state) { useGPSVelocity = state; }
+    void SetUseGPSPosition(const bool &state) { useGPSPosition = state; }
+
     uint64_t GetUpdateCount() const;
 };

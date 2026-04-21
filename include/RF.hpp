@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 #include <fstream>
 #include <stdio.h>
@@ -25,6 +27,7 @@ public:
         ABORT,
         Startup,
         TestTVC,
+        ChirpTVC,
         GoIdle,
         Ignite,
         Release,
@@ -53,7 +56,17 @@ public:
         SparkOff,
         ASITest,
         WaterFlow,
-        GoHotfireIdle
+        GoHotfireIdle,
+        CameraOn,
+        CameraOff,
+        LidarOn,
+        LidarOff,
+        GPSVelocityOn,
+        GPSVelocityOff,
+        GPSPositionOn,
+        GPSPositionOff,
+        MagnetometerOn,
+        MagnetometerOff,
     };
 
     RF::Command ParseCommand(std::string input_line)
@@ -71,6 +84,8 @@ public:
             ParsedCommand = RF::Command::Startup;
         else if (input_line == "TestTVC")
             ParsedCommand = RF::Command::TestTVC;
+        else if (input_line == "ChirpTVC")
+            ParsedCommand = RF::Command::ChirpTVC;
         else if (input_line == "GoIdle")
             ParsedCommand = RF::Command::GoIdle;
         else if (input_line == "Ignite")
@@ -85,6 +100,26 @@ public:
             ParsedCommand = RF::Command::DecrementYTVC;
         else if (input_line == "Release")
             ParsedCommand = RF::Command::Release;
+        else if (input_line == "SENSOR: camera ON")
+            ParsedCommand = RF::Command::CameraOn;
+        else if (input_line == "SENSOR: camera OFF")
+            ParsedCommand = RF::Command::CameraOff;
+        else if (input_line == "SENSOR: lidar ON")
+            ParsedCommand = RF::Command::LidarOn;
+        else if (input_line == "SENSOR: lidar OFF")
+            ParsedCommand = RF::Command::LidarOff;
+        else if (input_line == "SENSOR: gps_velocity ON")
+            ParsedCommand = RF::Command::GPSVelocityOn;
+        else if (input_line == "SENSOR: gps_velocity OFF")
+            ParsedCommand = RF::Command::GPSVelocityOff;
+        else if (input_line == "SENSOR: gps_position ON")
+            ParsedCommand = RF::Command::GPSPositionOn;
+        else if (input_line == "SENSOR: gps_position OFF")
+            ParsedCommand = RF::Command::GPSPositionOff;
+        else if (input_line == "SENSOR: magnetometer ON")
+            ParsedCommand = RF::Command::MagnetometerOn;
+        else if (input_line == "SENSOR: magnetometer OFF")
+            ParsedCommand = RF::Command::MagnetometerOff;
         // Liquid Propulsion Commands
         else if (input_line == "VALVE: nitrogen open")
             ParsedCommand = RF::Command::ValveNitrogenOpen;

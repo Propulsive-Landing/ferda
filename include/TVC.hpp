@@ -3,25 +3,25 @@
 #include <Eigen/Dense>
 #include "MissionConstants.hpp"
 
-#ifdef NDEBUG
-#include <PiPCA9685/PCA9685.h>
-#endif
-
 class TVC
 {
 private:
-    Eigen::Matrix<double, 2, 1> TVC_SERVO_HORN_OFFSET = (Eigen::MatrixXd(2, 1) << 101.0L,
-                                                         100.0L)
-                                                            .finished();
+    // Linear actuator control
+    Eigen::Vector2d desired_actuator_lengths; // [length_x, length_y] in inches
+    Eigen::Vector2d current_actuator_lengths; // [length_x, length_y] in inches
+    double stored_angle_x_rad = 0.0;          // Stored gimbal angle X [rad]
+    double stored_angle_y_rad = 0.0;          // Stored gimbal angle Y [rad]
+    int last_speed_command_x = 0;
+    int last_speed_command_y = 0;
 
-    Eigen::Matrix<double, 2, 2> TVC_GEAR_RATIO = (Eigen::MatrixXd(2, 2) << -1.0L / 0.317705L, 0.0L,
-                                                  0.0L, -1.0L / 0.31731096L)
-                                                     .finished();
-
-    // PiPCA9685::PCA9685 dev;
+    // Helper functions
+    void AnglesToActuatorLengths(double angle_x_rad, double angle_y_rad,
+                                 double &length_x, double &length_y);
+    void ProportionalPositionControl(int actuator_index);
 
 public:
     TVC() = default;
     void SetTVCX(double angle_rad);
     void SetTVCY(double angle_rad);
+    void UpdateActuatorPositions();
 };

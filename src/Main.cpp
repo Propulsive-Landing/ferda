@@ -30,13 +30,10 @@
 #ifdef NDEBUG
 #include <wiringPi.h>
 #include <ads1115.h>
-#include "ServoDriver.hpp"
+#include "PCA9685Driver.hpp"
 #endif
 
-
 // TODO: add a global ctr c handler to turn off all digital pins
-
-
 
 int main()
 {
@@ -48,16 +45,27 @@ int main()
         throw std::runtime_error("failed to initialize gpio");
 
     // Setup PCA9685 servo driver
-    try{
-         servo_driver = std::make_unique<PiPCA9685::PCA9685>();
-         servo_driver->set_pwm_freq(50);
+    try
+    {
+        servo_driver = std::make_unique<PiPCA9685::PCA9685>(MissionConstants::PCA9685_I2C_ADDR, MissionConstants::SERVO_DRIVER_ADDR);
+        servo_driver->set_pwm_freq(MissionConstants::SERVO_FREQ);
     }
-    catch(...)
+    catch (...)
     {
         // TODO: Log with telemetry
-        std::cout << "Warning: Could not setup PCA9685" << "\n";
+        Telemetry::GetInstance().Log("Warning: Could not setup PCA9685 for Servos");
     }
-   
+
+    // Setup PCA9685 for 1000hz pwm signals for Linear Actuators and Spark plug pwm signal
+    try
+    {
+        pwm_driver = std::make_unique<PiPCA9685::PCA9685>(MissionConstants::PCA9685_I2C_ADDR, MissionConstants::PWM_DRIVER_ADDR);
+        pwm_driver->set_pwm_freq(MissionConstants::PWM_FREQ);
+    }
+    catch (...)
+    {
+        Telemetry::GetInstance().Log("Warning: Could not setup PCA9685 for Linear Actuators and Spark plug");
+    }
 
     // Setup Analog to Digital Converters
     ads1115Setup(MissionConstants::ADS1BASE, MissionConstants::ADS1ADDR);
@@ -69,12 +77,13 @@ int main()
         // Log with telemetry
         std::stringstream ss;
         ss << "0x" << std::uppercase << std::hex << std::setw(2) << std::setfill('0') << MissionConstants::ADS1ADDR;
-        Telemetry::GetInstance().Log("Warning: Ads1115 was not found at " +  ss.str());
+        Telemetry::GetInstance().Log("Warning: Ads1115 was not found at " + ss.str());
     }
     else
     {
-        // Set to read up to 6.144 V
+        // Set to read up to 6.144 V and upgrade SPS to 860
         digitalWrite(MissionConstants::ADS1BASE, 0);
+        digitalWrite(MissionConstants::ADS1BASE + 1, 6);
     }
 
     ads1115Setup(MissionConstants::ADS2BASE, MissionConstants::ADS2ADDR);
@@ -83,33 +92,34 @@ int main()
     int config_value2 = wiringPiI2CReadReg16(node2->fd, 0x01); // Read config register
     if (config_value2 < 0)
     {
-          // Log with telemetry
+        // Log with telemetry
         std::stringstream ss;
         ss << "0x" << std::uppercase << std::hex << std::setw(2) << std::setfill('0') << MissionConstants::ADS2ADDR;
-        Telemetry::GetInstance().Log("Warning: Ads1115 was not found at " +  ss.str());
+        Telemetry::GetInstance().Log("Warning: Ads1115 was not found at " + ss.str());
     }
     else
     {
-        // Set to read up to 6.144 V
+        // Set to read up to 6.144 V and upgrade SPS to 860
         digitalWrite(MissionConstants::ADS2BASE, 0);
+        digitalWrite(MissionConstants::ADS2BASE + 1, 6);
     }
-
 
     ads1115Setup(MissionConstants::ADS3BASE, MissionConstants::ADS3ADDR);
     struct wiringPiNodeStruct *node3 = wiringPiFindNode(MissionConstants::ADS3BASE);
     // Attempt to read from config register to see if ADS1115 is connected since ads1115Setup just opens the I2c bus
     int config_value3 = wiringPiI2CReadReg16(node3->fd, 0x01); // Read config register
-    if(config_value3 < 0)
+    if (config_value3 < 0)
     {
         // Log with telemetry
         std::stringstream ss;
         ss << "0x" << std::uppercase << std::hex << std::setw(2) << std::setfill('0') << MissionConstants::ADS3ADDR;
-        Telemetry::GetInstance().Log("Warning: Ads1115 was not found at " +  ss.str());
+        Telemetry::GetInstance().Log("Warning: Ads1115 was not found at " + ss.str());
     }
     else
     {
-        // Set to read up to 6.144 V
+        // Set to read up to 6.144 V and upgrade SPS to 860
         digitalWrite(MissionConstants::ADS3BASE, 0);
+        digitalWrite(MissionConstants::ADS3BASE + 1, 6);
     }
 
     // TODO: MAYBE ADD USER QUESTON TO SEE IF THEY WANT TO SET PINS EXLCUDING SERVO DRIVER SINCE WE CAN USE A BOOLEAN FOR THAT
@@ -129,8 +139,7 @@ int main()
     // digitalWrite(MissionConstants::kNitrogenBleedPin, 0);  // LOW = CLOSED (normally-open valve)
     // digitalWrite(MissionConstants::kSparkPin, 1);          // HIGH = OFF
 
-    
-    //servo_driver->set_pwm(MissionConstants::kRPMPin, 0, 0); // 0% duty cycle
+    // servo_driver->set_pwm(MissionConstants::kRPMPin, 0, 0); // 0% duty cycle
 
     // // Initialize servos to closed position (179 degrees)
     // servo_driver->set_pwm(MissionConstants::kNitrogenServoPin, 0, 500 + (MissionConstants::kValveClosedAngle * 2000 / 180));
@@ -161,7 +170,8 @@ int main()
 
     Telemetry::GetInstance().Log("Starting program...");
 
-    while (mode.Update(navigation, controller, gps, igniter, imu, valveControl, sparkPlug, pressureTransducer, loadCell))
+    while (mode.Update(navigation, controller, gps, igniter, imu, magnetometer, valveControl,
+                       sparkPlug, pressureTransducer, loadCell, camera))
     {
     }
 

@@ -115,12 +115,19 @@ namespace MissionConstants
     const int kTvcXPin = 19;
     const int kTvcYPin = 18;
 
-    // Servo Driver Contants
-    inline const float MAX_TICKS = 4095;
-    inline const float SERVO_PERIOD = 20000; // (us)
+    // Shared PCA9685 constants
+    inline const std::string PCA9685_I2C_ADDR = "/dev/i2c-1";
 
-    // Ignition constants, TODO: USER EDIT PRE-FlIGHT
-    const int kIgnitionPin = 6;
+    // Servo Driver (PCA9685) Contants
+    inline const float MAX_TICKS = 4095;
+    inline const int SERVO_FREQ = 50;        // hz
+    inline const float SERVO_PERIOD = 20000; // (us)
+    inline const int SERVO_DRIVER_ADDR = 0x40;
+
+    // 1000Hz PWM (PCA9685) constants
+    inline const float PWM_FREQ = 1000;
+    inline const float PWM_PERIOD = 0.01; // ms
+    inline const int PWM_DRIVER_ADDR = 0x41;
 
     // ADS1115 constants
     const int ADS1ADDR = 0x48;
@@ -129,6 +136,36 @@ namespace MissionConstants
     const int ADS2BASE = 200;
     const int ADS3ADDR = 0x4A;
     const int ADS3BASE = 300;
+
+    // Linear Actuator TVC Geometry (in inches, relative to u-joint origin)
+    const Eigen::Vector3d kTvcVehicleMountPoint0 = Eigen::Vector3d(4.183, 0.0, 5.563);
+    const Eigen::Vector3d kTvcVehicleMountPoint1 = Eigen::Vector3d(0, 4.183, 5.563);
+    const Eigen::Vector3d kTvcEngineMountPoint0 = Eigen::Vector3d(2.755, 0.0, -11.078);
+    const Eigen::Vector3d kTvcEngineMountPoint1 = Eigen::Vector3d(0.0, 2.755, -11.078);
+
+    // Linear Actuator Control Parameters
+    const double kTvcPositionControlGain = 400.0;  // Proportional gain (PWM/inch)
+    const int kTvcMaxMotorSpeed = 4000;            // Max PWM speed (0-4095)
+    const double kTvcStrokeLengthInches = 4.0;     // Actuator stroke length
+    const double kTvcZeroExtensionInches = 14.972; // Actuator length when fully retracted (used to convert from absolute length to extension length)
+    const double kTvcMinLengthInches = 1.0;        // Minimum actuator extension
+    const double kTvcMaxLengthInches = 3.0;        // Maximum actuator extension
+    const int kTvcPotentiometerMinReading = 26054; // ADC reading at minimum extension (retracted)
+    const int kTvcPotentiometerMaxReading = 2498;  // ADC reading at maximum extension (extended)
+    const int kTvcActuator0RpwmChannel = 0;        // PCA9685 RPWM channel for actuator 0 (X)
+    const int kTvcActuator0LpwmChannel = 1;        // PCA9685 LPWM channel for actuator 0 (X)
+    const int kTvcActuator1RpwmChannel = 2;        // PCA9685 RPWM channel for actuator 1 (Y)
+    const int kTvcActuator1LpwmChannel = 3;        // PCA9685 LPWM channel for actuator 1 (Y)
+    const float kTvcChirpDurationSec = 10.0f;
+    const float kTvcChirpStartFreqHz = 1.0f;
+    const float kTvcChirpEndFreqHz = 15.0f;
+    const int kTvcChirpMaxSpeed = kTvcMaxMotorSpeed;
+    const int kTvcChirpControlPeriodMs = 20;
+    const int kTVCXPotentiometerReading = ADS3BASE + 0; // Third ADS1115 A0
+    const int kTVCYPotentiometerReading = ADS3BASE + 1; // Third ADS1115 A1
+
+    // Ignition constants, TODO: USER EDIT PRE-FlIGHT
+    const int kIgnitionPin = 6;
 
     // Liquid Propulsion Hardware Pins, TODO: USER EDIT PRE-FLIGHT
     // Valve Servo Pins (PWM)

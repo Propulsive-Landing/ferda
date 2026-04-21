@@ -90,6 +90,28 @@ void Telemetry::GPSSaveFrame(GPS &gps)
              << std::flush;
 }
 
+void Telemetry::LogActuatorFrame(double commanded_angle_x_rad,
+                                 double commanded_angle_y_rad,
+                                 double commanded_length_x_in,
+                                 double commanded_length_y_in,
+                                 double observed_length_x_in,
+                                 double observed_length_y_in,
+                                 int commanded_speed_x,
+                                 int commanded_speed_y)
+{
+    WriteElapsedSecondsPrefix(ActuatorSaved, StartTime);
+
+    ActuatorSaved << commanded_angle_x_rad << ", ";
+    ActuatorSaved << commanded_angle_y_rad << ", ";
+    ActuatorSaved << commanded_length_x_in << ", ";
+    ActuatorSaved << commanded_length_y_in << ", ";
+    ActuatorSaved << observed_length_x_in << ", ";
+    ActuatorSaved << observed_length_y_in << ", ";
+    ActuatorSaved << commanded_speed_x << ", ";
+    ActuatorSaved << commanded_speed_y << "\n"
+                  << std::flush;
+}
+
 void Telemetry::Log(std::string message)
 {
     // write time to hardware file
@@ -194,10 +216,12 @@ Telemetry::Telemetry() : StartTime(std::chrono::steady_clock::now())
     HardwareSaved.open("../logs/data" + str + ".txt");
     SensorSaved.open("../logs/sensors" + str + ".txt");
     GPSSaved.open("../logs/gps" + str + ".txt");
+    ActuatorSaved.open("../logs/actuators" + str + ".txt");
 
     HardwareSaved << "TimeSeconds, x, y, z, vx, vy, vz, q1, q2, q3, q4, ab1, ab2, ab3, wb1, wb2, wb3, E, N, U, ux, uy, K_Matrix_Index \n";
     SensorSaved << "TimeSeconds, accelX, accelY, accelZ, gyroX, gryoY, gyroZ, magx, magy, magz \n";
     GPSSaved << "TimeSeconds, gpsE, gpsN, gpsU, gpsVxE, gpsVyN \n";
+    ActuatorSaved << "TimeSeconds, commandedAngleXRad, commandedAngleYRad, commandedLengthXIn, commandedLengthYIn, observedLengthXIn, observedLengthYIn, commandedSpeedX, commandedSpeedY \n";
 
     HardwareSaved << "Date, x, y, z, vx, vy, vz, q1, q2, q3, q4, ab1, ab2, ab3, wb1, wb2, wb3, E, N, U, E_Vel, N_Vel, ux, uy \n";
     SensorSaved << "Date, accelX, accelY, accelZ, gyroX, gryoY, gyroZ, magx, magy, magz \n";
@@ -209,4 +233,5 @@ Telemetry::~Telemetry()
     HardwareSaved.close();
     SensorSaved.close();
     GPSSaved.close();
+    ActuatorSaved.close();
 }

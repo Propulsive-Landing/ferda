@@ -11,18 +11,21 @@ class Camera
 {
 public:
     Camera();
+    bool getUseCamera() { return useCamera; }
+    void setUseCamera(const bool &state) { useCamera = state; }
     void RequestCapture();
     std::vector<Eigen::Vector3d> GetUnitVectorList();
     double GetFrameId();
     void AnnotateDebugFrameMatches(
         double frameId,
-        const std::vector<std::pair<int, int>>& measurementToMarkerMatches);
+        const std::vector<std::pair<int, int>> &measurementToMarkerMatches);
     void AnnotateDebugFrameExpectedVsTrue(
         double frameId,
-        const std::vector<std::pair<int, Eigen::Vector3d>>& expectedMarkerBodyDirections);
+        const std::vector<std::pair<int, Eigen::Vector3d>> &expectedMarkerBodyDirections);
 
 private:
     std::vector<Eigen::Vector3d> latestUnitVectorList;
+    bool useCamera;
     double latestFrameId = -1.0;
     bool capturePending = false;
     double nextCaptureFrameId = 0.0;
@@ -31,5 +34,5 @@ private:
     void TryProcessPendingLocalCapture();
     bool InitializeVideoStream();
     bool CaptureLocalFrameAndProcess(double frameId);
-    void UpdateFromPixelList(double frameId, const std::vector<std::pair<double, double>>& pixelList);
+    void UpdateFromPixelList(double frameId, const std::vector<std::pair<double, double>> &pixelList);
 };

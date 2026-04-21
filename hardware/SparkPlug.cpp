@@ -1,7 +1,7 @@
 #include "SparkPlug.hpp"
 #include "Telemetry.hpp"
 #include <wiringPi.h>
-#include <ServoDriver.hpp>
+#include <PCA9685Driver.hpp>
 
 void SparkPlug::TurnOn()
 {
@@ -16,7 +16,7 @@ void SparkPlug::TurnOn()
 void SparkPlug::TurnOff()
 {
     Telemetry::GetInstance().Log("Turning Spark off");
-    digitalWrite(MissionConstants::kSparkPin, 1);             // HIGH = OFF
+    digitalWrite(MissionConstants::kSparkPin, 1);           // HIGH = OFF
     servo_driver->set_pwm(MissionConstants::kRPMPin, 0, 0); // 0% duty cycle
     isOn = false;
 }

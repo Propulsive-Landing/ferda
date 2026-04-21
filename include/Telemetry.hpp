@@ -26,9 +26,18 @@ public:
     std::ofstream HardwareSaved;
     std::ofstream SensorSaved;
     std::ofstream GPSSaved;
+    std::ofstream ActuatorSaved;
 
     void RunTelemetry(Navigation &navigation, Controller &controller, GPS &gps, PressureTransducer &pt, LoadCell &lc, float HardwareSaveDelta, float RFSaveDelta);
     void Log(std::string message);
+    void LogActuatorFrame(double commanded_angle_x_rad,
+                          double commanded_angle_y_rad,
+                          double commanded_length_x_in,
+                          double commanded_length_y_in,
+                          double observed_length_x_in,
+                          double observed_length_y_in,
+                          int commanded_speed_x,
+                          int commanded_speed_y);
 
     static Telemetry &GetInstance()
     {
