@@ -4,9 +4,11 @@
 #include <signal.h>
 #include <cmath>
 #include <mutex>
+#include <sstream>
 #include <ads1115.h>
 #include "MissionConstants.hpp"
 #include "LinActMotorPositionControl.hpp"
+#include "Telemetry.hpp"
 
 float extensionLength;
 
@@ -18,7 +20,7 @@ float mapFloat(float x, float in_min, float in_max, float out_min, float out_max
 float readPositionInches(int actuator_index)
 {
 
-    int sensorPin = (actuator_index == 0) ? MissionConstants::kTVCXPotentiometerReading : SENSOR_MissionConstants::kTVCYPotentiometerReading;
+    int sensorPin = (actuator_index == 0) ? MissionConstants::kTVCXPotentiometerReading : MissionConstants::kTVCYPotentiometerReading;
     const int actuatorMinReading = (actuator_index == 0)
                                        ? MissionConstants::kTvcActuator0PotentiometerMinReading
                                        : MissionConstants::kTvcActuator1PotentiometerMinReading;
@@ -54,12 +56,14 @@ void driveActuator(int actuator_index, int direction, int speed)
         rpwmChannel = MissionConstants::kTvcActuator1RpwmChannel;
         lpwmChannel = MissionConstants::kTvcActuator1LpwmChannel;
     }
-
+    std::stringstream ss;
     switch (direction)
     {
     case 1: // extend
 
-        std::cout << "Driving actuator " << actuator_index << " to extend at speed " << speed << std::endl;
+        ss << "Driving actuator " << actuator_index << " to extend at speed " << speed;
+
+        Telemetry.GetInstance().Log(ss);
 
         pwm_driver->set_pwm(rpwmChannel, 0, speed);
         pwm_driver->set_pwm(lpwmChannel, 0, 0);
@@ -67,14 +71,18 @@ void driveActuator(int actuator_index, int direction, int speed)
 
     case 0: // stop
 
-        std::cout << "Stopping actuator " << actuator_index << " to extend at speed " << speed << std::endl;
+        ss << "Stopping actuator " << actuator_index << " to extend at speed " << speed;
+
+        Telemetry.GetInstance().Log(ss);
 
         pwm_driver->set_pwm(rpwmChannel, 0, 0);
         pwm_driver->set_pwm(lpwmChannel, 0, 0);
         break;
 
     case -1: // retract
-        std::cout << "Retracting actuator " << actuator_index << " to retract at speed " << speed << std::endl;
+        ss << "Retracting actuator " << actuator_index << " to retract at speed " << speed;
+
+        Telemetry.GetInstance().Log(ss);
         pwm_driver->set_pwm(rpwmChannel, 0, 0);
         pwm_driver->set_pwm(lpwmChannel, 0, speed);
         break;
@@ -93,7 +101,7 @@ void applyLinearChirpVelocityCommand(float durationSec,
 {
     if (durationSec <= 0.0f || controlPeriodMs <= 0)
     {
-        std::cout << "Invalid chirp timing parameters\n";
+        Telemetry.GetInstance().Log("Invalid chirp timing parameters");
         return;
     }
 
@@ -105,7 +113,7 @@ void applyLinearChirpVelocityCommand(float durationSec,
     std::ofstream logFile("chirp_velocity_log.csv", std::ios::app);
     if (!logFile)
     {
-        std::cout << "Failed to open chirp_velocity_log.csv\n";
+        Telemetry.GetInstance().Log("Failed to open chirp_velocity_log.csv");
         return;
     }
     if (logFile.tellp() == 0)
@@ -172,7 +180,7 @@ void applyVelocityStepCommand(float durationSec,
 {
     if (durationSec <= 0.0f || controlPeriodMs <= 0)
     {
-        std::cout << "Invalid step timing parameters\n";
+        Telemetry.GetInstance().Log("Invalid step timing parameters");
         return;
     }
 
@@ -184,7 +192,7 @@ void applyVelocityStepCommand(float durationSec,
     std::ofstream logFile("step_velocity_log.csv", std::ios::app);
     if (!logFile)
     {
-        std::cout << "Failed to open step_velocity_log.csv\n";
+        Telemetry.GetInstance().Log("Failed to open step_velocity_log.csv");
         return;
     }
     if (logFile.tellp() == 0)
@@ -238,6 +246,7 @@ int moveToLimit(int actuator_index, int direction)
 
     do
     {
+        std::stringstream ss;
         prev = curr;
 
         driveActuator(actuator_index, direction, MissionConstants::kTvcMaxMotorSpeed);
@@ -246,7 +255,8 @@ int moveToLimit(int actuator_index, int direction)
         curr = analogRead(sensorPin);
 
         float voltage = (curr / 32767.0) * 6.144;
-        std::cout << "Actuator " << actuator_index << " Raw: " << curr << " Voltage: " << voltage << "\n";
+        ss << "Actuator " << actuator_index << " Raw: " << curr << " Voltage: " << voltage;
+        Telemetry::.GetInstance().Log(ss);
 
     } while (abs(curr - prev) > 10); // tolerance for noise
 
