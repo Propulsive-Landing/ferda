@@ -182,6 +182,9 @@ Mode::Phase Mode::UpdateTestTVC(Navigation &navigation, Controller &controller,
     {
         Telemetry::GetInstance().Log("Switching mode from test to idle");
         controller.Center();
+        // Command both Actuators to stop
+        driveActuator(0, 0, 0);
+        driveActuator(1, 0, 0);
         return Mode::Idle;
     }
 
