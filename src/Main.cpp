@@ -33,7 +33,9 @@
 #include "PCA9685Driver.hpp"
 #endif
 
-// TODO: add a global ctr c handler to turn off all digital pins
+// TODO: THINK ABOUT ABORTING PROCEDURES AND WHAT WE NEED TO TURN OFF LIKE TURN PINS TO LOW AND CLOSE
+//         VALVES AND TURN SPARK PLUG OFF AND THINGS LIKE THAT: (ONE POSSIBLE SOLUTION IS TO ADD DIFFERENT ABORT MODES
+//          AND DO WHAT WE NEED TO DO
 
 int main()
 {
@@ -133,7 +135,7 @@ int main()
     // pinMode(MissionConstants::kSparkPin, OUTPUT);
     // pinMode(MissionConstants::kRPMPin, OUTPUT);
 
-    // // Initialize solenoids to closed state (HIGH for normally-closed, LOW for normally-open)
+    //  Initialize solenoids to closed state (HIGH for normally-closed, LOW for normally-open)
     // digitalWrite(MissionConstants::kASIEthanolPin, 1);     // HIGH = CLOSED
     // digitalWrite(MissionConstants::kASIOxygenPin, 1);      // HIGH = CLOSED
     // digitalWrite(MissionConstants::kNitrogenBleedPin, 0);  // LOW = CLOSED (normally-open valve)
@@ -176,7 +178,7 @@ int main()
     }
 
     // #ifdef NDEBUG
-    //     gpioTerminate();
+    //
     // #endif
 
     return 0;
