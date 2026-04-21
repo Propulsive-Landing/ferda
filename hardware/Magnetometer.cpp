@@ -7,8 +7,7 @@
 
 Magnetometer::Magnetometer()
 {
-    // Call parents constructor and if IMUFound is false, set UseMagnometer to false by default;
-    IMU::();
+    //  If IMUFound is false which would be set in IMU constructor, set UseMagnometer to false by default;
     if (!IMUFound)
     {
         useMagnometer = false;
