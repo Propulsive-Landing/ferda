@@ -10,22 +10,27 @@
 
 float extensionLength;
 
-int maxReading = MissionConstants::kTvcPotentiometerMaxReading;
-int minReading = MissionConstants::kTvcPotentiometerMinReading;
+int maxReading = MissionConstants::kTvcActuator0PotentiometerMaxReading;
+int minReading = MissionConstants::kTvcActuator0PotentiometerMinReading;
 
 float mapFloat(float x, float in_min, float in_max, float out_min, float out_max);
 
 float readPositionInches(int actuator_index)
 {
-    // Read position from specified actuator (0 or 1)
-    // Both actuators use the same calibration range (min/max readings)
-    int sensorPin = (actuator_index == 0) ? MissionConstants::kTVCXPotentiometerReading : MissionConstants::kTVCYPotentiometerReading;
+
+    int sensorPin = (actuator_index == 0) ? MissionConstants::kTVCXPotentiometerReading : SENSOR_MissionConstants::kTVCYPotentiometerReadingPIN_1;
+    const int actuatorMinReading = (actuator_index == 0)
+                                       ? MissionConstants::kTvcActuator0PotentiometerMinReading
+                                       : MissionConstants::kTvcActuator1PotentiometerMinReading;
+    const int actuatorMaxReading = (actuator_index == 0)
+                                       ? MissionConstants::kTvcActuator0PotentiometerMaxReading
+                                       : MissionConstants::kTvcActuator1PotentiometerMaxReading;
 
     int sensorVal = analogRead(sensorPin);
     return mapFloat(
         (float)sensorVal,
-        (float)minReading,
-        (float)maxReading,
+        (float)actuatorMinReading,
+        (float)actuatorMaxReading,
         0.0f,
         MissionConstants::kTvcStrokeLengthInches);
 }
@@ -137,7 +142,7 @@ void applyLinearChirpVelocityCommand(float durationSec,
         int speedCmd = static_cast<int>(std::abs(velocityCmd) * maxSpeed);
         driveActuator(0, direction, speedCmd);
 
-        float position = readPositionInches();
+        float position = readPositionInches(0);
         logFile << t << "," << velocityCmd << "," << position << "\n";
 
         delay(controlPeriodMs);
@@ -214,7 +219,7 @@ void applyVelocityStepCommand(float durationSec,
         }
 
         driveActuator(0, direction, speedCmd);
-        float position = readPositionInches();
+        float position = readPositionInches(0);
         logFile << t << "," << stepAmplitude << "," << position << "\n";
         delay(controlPeriodMs);
     }
@@ -225,26 +230,27 @@ void applyVelocityStepCommand(float durationSec,
 // ----------------------
 // Move to limit (auto-calibration)
 // ----------------------
-int moveToLimit(int direction)
+int moveToLimit(int actuator_index, int direction)
 {
     int prev = 0;
     int curr = 0;
+    int sensorPin = (actuator_index == 0) ? MissionConstants::kTVCXPotentiometerReading : MissionConstants::kTVCYPotentiometerReading;
 
     do
     {
         prev = curr;
 
-        driveActuator(0, direction, MissionConstants::kTvcMaxMotorSpeed);
+        driveActuator(actuator_index, direction, MissionConstants::kTvcMaxMotorSpeed);
         delay(200);
 
-        curr = analogRead(MissionConstants::kTVCXPotentiometerReading);
+        curr = analogRead(sensorPin);
 
         float voltage = (curr / 32767.0) * 6.144;
-        std::cout << "Raw: " << curr << " Voltage: " << voltage << "\n";
+        std::cout << "Actuator " << actuator_index << " Raw: " << curr << " Voltage: " << voltage << "\n";
 
     } while (abs(curr - prev) > 10); // tolerance for noise
 
-    driveActuator(0, 0, 0);
+    driveActuator(actuator_index, 0, 0);
     return curr;
 }
 

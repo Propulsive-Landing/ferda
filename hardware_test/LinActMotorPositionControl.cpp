@@ -6,26 +6,11 @@
 #include "MissionConstants.hpp"
 #include "LinActMotorPositionControl.hpp"
 
-float extensionLength;
-
-int maxReading = MissionConstants::kTvcPotentiometerMaxReading;
-int minReading = MissionConstants::kTvcPotentiometerMinReading;
-
 float mapFloat(float x, float in_min, float in_max, float out_min, float out_max);
 
 float readPositionInches(int actuator_index)
 {
-    // Read position from specified actuator (0 or 1)
-    // Both actuators use the same calibration range (min/max readings)
-    int sensorPin = (actuator_index == 0) ? MissionConstants::kTVCXPotentiometerReading : MissionConstants::kTVCYPotentiometerReading;
-
-    int sensorVal = 0;
-    return mapFloat(
-        (float)sensorVal,
-        (float)minReading,
-        (float)maxReading,
-        0.0f,
-        MissionConstants::kTvcStrokeLengthInches);
+    return 0;
 }
 
 // Legacy function for backward compatibility (defaults to actuator 0)
@@ -104,7 +89,7 @@ void applyVelocityStepCommand(float durationSec,
 // ----------------------
 // Move to limit (auto-calibration)
 // ----------------------
-int moveToLimit(int direction)
+int moveToLimit(int actuator_index, int direction)
 {
     return 0;
 }

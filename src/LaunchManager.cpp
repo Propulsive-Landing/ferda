@@ -204,7 +204,7 @@ bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter
         if (currentAltitude <= 0.1 && currentVelocityZ >= -0.1)
         {
             Telemetry::GetInstance().Log("LAND complete (ground contact). Transitioning to Safe mode.");
-            controller.Center();
+            controller.UpdateSafe();
             return true; // request top-level transition to Safe mode
         }
         break;

@@ -10,6 +10,18 @@
 #include "Telemetry.hpp"
 #include "LinActMotorPositionControl.hpp"
 
+TVC::TVC()
+    : desired_actuator_lengths(Eigen::Vector2d::Zero()),
+      current_actuator_lengths(Eigen::Vector2d::Zero()),
+      last_command_time(std::chrono::steady_clock::now()),
+      last_control_time(std::chrono::steady_clock::now()),
+      has_recent_command(false),
+      has_control_timestamp(false),
+      last_speed_command_x(0),
+      last_speed_command_y(0)
+{
+}
+
 void TVC::AnglesToActuatorLengths(double angle_x_rad, double angle_y_rad,
                                   double &length_x, double &length_y)
 {
@@ -66,7 +78,7 @@ void TVC::AnglesToActuatorLengths(double angle_x_rad, double angle_y_rad,
     length_y = std::clamp(length_y, MissionConstants::kTvcMinLengthInches, MissionConstants::kTvcMaxLengthInches);
 }
 
-void TVC::ProportionalPositionControl(int actuator_index)
+void TVC::ProportionalPositionControl(int actuator_index, double dt_seconds)
 {
     // actuator_index: 0 = X axis, 1 = Y axis
     double current_length = current_actuator_lengths(actuator_index);
@@ -75,23 +87,49 @@ void TVC::ProportionalPositionControl(int actuator_index)
     // Position error [inches]
     double error = desired_length - current_length;
 
-    // Proportional velocity command: larger error -> larger command
-    // Normalized to [-1, 1] range where 1.0 = max motor speed
-    double velocity_command = MissionConstants::kTvcPositionControlGain * error / MissionConstants::kTvcMaxMotorSpeed;
-    velocity_command = std::clamp(velocity_command, -1.0, 1.0);
+    if (dt_seconds <= 1e-6)
+    {
+        dt_seconds = 1e-3;
+    }
 
-    // Convert normalized velocity to motor direction and speed
-    int direction = 0;           // 0 = stop, 1 = extend, -1 = retract
-    if (velocity_command > 0.01) // Deadband to avoid chatter
+    integral_error_inch_seconds(actuator_index) += error * dt_seconds;
+    integral_error_inch_seconds(actuator_index) = std::clamp(
+        integral_error_inch_seconds(actuator_index),
+        -MissionConstants::kTvcIntegralWindupLimitInchSeconds,
+        MissionConstants::kTvcIntegralWindupLimitInchSeconds);
+
+    const double derivative_error_inches_per_second =
+        (error - previous_error_inches(actuator_index)) / dt_seconds;
+    previous_error_inches(actuator_index) = error;
+
+    // PID output is target actuator velocity [in/s].
+    double velocity_command_inches_per_second =
+        MissionConstants::kTvcPositionKpPerSecond * error + MissionConstants::kTvcPositionKiPerSecondSquared * integral_error_inch_seconds(actuator_index) + MissionConstants::kTvcPositionKdUnitless * derivative_error_inches_per_second;
+
+    velocity_command_inches_per_second = std::clamp(
+        velocity_command_inches_per_second,
+        -MissionConstants::kTvcMaxCommandedVelocityInchesPerSecond,
+        MissionConstants::kTvcMaxCommandedVelocityInchesPerSecond);
+
+    // Convert commanded velocity to motor direction and speed.
+    int direction = 0; // 0 = stop, 1 = extend, -1 = retract
+    if (velocity_command_inches_per_second > MissionConstants::kTvcVelocityDeadbandInchesPerSecond)
     {
         direction = 1; // Extend
     }
-    else if (velocity_command < -0.01)
+    else if (velocity_command_inches_per_second < -MissionConstants::kTvcVelocityDeadbandInchesPerSecond)
     {
         direction = -1; // Retract
     }
 
-    int speed_cmd = static_cast<int>(std::abs(velocity_command) * MissionConstants::kTvcMaxMotorSpeed);
+    double normalized_speed_command = 0.0;
+    if (MissionConstants::kTvcMaxCommandedVelocityInchesPerSecond > 1e-6)
+    {
+        normalized_speed_command = std::abs(velocity_command_inches_per_second) / MissionConstants::kTvcMaxCommandedVelocityInchesPerSecond;
+    }
+    normalized_speed_command = std::clamp(normalized_speed_command, 0.0, 1.0);
+
+    int speed_cmd = static_cast<int>(normalized_speed_command * MissionConstants::kTvcMaxMotorSpeed);
     speed_cmd = std::clamp(speed_cmd, 0, MissionConstants::kTvcMaxMotorSpeed);
 
     if (actuator_index == 0)
@@ -109,18 +147,38 @@ void TVC::ProportionalPositionControl(int actuator_index)
 
 void TVC::SetTVCX(double angle_rad)
 {
-    // Clamp and store angle for use in UpdateActuatorPositions()
-    stored_angle_x_rad = std::clamp(angle_rad, -10.0 * MissionConstants::kDeg2Rad, 10.0 * MissionConstants::kDeg2Rad);
+    // Apply compile-time calibration trim before clamping.
+    const double corrected_angle = angle_rad + MissionConstants::kTvcXInputCenterAngleRad;
+    stored_angle_x_rad = std::clamp(corrected_angle, -10.0 * MissionConstants::kDeg2Rad, 10.0 * MissionConstants::kDeg2Rad);
+    last_command_time = std::chrono::steady_clock::now();
+    has_recent_command = true;
 }
 
 void TVC::SetTVCY(double angle_rad)
 {
-    // Clamp and store angle for use in UpdateActuatorPositions()
-    stored_angle_y_rad = std::clamp(angle_rad, -10.0 * MissionConstants::kDeg2Rad, 10.0 * MissionConstants::kDeg2Rad);
+    // Apply compile-time calibration trim before clamping.
+    const double corrected_angle = angle_rad + MissionConstants::kTvcYInputCenterAngleRad;
+    stored_angle_y_rad = std::clamp(corrected_angle, -10.0 * MissionConstants::kDeg2Rad, 10.0 * MissionConstants::kDeg2Rad);
+    last_command_time = std::chrono::steady_clock::now();
+    has_recent_command = true;
 }
 
 void TVC::UpdateActuatorPositions()
 {
+    const auto now = std::chrono::steady_clock::now();
+    if (!has_recent_command)
+    {
+        Stop();
+        return;
+    }
+
+    const double command_age_seconds = std::chrono::duration<double>(now - last_command_time).count();
+    if (command_age_seconds > MissionConstants::kTvcCommandTimeoutSeconds)
+    {
+        Stop();
+        return;
+    }
+
     // Compute desired actuator lengths from both stored angles (eliminates coupling ambiguity)
     double length_x, length_y;
     AnglesToActuatorLengths(stored_angle_x_rad, stored_angle_y_rad, length_x, length_y);
@@ -131,9 +189,17 @@ void TVC::UpdateActuatorPositions()
     current_actuator_lengths(0) = readPositionInches(0);
     current_actuator_lengths(1) = readPositionInches(1);
 
+    double dt_seconds = 0.005;
+    if (has_control_timestamp)
+    {
+        dt_seconds = std::chrono::duration<double>(now - last_control_time).count();
+    }
+    last_control_time = now;
+    has_control_timestamp = true;
+
     // Run proportional position control for each actuator
-    ProportionalPositionControl(0);
-    ProportionalPositionControl(1);
+    ProportionalPositionControl(0, dt_seconds);
+    ProportionalPositionControl(1, dt_seconds);
 
     Telemetry::GetInstance().LogActuatorFrame(stored_angle_x_rad,
                                               stored_angle_y_rad,
@@ -143,4 +209,20 @@ void TVC::UpdateActuatorPositions()
                                               current_actuator_lengths(1),
                                               last_speed_command_x,
                                               last_speed_command_y);
+}
+
+void TVC::Stop()
+{
+    has_recent_command = false;
+    has_control_timestamp = false;
+    stored_angle_x_rad = 0.0;
+    stored_angle_y_rad = 0.0;
+    desired_actuator_lengths = current_actuator_lengths;
+    last_speed_command_x = 0;
+    last_speed_command_y = 0;
+    integral_error_inch_seconds = Eigen::Vector2d::Zero();
+    previous_error_inches = Eigen::Vector2d::Zero();
+
+    driveActuator(0, 0, 0);
+    driveActuator(1, 0, 0);
 }

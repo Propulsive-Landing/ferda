@@ -16,6 +16,17 @@
 #include <iostream>
 #include <thread>
 
+namespace
+{
+    void LogActuatorCalibrationInstructions()
+    {
+        Telemetry::GetInstance().Log("ACTUATOR CALIBRATION MODE");
+        Telemetry::GetInstance().Log("WARNING: Actuators should NOT be connected to the TVC linkage in this mode.");
+        Telemetry::GetInstance().Log("Commands: MoveXTVCToLimitExtend, MoveXTVCToLimitRetract, MoveYTVCToLimitExtend, MoveYTVCToLimitRetract");
+        Telemetry::GetInstance().Log("Use StopTVC to halt motion, CenterTVC to center, and GoIdle to exit.");
+    }
+}
+
 Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
 void Mode::UploadKmatrices()
@@ -81,6 +92,32 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
     // Check for sensor toggle commands
     CheckForToggleSensorCommands(command, gps, camera, magnetometer);
 
+    if (command == RF::Command::StopTVC)
+    {
+        Telemetry::GetInstance().Log("STOP TVC command received in calibration");
+        controller.tvc.Stop();
+        return Mode::Calibration;
+    }
+    if (command == RF::Command::CenterTVC)
+    {
+        Telemetry::GetInstance().Log("CENTER TVC command received in calibration");
+        XTVC = 0.0;
+        YTVC = 0.0;
+        controller.Center();
+        return Mode::Calibration;
+    }
+    if (command == RF::Command::ActuatorCalibration)
+    {
+        Telemetry::GetInstance().Log("Switching mode from calibration to actuator calibration");
+        LogActuatorCalibrationInstructions();
+        controller.Center();
+        return Mode::ActuatorCalibration;
+    }
+    if (command == RF::Command::ChirpTVC)
+    {
+        Telemetry::GetInstance().Log("Switching mode from calibration to chirp tvc");
+        return Mode::ChirpTVC;
+    }
     if (command == RF::Command::IncrementXTVC)
     {
         XTVC += 0.01;
@@ -89,15 +126,9 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
         controller.tvc.SetTVCX(XTVC);
-        controller.tvc.UpdateActuatorPositions();
         return Mode::Calibration;
     }
-    else if (command == RF::Command::ChirpTVC)
-    {
-        Telemetry::GetInstance().Log("Switching mode from calibration to chirp tvc");
-        return Mode::ChirpTVC;
-    }
-    else if (command == RF::Command::IncrementYTVC)
+    if (command == RF::Command::IncrementYTVC)
     {
         YTVC += 0.01;
         std::ostringstream os;
@@ -105,11 +136,9 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
         controller.tvc.SetTVCY(YTVC);
-        controller.tvc.UpdateActuatorPositions();
         return Mode::Calibration;
     }
-
-    else if (command == RF::Command::DecrementXTVC)
+    if (command == RF::Command::DecrementXTVC)
     {
         XTVC -= 0.01;
         std::ostringstream os;
@@ -117,7 +146,6 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
         controller.tvc.SetTVCX(XTVC);
-        controller.tvc.UpdateActuatorPositions();
         return Mode::Calibration;
     }
     else if (command == RF::Command::DecrementYTVC)
@@ -128,11 +156,9 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         std::string s = os.str();
         Telemetry::GetInstance().Log(s);
         controller.tvc.SetTVCY(YTVC);
-        controller.tvc.UpdateActuatorPositions();
         return Mode::Calibration;
     }
-
-    else if (command == RF::Command::TestTVC)
+    if (command == RF::Command::TestTVC)
     {
         Telemetry::GetInstance().Log("Switching mode from calibration to test tvc");
         UploadKmatrices();
@@ -158,7 +184,69 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         exit(0);
     }
 
+    controller.tvc.UpdateActuatorPositions();
     return Mode::Calibration;
+}
+
+Mode::Phase Mode::UpdateActuatorCalibration(Navigation &navigation, Controller &controller, double currentTime)
+{
+    navigation.UpdateNavigation();
+
+    RF::Command command = RF::GetInstance().GetCommand();
+    if (command == RF::Command::ABORT)
+    {
+        Telemetry::GetInstance().Log("ABORT, EXITING");
+        exit(0);
+    }
+    else if (command == RF::Command::GoIdle)
+    {
+        Telemetry::GetInstance().Log("Leaving actuator calibration for idle");
+        controller.tvc.Stop();
+        return Mode::Idle;
+    }
+    else if (command == RF::Command::CenterTVC)
+    {
+        Telemetry::GetInstance().Log("CENTER TVC command received in actuator calibration");
+        controller.Center();
+        return Mode::ActuatorCalibration;
+    }
+    else if (command == RF::Command::StopTVC)
+    {
+        Telemetry::GetInstance().Log("STOP TVC command received in actuator calibration");
+        controller.tvc.Stop();
+        return Mode::ActuatorCalibration;
+    }
+    else if (command == RF::Command::MoveXTVCToLimitExtend)
+    {
+        Telemetry::GetInstance().Log("MOVE X TVC TO LIMIT (extend) received in actuator calibration");
+        moveToLimit(0, 1);
+        controller.tvc.Stop();
+        return Mode::ActuatorCalibration;
+    }
+    else if (command == RF::Command::MoveXTVCToLimitRetract)
+    {
+        Telemetry::GetInstance().Log("MOVE X TVC TO LIMIT (retract) received in actuator calibration");
+        moveToLimit(0, -1);
+        controller.tvc.Stop();
+        return Mode::ActuatorCalibration;
+    }
+    else if (command == RF::Command::MoveYTVCToLimitExtend)
+    {
+        Telemetry::GetInstance().Log("MOVE Y TVC TO LIMIT (extend) received in actuator calibration");
+        moveToLimit(1, 1);
+        controller.tvc.Stop();
+        return Mode::ActuatorCalibration;
+    }
+    else if (command == RF::Command::MoveYTVCToLimitRetract)
+    {
+        Telemetry::GetInstance().Log("MOVE Y TVC TO LIMIT (retract) received in actuator calibration");
+        moveToLimit(1, -1);
+        controller.tvc.Stop();
+        return Mode::ActuatorCalibration;
+    }
+
+    controller.tvc.UpdateActuatorPositions();
+    return Mode::ActuatorCalibration;
 }
 
 Mode::Phase Mode::UpdateTestTVC(Navigation &navigation, Controller &controller,
@@ -177,6 +265,18 @@ Mode::Phase Mode::UpdateTestTVC(Navigation &navigation, Controller &controller,
     {
         Telemetry::GetInstance().Log("ABORT, EXITING");
         exit(0);
+    }
+    else if (command == RF::Command::StopTVC)
+    {
+        Telemetry::GetInstance().Log("STOP TVC command received in test mode");
+        controller.tvc.Stop();
+        return Mode::Idle;
+    }
+    else if (command == RF::Command::CenterTVC)
+    {
+        Telemetry::GetInstance().Log("CENTER TVC command received in test mode");
+        controller.Center();
+        return Mode::Idle;
     }
     else if (seconds_since_start >= 10)
     {
@@ -218,6 +318,18 @@ Mode::Phase Mode::UpdateIdle(Navigation &navigation, Controller &controller, IMU
     {
         Telemetry::GetInstance().Log("ABORT, EXITING");
         exit(0);
+    }
+    else if (command == RF::Command::StopTVC)
+    {
+        Telemetry::GetInstance().Log("STOP TVC command received in idle");
+        controller.tvc.Stop();
+        return Mode::Idle;
+    }
+    else if (command == RF::Command::CenterTVC)
+    {
+        Telemetry::GetInstance().Log("CENTER TVC command received in idle");
+        controller.Center();
+        return Mode::Idle;
     }
     else if (command == RF::Command::Ignite)
     {
@@ -275,6 +387,7 @@ Mode::Phase Mode::UpdateSafeMode(Navigation &navigation, Controller &controller,
 {
     // continue collection data
     navigation.UpdateNavigation();
+    controller.UpdateSafe();
 
     return Mode::Terminate;
 }
@@ -526,6 +639,10 @@ bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igni
     case Calibration:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
         this->eCurrentMode = UpdateCalibration(navigation, controller, gps, camera, magnetometer, currentTime);
+        break;
+    case ActuatorCalibration:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
+        this->eCurrentMode = UpdateActuatorCalibration(navigation, controller, currentTime);
         break;
     case TestTVC:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);

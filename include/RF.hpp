@@ -31,6 +31,13 @@ public:
         GoIdle,
         Ignite,
         Release,
+        ActuatorCalibration,
+        StopTVC,
+        CenterTVC,
+        MoveXTVCToLimitExtend,
+        MoveXTVCToLimitRetract,
+        MoveYTVCToLimitExtend,
+        MoveYTVCToLimitRetract,
         IncrementXTVC,
         IncrementYTVC,
         DecrementXTVC,
@@ -90,6 +97,20 @@ public:
             ParsedCommand = RF::Command::GoIdle;
         else if (input_line == "Ignite")
             ParsedCommand = RF::Command::Ignite;
+        else if (input_line == "ActuatorCalibration" || input_line == "ActuatorCalibrate" || input_line == "ACTUATOR_CALIBRATION")
+            ParsedCommand = RF::Command::ActuatorCalibration;
+        else if (input_line == "StopTVC" || input_line == "STOP" || input_line == "stop")
+            ParsedCommand = RF::Command::StopTVC;
+        else if (input_line == "CenterTVC" || input_line == "CENTER" || input_line == "center")
+            ParsedCommand = RF::Command::CenterTVC;
+        else if (input_line == "MoveXTVCToLimitExtend" || input_line == "MoveXToLimitExtend" || input_line == "MOVE_X_TO_LIMIT")
+            ParsedCommand = RF::Command::MoveXTVCToLimitExtend;
+        else if (input_line == "MoveXTVCToLimitRetract" || input_line == "MoveXToLimitRetract")
+            ParsedCommand = RF::Command::MoveXTVCToLimitRetract;
+        else if (input_line == "MoveYTVCToLimitExtend" || input_line == "MoveYToLimitExtend" || input_line == "MOVE_Y_TO_LIMIT")
+            ParsedCommand = RF::Command::MoveYTVCToLimitExtend;
+        else if (input_line == "MoveYTVCToLimitRetract" || input_line == "MoveYToLimitRetract")
+            ParsedCommand = RF::Command::MoveYTVCToLimitRetract;
         else if (input_line == "IncrementYTVC")
             ParsedCommand = RF::Command::IncrementYTVC;
         else if (input_line == "IncrementXTVC")

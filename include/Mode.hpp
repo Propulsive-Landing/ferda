@@ -21,6 +21,7 @@ public:
     enum Phase
     {
         Calibration,
+        ActuatorCalibration,
         TestTVC,
         ChirpTVC,
         Idle,
@@ -48,6 +49,7 @@ private:
     LaunchManager launchManager;
 
     Mode::Phase UpdateCalibration(Navigation &navigation, Controller &controller, GPS &gps, Camera &camera, Magnetometer &magnetometer, double currentTime);
+    Mode::Phase UpdateActuatorCalibration(Navigation &navigation, Controller &controller, double currentTime);
     Mode::Phase UpdateTestTVC(Navigation &navigation, Controller &controller, GPS &gps, Camera &camera, Magnetometer &magnetometer, double currentTime);
     Mode::Phase UpdateChirpTVC(Navigation &navigation, Controller &controller, double currentTime);
     Mode::Phase UpdateIdle(Navigation &navigation, Controller &controller, IMU &imu, GPS &gps, Camera &camera, Magnetometer &magnetometer, double currentTime);
