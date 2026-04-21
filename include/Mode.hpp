@@ -48,17 +48,17 @@ private:
     // Launch manager instance
     LaunchManager launchManager;
 
-    Mode::Phase UpdateCalibration(Navigation &navigation, Controller &controller, GPS &gps, Camera &camera, Magnetometer &magnetometer, double currentTime);
-    Mode::Phase UpdateActuatorCalibration(Navigation &navigation, Controller &controller, double currentTime);
-    Mode::Phase UpdateTestTVC(Navigation &navigation, Controller &controller, GPS &gps, Camera &camera, Magnetometer &magnetometer, double currentTime);
+    Mode::Phase UpdateCalibration(RF::Command &command, Navigation &navigation, Controller &controller, double currentTime);
+    Mode::Phase UpdateActuatorCalibration(RF::Command &command, Navigation &navigation, Controller &controller, double currentTime);
+    Mode::Phase UpdateTestTVC(RF::Command &command, Navigation &navigation, Controller &controller, double currentTime);
     Mode::Phase UpdateChirpTVC(Navigation &navigation, Controller &controller, double currentTime);
-    Mode::Phase UpdateIdle(Navigation &navigation, Controller &controller, IMU &imu, GPS &gps, Camera &camera, Magnetometer &magnetometer, double currentTime);
+    Mode::Phase UpdateIdle(RF::Command &command, Navigation &navigation, Controller &controller, double currentTime);
     Mode::Phase UpdateLaunch(Navigation &navigation, Controller &controller, Igniter &igniter, float current_time);
     Mode::Phase UpdateSafeMode(Navigation &navigation, Controller &controller, double currentTime);
     void UploadKmatrices();
     // Liquid Propulsion State Updates
-    Mode::Phase UpdateHotfireIdle(Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug, GPS &gps, Camera &camera, Magnetometer &magnetometer);
-    Mode::Phase UpdateASITest(Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug, double currentTime);
-    Mode::Phase UpdateWaterFlow(Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug, double currentTime);
+    Mode::Phase UpdateHotfireIdle(RF::Command &command, Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug);
+    Mode::Phase UpdateASITest(RF::Command &command, Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug, double currentTime);
+    Mode::Phase UpdateWaterFlow(RF::Command &command, Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug, double currentTime);
     void CheckForToggleSensorCommands(RF::Command &command, GPS &gps, Camera &camera, Magnetometer &magnetometer);
 };
