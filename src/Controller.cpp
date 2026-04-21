@@ -84,7 +84,7 @@ void Controller::AttitudeControl(Navigation &navigation)
 // shut down rocket functions
 void Controller::UpdateSafe()
 {
-    // TODO. Center TVC, turn off reaction wheel, etc.
+    tvc.Stop();
 }
 
 void Controller::CalculateInput(Navigation &navigation)

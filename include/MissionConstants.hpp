@@ -107,14 +107,9 @@ namespace MissionConstants
     const double kThrottleToMassFlowScale = -5.6e-4; // kg/(N*s)
     const Eigen::Vector3d kEngineThrustLocationBodyM = Eigen::Vector3d(0.0, 0.0, -1.13);
 
-    // TVC Constants, TODO: USER EDIT PRE-FLIGHT
-    const double kDeg2PulseWidth = ((double)1000.0) / ((double)90.0);
-    const double kTvcXCenterAngleDeg = -10;
-    const double kTvcYCenterAngleDeg = -55;
-    const double kTvcYInputCenterAngleRad = 0.12;
-    const double kTvcXInputCenterAngleRad = -0.29;
-    const int kTvcXPin = 19;
-    const int kTvcYPin = 18;
+    // TVC Calibration Constants, TODO: USER EDIT PRE-FLIGHT
+    const double kTvcYInputCenterAngleRad = 0.0;
+    const double kTvcXInputCenterAngleRad = 0.0;
     
     // Linear Actuator TVC Geometry (in inches, relative to u-joint origin)
     const Eigen::Vector3d kTvcVehicleMountPoint0 = Eigen::Vector3d(4.183, 0.0, 5.563);
@@ -123,18 +118,27 @@ namespace MissionConstants
     const Eigen::Vector3d kTvcEngineMountPoint1 = Eigen::Vector3d(0.0, 2.755, -11.078);
     
     // Linear Actuator Control Parameters
-    const double kTvcPositionControlGain = 400.0;      // Proportional gain (PWM/inch)
-    const int kTvcMaxMotorSpeed = 4000;                 // Max PWM speed (0-4095)
+    // PID output is commanded actuator speed in inches/second.
+    const double kTvcPositionKpPerSecond = 3.0;                       // (in/s)/in = 1/s
+    const double kTvcPositionKiPerSecondSquared = 0.8;                // (in/s)/(in*s) = 1/s^2
+    const double kTvcPositionKdUnitless = 0.15;                       // (in/s)/(in/s) = unitless
+    const double kTvcIntegralWindupLimitInchSeconds = 1.0;            // Clamp for integrated position error
+    const double kTvcVelocityDeadbandInchesPerSecond = 0.01;          // Velocity deadband to avoid chatter
+    const double kTvcMaxCommandedVelocityInchesPerSecond = 1.8;       // Maps to max PWM command
+    const int kTvcMaxMotorSpeed = 3686;                               // Max PWM speed (0-4095)
     const double kTvcStrokeLengthInches = 4.0;          // Actuator stroke length
     const double kTvcZeroExtensionInches = 14.972;      // Actuator length when fully retracted (used to convert from absolute length to extension length)
     const double kTvcMinLengthInches = 1.0;             // Minimum actuator extension
     const double kTvcMaxLengthInches = 3.0;             // Maximum actuator extension
-    const int kTvcPotentiometerMinReading = 26054;       // ADC reading at minimum extension (retracted)
-    const int kTvcPotentiometerMaxReading = 2498;      // ADC reading at maximum extension (extended)
+    const int kTvcActuator0PotentiometerMinReading = 26054; // ADC reading for actuator 0 at minimum extension (retracted)
+    const int kTvcActuator0PotentiometerMaxReading = 2498;  // ADC reading for actuator 0 at maximum extension (extended)
+    const int kTvcActuator1PotentiometerMinReading = 26054; // ADC reading for actuator 1 at minimum extension (retracted)
+    const int kTvcActuator1PotentiometerMaxReading = 2498;  // ADC reading for actuator 1 at maximum extension (extended)
     const int kTvcActuator0RpwmChannel = 0;             // PCA9685 RPWM channel for actuator 0 (X)
     const int kTvcActuator0LpwmChannel = 1;             // PCA9685 LPWM channel for actuator 0 (X)
     const int kTvcActuator1RpwmChannel = 2;             // PCA9685 RPWM channel for actuator 1 (Y)
     const int kTvcActuator1LpwmChannel = 3;             // PCA9685 LPWM channel for actuator 1 (Y)
+    const double kTvcCommandTimeoutSeconds = 0.100;     // Max command age before actuator output is forced to neutral
     const float kTvcChirpDurationSec = 10.0f;
     const float kTvcChirpStartFreqHz = 1.0f;
     const float kTvcChirpEndFreqHz = 15.0f;
