@@ -18,7 +18,7 @@ float mapFloat(float x, float in_min, float in_max, float out_min, float out_max
 float readPositionInches(int actuator_index)
 {
 
-    int sensorPin = (actuator_index == 0) ? MissionConstants::kTVCXPotentiometerReading : SENSOR_MissionConstants::kTVCYPotentiometerReadingPIN_1;
+    int sensorPin = (actuator_index == 0) ? MissionConstants::kTVCXPotentiometerReading : SENSOR_MissionConstants::kTVCYPotentiometerReading;
     const int actuatorMinReading = (actuator_index == 0)
                                        ? MissionConstants::kTvcActuator0PotentiometerMinReading
                                        : MissionConstants::kTvcActuator1PotentiometerMinReading;
