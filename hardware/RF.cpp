@@ -106,46 +106,35 @@ void RF::SendString(std::string text)
 
 RF::Command RF::GetCommand() // Will check for commands and return the received command. Non-blocking.
 {
-
-    // struct pollfd fds;
-    // int ret;
-    // fds.fd = SerialFd; /* this is Serial Port */
-    // fds.events = POLLIN;
-    // ret = poll(&fds, 1, 0);
-
-    // std::cout << "Polling " << std::to_string(ret) << "\n";
-
-    // if(ret != 1) // Return if no data
-    //     return RF::Command::None;
-
-    std::string input_line;
     if (!terminal_switch)
     {
-        const int MAXLEN = 512;
-        char buffer[MAXLEN];
-        memset(buffer, 0, 512);
-        int len = read(SerialFd, buffer, MAXLEN);
+        RF::Command cmd = RF::Command::None;
+        static std::string rx_buffer;
 
-        if (len <= 0)
+        char buffer[512];
+        int len = read(SerialFd, buffer, sizeof(buffer));
+
+        if (len > 0)
         {
-            return RF::Command::None;
+            rx_buffer.append(buffer, len);
+
+            size_t pos;
+            while ((pos = rx_buffer.find('\n')) != std::string::npos)
+            {
+                std::string line = rx_buffer.substr(0, pos);
+                rx_buffer.erase(0, pos + 1);
+
+                std::cout << "FULL MSG: " << line << "\n";
+
+                cmd = ParseCommand(line);  // process ALL
+            }
         }
 
-        std::cout << "GOT: " << buffer;
-
-        input_line = buffer;
-
-        std::cout << "String:" << input_line << "\n"
-                  << std::flush;
-
-        for (size_t i = 0; i < 100; ++i)
-        {
-            std::cout << static_cast<int>(buffer[i]) << " "; // Output the byte values as integers
-        }
-        std::cout << std::endl;
+        return cmd;
     }
     else
     {
+        std::string input_line;
         struct pollfd fds;
         int ret;
         fds.fd = 0; /* this is STDIN */
@@ -163,7 +152,9 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
 
         std::cout << "GOT: " << input_line << "\n"
                   << std::flush;
+
+        return ParseCommand(input_line);
     }
 
-    return ParseCommand(input_line);
+    
 }

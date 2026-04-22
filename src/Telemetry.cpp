@@ -148,7 +148,7 @@ void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
     // TODO: MAKE SURE THIS FOLLOWS WHAT GROUND CONTROL EXPECTS
     json json_msg;
     json_msg["data_type"] = "telem";
-    json_msg["type"] = "GNC",
+    json_msg["type"] = "GNC";
     json_msg["payload"] = {
         // Position
         navigation.GetNavigation()(0),
@@ -203,7 +203,7 @@ void Telemetry::RfSendLiquidFrame(PressureTransducer &pt, LoadCell &lc)
 {
     json json_msg;
     json_msg["data_type"] = "telem";
-    json_msg["type"] = "Liquid",
+    json_msg["type"] = "Liquid";
     json_msg["payload"] = {
         pt.ReadPSI(PressureTransducer::NitrogenLine),    // 0-1000 PSI
         pt.ReadPSI(PressureTransducer::EthanolTank),     // 0-1000 PSI
