@@ -108,11 +108,10 @@ void applyLinearChirpVelocityCommand(float durationSec,
 {
     if (durationSec <= 0.0f || controlPeriodMs <= 0)
     {
-        Telemetry::.GetInstance().Log("Invalid chirp timing parameters");
+        Telemetry::GetInstance().Log("Invalid chirp timing parameters");
         return;
     }
-
-    if (maxSpeed < 0)
+    S if (maxSpeed < 0)
         maxSpeed = 0;
     if (maxSpeed > 4095)
         maxSpeed = 4095;
