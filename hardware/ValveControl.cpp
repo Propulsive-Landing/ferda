@@ -16,21 +16,28 @@ void ValveControl::OpenValve(ValveType valve)
         // int ticks = (pulse / 20000.0) * 4096.0;
         Telemetry::GetInstance().Log("Opening Nitrogen Valve");
 
+        // NOTE: We do not handle if servo_driver is a null pointer meaninf the PCA9685 is not connected
         servo_driver->set_pwm(MissionConstants::kNitrogenServoPin, 0, ticks);
         nitrogenOpen = true;
         break;
     case Purge:
         Telemetry::GetInstance().Log("Opening purge Valve");
+
+        // NOTE: We do not handle if servo_driver is a null pointer meaninf the PCA9685 is not connected
         servo_driver->set_pwm(MissionConstants::kPurgeServoPin, 0, ticks);
         purgeOpen = true;
         break;
     case MainEthanol:
         Telemetry::GetInstance().Log("Opening Main Ethanol Valve");
+
+        // NOTE: We do not handle if servo_driver is a null pointer meaninf the PCA9685 is not connected
         servo_driver->set_pwm(MissionConstants::kMainEthanolServoPin, 0, ticks);
         mainEthanolOpen = true;
         break;
     case MainNitrous:
         Telemetry::GetInstance().Log("Opening Main Nitrous Valve");
+
+        // NOTE: We do not handle if servo_driver is a null pointer meaninf the PCA9685 is not connected
         servo_driver->set_pwm(MissionConstants::kMainNitrousServoPin, 0, ticks);
         mainNitrousOpen = true;
         break;
@@ -62,21 +69,29 @@ void ValveControl::CloseValve(ValveType valve)
         // set_pwm takes pulse width in microseconds: 500-2500 us for 0-180 degrees
         // 179 degrees = 500 + (179 * 2000 / 180) = ~510 us
         Telemetry::GetInstance().Log("Closing Nitrogen Valve");
+
+        // NOTE: We do not handle if servo_driver is a null pointer meaninf the PCA9685 is not connected
         servo_driver->set_pwm(MissionConstants::kNitrogenServoPin, 0, ticks);
         nitrogenOpen = false;
         break;
     case Purge:
         Telemetry::GetInstance().Log("Closing purge Valve");
+
+        // NOTE: We do not handle if servo_driver is a null pointer meaninf the PCA9685 is not connected
         servo_driver->set_pwm(MissionConstants::kPurgeServoPin, 0, ticks);
         purgeOpen = false;
         break;
     case MainEthanol:
         Telemetry::GetInstance().Log("Closing Main Ethanol Valve");
+
+        // NOTE: We do not handle if servo_driver is a null pointer meaninf the PCA9685 is not connected
         servo_driver->set_pwm(MissionConstants::kMainEthanolServoPin, 0, ticks);
         mainEthanolOpen = false;
         break;
     case MainNitrous:
         Telemetry::GetInstance().Log("Closing Main Nitrous Valve");
+
+        // NOTE: We do not handle if servo_driver is a null pointer meaninf the PCA9685 is not connected
         servo_driver->set_pwm(MissionConstants::kMainNitrousServoPin, 0, ticks);
         mainNitrousOpen = false;
         break;

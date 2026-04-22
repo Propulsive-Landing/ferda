@@ -48,6 +48,13 @@ float readPositionInches()
 // ----------------------
 void driveActuator(int actuator_index, int direction, int speed)
 {
+    // In case user chose to continue without PCA9685 for controlling pwm signals for Linear Actuators,
+    // we return  so we don't get Segmentation Fault erros using a null pointer
+    if (pwm_driver == nullptr)
+    {
+        return;
+    }
+
     int rpwmChannel = MissionConstants::kTvcActuator0RpwmChannel;
     int lpwmChannel = MissionConstants::kTvcActuator0LpwmChannel;
 
@@ -63,7 +70,7 @@ void driveActuator(int actuator_index, int direction, int speed)
 
         ss << "Driving actuator " << actuator_index << " to extend at speed " << speed;
 
-        Telemetry::GetInstance().Log(ss);
+        Telemetry::GetInstance().Log(ss.str());
 
         pwm_driver->set_pwm(rpwmChannel, 0, speed);
         pwm_driver->set_pwm(lpwmChannel, 0, 0);
@@ -73,7 +80,7 @@ void driveActuator(int actuator_index, int direction, int speed)
 
         ss << "Stopping actuator " << actuator_index << " to extend at speed " << speed;
 
-        Telemetry::GetInstance().Log(ss);
+        Telemetry::GetInstance().Log(ss.str());
 
         pwm_driver->set_pwm(rpwmChannel, 0, 0);
         pwm_driver->set_pwm(lpwmChannel, 0, 0);
@@ -82,7 +89,7 @@ void driveActuator(int actuator_index, int direction, int speed)
     case -1: // retract
         ss << "Retracting actuator " << actuator_index << " to retract at speed " << speed;
 
-        Telemetry::GetInstance().Log(ss);
+        Telemetry::GetInstance().Log(ss.str());
         pwm_driver->set_pwm(rpwmChannel, 0, 0);
         pwm_driver->set_pwm(lpwmChannel, 0, speed);
         break;
@@ -256,7 +263,7 @@ int moveToLimit(int actuator_index, int direction)
 
         float voltage = (curr / 32767.0) * 6.144;
         ss << "Actuator " << actuator_index << " Raw: " << curr << " Voltage: " << voltage;
-        Telemetry::GetInstance().Log(ss);
+        Telemetry::GetInstance().Log(ss.str());
 
     } while (abs(curr - prev) > 10); // tolerance for noise
 
