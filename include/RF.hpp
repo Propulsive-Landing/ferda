@@ -25,12 +25,10 @@ public:
     {
         None,
         ABORT,
-        Startup,
         TestTVC,
         ChirpTVC,
         GoIdle,
         Ignite,
-        Release,
         ActuatorCalibration,
         StopTVC,
         CenterTVC,
@@ -87,8 +85,6 @@ public:
         RF::Command ParsedCommand = RF::Command::None;
         if (input_line == "ABORT")
             ParsedCommand = RF::Command::ABORT;
-        else if (input_line == "Startup")
-            ParsedCommand = RF::Command::Startup;
         else if (input_line == "TestTVC")
             ParsedCommand = RF::Command::TestTVC;
         else if (input_line == "ChirpTVC")
@@ -119,8 +115,6 @@ public:
             ParsedCommand = RF::Command::DecrementXTVC;
         else if (input_line == "DecrementYTVC")
             ParsedCommand = RF::Command::DecrementYTVC;
-        else if (input_line == "Release")
-            ParsedCommand = RF::Command::Release;
         else if (input_line == "SENSOR: camera ON")
             ParsedCommand = RF::Command::CameraOn;
         else if (input_line == "SENSOR: camera OFF")

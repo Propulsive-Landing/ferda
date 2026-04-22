@@ -13,5 +13,4 @@ while True:
     if not gps.has_fix:
         print("Waiting for fix...")
         continue
-    print("has fix")
     break
