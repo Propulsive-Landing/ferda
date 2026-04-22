@@ -439,12 +439,15 @@ void Navigation::UpdateNavigation()
 
     // Update lidar on fixed cadence near ground.
     ++lidar_update_counter;
-    if (lidar_update_counter >= kLidarUpdateCadence && false)
+    if (lidar_update_counter >= kLidarUpdateCadence)
     {
-        if (x_e(2) < 4.0)
+        if (lidar.GetUseLidar())
         {
-            double lidarDistance = std::get<0>(lidar.GetLidarDistance());
-            lidarUpdate(lidarDistance, R);
+            if (x_e(2) < 4.0)
+            {
+                double lidarDistance = std::get<0>(lidar.GetLidarDistance());
+                lidarUpdate(lidarDistance, R);
+            }
         }
         lidar_update_counter = 0; // Reset counter
     }

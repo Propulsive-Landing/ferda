@@ -17,7 +17,8 @@ private:
 
     void HardwareSaveFrame(Navigation &navigation, Controller &controller, GPS &gps);
     void GPSSaveFrame(GPS &gps);
-    void RfSendFrame(Navigation &navigation, Controller &controller, PressureTransducer &pt, LoadCell &lc);
+    void RfSendGNCFrame(Navigation &navigation, Controller &controller);
+    void RfSendLiquidFrame(PressureTransducer &pt, LoadCell &lc);
 
 public:
     std::chrono::steady_clock::time_point StartTime;

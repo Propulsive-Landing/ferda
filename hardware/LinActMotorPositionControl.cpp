@@ -63,7 +63,7 @@ void driveActuator(int actuator_index, int direction, int speed)
 
         ss << "Driving actuator " << actuator_index << " to extend at speed " << speed;
 
-        Telemetry.GetInstance().Log(ss);
+        Telemetry::GetInstance().Log(ss);
 
         pwm_driver->set_pwm(rpwmChannel, 0, speed);
         pwm_driver->set_pwm(lpwmChannel, 0, 0);
@@ -73,7 +73,7 @@ void driveActuator(int actuator_index, int direction, int speed)
 
         ss << "Stopping actuator " << actuator_index << " to extend at speed " << speed;
 
-        Telemetry.GetInstance().Log(ss);
+        Telemetry::GetInstance().Log(ss);
 
         pwm_driver->set_pwm(rpwmChannel, 0, 0);
         pwm_driver->set_pwm(lpwmChannel, 0, 0);
@@ -82,7 +82,7 @@ void driveActuator(int actuator_index, int direction, int speed)
     case -1: // retract
         ss << "Retracting actuator " << actuator_index << " to retract at speed " << speed;
 
-        Telemetry.GetInstance().Log(ss);
+        Telemetry::GetInstance().Log(ss);
         pwm_driver->set_pwm(rpwmChannel, 0, 0);
         pwm_driver->set_pwm(lpwmChannel, 0, speed);
         break;
@@ -101,7 +101,7 @@ void applyLinearChirpVelocityCommand(float durationSec,
 {
     if (durationSec <= 0.0f || controlPeriodMs <= 0)
     {
-        Telemetry.GetInstance().Log("Invalid chirp timing parameters");
+        Telemetry::.GetInstance().Log("Invalid chirp timing parameters");
         return;
     }
 
@@ -113,7 +113,7 @@ void applyLinearChirpVelocityCommand(float durationSec,
     std::ofstream logFile("chirp_velocity_log.csv", std::ios::app);
     if (!logFile)
     {
-        Telemetry.GetInstance().Log("Failed to open chirp_velocity_log.csv");
+        Telemetry::GetInstance().Log("Failed to open chirp_velocity_log.csv");
         return;
     }
     if (logFile.tellp() == 0)
@@ -180,7 +180,7 @@ void applyVelocityStepCommand(float durationSec,
 {
     if (durationSec <= 0.0f || controlPeriodMs <= 0)
     {
-        Telemetry.GetInstance().Log("Invalid step timing parameters");
+        Telemetry::GetInstance().Log("Invalid step timing parameters");
         return;
     }
 
@@ -192,7 +192,7 @@ void applyVelocityStepCommand(float durationSec,
     std::ofstream logFile("step_velocity_log.csv", std::ios::app);
     if (!logFile)
     {
-        Telemetry.GetInstance().Log("Failed to open step_velocity_log.csv");
+        Telemetry::GetInstance().Log("Failed to open step_velocity_log.csv");
         return;
     }
     if (logFile.tellp() == 0)
@@ -256,7 +256,7 @@ int moveToLimit(int actuator_index, int direction)
 
         float voltage = (curr / 32767.0) * 6.144;
         ss << "Actuator " << actuator_index << " Raw: " << curr << " Voltage: " << voltage;
-        Telemetry::.GetInstance().Log(ss);
+        Telemetry::GetInstance().Log(ss);
 
     } while (abs(curr - prev) > 10); // tolerance for noise
 

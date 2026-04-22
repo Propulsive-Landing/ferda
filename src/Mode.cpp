@@ -474,18 +474,19 @@ Mode::Phase Mode::UpdateHotfireIdle(RF::Command &command, Navigation &navigation
 Mode::Phase Mode::UpdateASITest(RF::Command &command, Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug,
                                 double currentTime)
 {
-    static double startTime = currentTime;
+    static double startTime;
     static bool sequenceStarted = false;
-    double seconds_since_start = currentTime - startTime;
 
     if (!sequenceStarted)
     {
+        startTime = currentTime;
         Telemetry::GetInstance().Log("Starting ASI Test sequence");
         valveControl.OpenValve(ValveControl::ASIOxygen);
         sparkPlug.TurnOn();
         sequenceStarted = true;
     }
 
+    double seconds_since_start = currentTime - startTime;
     navigation.UpdateNavigation();
 
     // Sequence timing (matching original hotfire.ino logic)
@@ -516,7 +517,7 @@ Mode::Phase Mode::UpdateASITest(RF::Command &command, Navigation &navigation, Va
         // Return to HotfireIdle after sequence completes
         if (seconds_since_start >= 3.0)
         {
-            startTime = 0;
+            Telemetry::GetInstance().Log("asitest sequence completed, returning to HotfireIdle");
             sequenceStarted = false;
             return Mode::HotfireIdle;
         }
@@ -537,41 +538,42 @@ Mode::Phase Mode::UpdateASITest(RF::Command &command, Navigation &navigation, Va
 Mode::Phase Mode::UpdateWaterFlow(RF::Command &command, Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug,
                                   double currentTime)
 {
-    static double startTime = currentTime;
+    // TODO: GO OVER WATER TEST SEQUENCE
+    static double startTime;
     static bool sequenceStarted = false;
-    double seconds_since_start = currentTime - startTime;
 
     if (!sequenceStarted)
     {
+        startTime = currentTime;
         Telemetry::GetInstance().Log("Starting Water Flow sequence");
         valveControl.OpenValve(ValveControl::MainNitrous);
         sequenceStarted = true;
     }
 
+    double seconds_since_start = currentTime - startTime;
     navigation.UpdateNavigation();
 
     // Sequence timing (matching original hotfire.ino logic)
-    if (seconds_since_start >= 2.0 && seconds_since_start < 5.0)
+    if (seconds_since_start >= 1.0 && seconds_since_start < 2.0)
     {
         // Open main ethanol after 2 seconds
-        if (seconds_since_start < 2.01)
+        if (seconds_since_start < 1.01)
         {
             valveControl.OpenValve(ValveControl::MainEthanol);
         }
     }
-    else if (seconds_since_start >= 5.0)
+    else if (seconds_since_start >= 3.0)
     {
         // Close both valves after 5 seconds total (3 seconds after ethanol opens)
-        if (seconds_since_start < 5.01)
+        if (seconds_since_start < 3.01)
         {
             valveControl.CloseValve(ValveControl::MainNitrous);
             valveControl.CloseValve(ValveControl::MainEthanol);
         }
         // Return to HotfireIdle after sequence completes
-        if (seconds_since_start >= 5.5)
+        if (seconds_since_start >= 3.5)
         {
             Telemetry::GetInstance().Log("Water Flow sequence completed, returning to HotfireIdle");
-            startTime = 0;
             sequenceStarted = false;
             return Mode::HotfireIdle;
         }

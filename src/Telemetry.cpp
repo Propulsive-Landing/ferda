@@ -115,8 +115,19 @@ void Telemetry::LogActuatorFrame(double commanded_angle_x_rad,
 void Telemetry::Log(std::string message)
 {
     // write time to hardware file
-    auto time_now = std::chrono::system_clock::now();
-    auto in_time_t = std::chrono::system_clock::to_time_t(time_now);
+    auto now = std::chrono::system_clock::now();
+
+    auto seconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - seconds).count();
+
+    std::time_t tt = std::chrono::system_clock::to_time_t(seconds);
+
+    std::tm tm;
+    localtime_r(&tt, &tm); // thread-safe on Linux
+
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%d-%m-%Y %H:%M:%S")
+        << "." << std::setw(3) << std::setfill('0') << ms;
 
     json json_msg;
     json_msg["data_type"] = "string";
@@ -127,32 +138,73 @@ void Telemetry::Log(std::string message)
     std::cout << message << "\n";
 
     // Write data to file
-    Logs << std::put_time(std::localtime(&in_time_t), "%c") << ",";
+    Logs << oss.str() << ", ";
     Logs << message << "\n"
          << std::flush;
 }
 
-void Telemetry::RfSendFrame(Navigation &navigation, Controller &controller, PressureTransducer &pt, LoadCell &lc)
+void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
+{
+    // TODO: MAKE SURE THIS FOLLOWS WHAT GROUND CONTROL EXPECTS
+    json json_msg;
+    json_msg["data_type"] = "telem";
+    json_msg["type"] = "GNC",
+    json_msg["payload"] = {
+        // Position
+        navigation.GetNavigation()(0),
+        navigation.GetNavigation()(1),
+        navigation.GetNavigation()(2),
+        // Velocity
+        navigation.GetNavigation()(3),
+        navigation.GetNavigation()(4),
+        navigation.GetNavigation()(5),
+        // Eulers
+        0,
+        0,
+        0,
+        // Omegas
+        0,
+        0,
+        0,
+        // Accel Bias
+        navigation.GetNavigation()(10),
+        navigation.GetNavigation()(11),
+        navigation.GetNavigation()(12),
+        // Omega Bias
+        navigation.GetNavigation()(13),
+        navigation.GetNavigation()(14),
+        navigation.GetNavigation()(15),
+        // Tvc commands
+        controller.GetCurrentTVCCommand()(0),
+        controller.GetCurrentTVCCommand()(1),
+        // Rcs command
+        0,
+        // Thrust command,
+        controller.GetCurrentThrustCommand(),
+        // Actuator setpoint errors
+        0,
+        0,
+        // Attitude Setpoint errors
+        0,
+        0,
+        0,
+        // Guidance altitude error
+        0,
+        // Guidiance translation errors
+        0,
+        0
+
+    };
+
+    RF::GetInstance().SendString(json_msg.dump() + "\n");
+}
+
+void Telemetry::RfSendLiquidFrame(PressureTransducer &pt, LoadCell &lc)
 {
     json json_msg;
     json_msg["data_type"] = "telem";
+    json_msg["type"] = "Liquid",
     json_msg["payload"] = {
-        // Euler.
-        navigation.GetNavigation()(0, 0),
-        navigation.GetNavigation()(1, 0),
-        navigation.GetNavigation()(2, 0),
-
-        // Input.
-        controller.input(0),
-        controller.input(1),
-
-        // Velocity.
-        navigation.GetNavigation()(3, 0),
-        navigation.GetNavigation()(4, 0),
-        navigation.GetNavigation()(5, 0),
-
-        // dt.
-        0.0,
         pt.ReadPSI(PressureTransducer::NitrogenLine),    // 0-1000 PSI
         pt.ReadPSI(PressureTransducer::EthanolTank),     // 0-1000 PSI
         pt.ReadPSI(PressureTransducer::NitrousLine),     // 0-1000 PSI
@@ -198,7 +250,8 @@ void Telemetry::RunTelemetry(Navigation &navigation, Controller &controller, GPS
     // Log navigational sensors in RFSendFrame() and Log liquid engine sensors in RfSendLiquidPropulsionData()
     if (std::chrono::duration_cast<std::chrono::milliseconds>(rf_change_time).count() / 1000.0 >= RFSaveDelta)
     {
-        RfSendFrame(navigation, controller, pt, lc);
+        RfSendGNCFrame(navigation, controller);
+        RfSendLiquidFrame(pt, lc);
         last_rf_time = std::chrono::high_resolution_clock::now();
     }
 }
@@ -218,13 +271,10 @@ Telemetry::Telemetry() : StartTime(std::chrono::steady_clock::now())
     GPSSaved.open("../logs/gps" + str + ".txt");
     ActuatorSaved.open("../logs/actuators" + str + ".txt");
 
-    HardwareSaved << "TimeSeconds, x, y, z, vx, vy, vz, q1, q2, q3, q4, ab1, ab2, ab3, wb1, wb2, wb3, E, N, U, ux, uy, K_Matrix_Index \n";
+    HardwareSaved << "TimeSeconds, x, y, z, vx, vy, vz, q1, q2, q3, q4, ab1, ab2, ab3, wb1, wb2, wb3, E, N, U, E_Vel, N_Vel, ux, uy \n";
     SensorSaved << "TimeSeconds, accelX, accelY, accelZ, gyroX, gryoY, gyroZ, magx, magy, magz \n";
     GPSSaved << "TimeSeconds, gpsE, gpsN, gpsU, gpsVxE, gpsVyN \n";
     ActuatorSaved << "TimeSeconds, commandedAngleXRad, commandedAngleYRad, commandedLengthXIn, commandedLengthYIn, observedLengthXIn, observedLengthYIn, commandedSpeedX, commandedSpeedY \n";
-
-    HardwareSaved << "Date, x, y, z, vx, vy, vz, q1, q2, q3, q4, ab1, ab2, ab3, wb1, wb2, wb3, E, N, U, E_Vel, N_Vel, ux, uy \n";
-    SensorSaved << "Date, accelX, accelY, accelZ, gyroX, gryoY, gyroZ, magx, magy, magz \n";
 }
 
 Telemetry::~Telemetry()
