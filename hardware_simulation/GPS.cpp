@@ -26,11 +26,6 @@ bool GPS::GPSAvailable()
     return true;
 }
 
-bool GPS::GPSUsed()
-{
-    return found_gps;
-}
-
 bool GPS::HasFreshPosition() const
 {
     return true;

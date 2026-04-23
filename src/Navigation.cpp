@@ -378,7 +378,7 @@ void Navigation::UpdateNavigation()
     ++magnetometer_update_counter;
     if (magnetometer_update_counter >= kMagnetometerUpdateCadence)
     {
-        if (magnetometer.GgetUseMagnometer())
+        if (magnetometer.getUseMagnometer())
         {
             magneticField = magnetometer.GetMagneticField();
             Eigen::Vector3d magneticFieldVector(std::get<0>(magneticField), std::get<1>(magneticField), std::get<2>(magneticField));
@@ -389,28 +389,24 @@ void Navigation::UpdateNavigation()
     ++gps_update_counter;
     if (gps_update_counter == kGPSUpdateCadence)
     {
-        if (gps.GPSUsed())
+        gps.Update();
+
+        if (gps.GPSAvailable())
         {
-
-            gps.Update();
-
-            if (gps.GPSAvailable())
+            // Make Sure GPS position is new and is toggled to be used
+            if (gps.HasFreshPosition() && gps.GetUseGPSPosition())
             {
-                // Make Sure GPS position is new and is toggled to be used
-                if (gps.HasFreshPosition() && gps.GetUseGPSPosition())
-                {
-                    gpsPosition = gps.GetGPSPosition();
-                    Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
-                    gpsPositionUpdate(gpsPositionVector);
-                }
+                gpsPosition = gps.GetGPSPosition();
+                Eigen::Vector3d gpsPositionVector(std::get<0>(gpsPosition), std::get<1>(gpsPosition), std::get<2>(gpsPosition));
+                gpsPositionUpdate(gpsPositionVector);
+            }
 
-                // Make Sure GPS velocity is new and is toggled to be used
-                if (gps.HasFreshVelocity() && gps.GetUseGPSVelocity())
-                {
-                    gpsVelocity = gps.GetGPSVelocity();
-                    Eigen::Vector2d gpsVelocityVector(std::get<0>(gpsVelocity), std::get<1>(gpsVelocity));
-                    gpsVelocityUpdate(gpsVelocityVector);
-                }
+            // Make Sure GPS velocity is new and is toggled to be used
+            if (gps.HasFreshVelocity() && gps.GetUseGPSVelocity())
+            {
+                gpsVelocity = gps.GetGPSVelocity();
+                Eigen::Vector2d gpsVelocityVector(std::get<0>(gpsVelocity), std::get<1>(gpsVelocity));
+                gpsVelocityUpdate(gpsVelocityVector);
             }
         }
         gps_update_counter = 0;

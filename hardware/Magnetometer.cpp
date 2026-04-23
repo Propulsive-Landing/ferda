@@ -5,19 +5,6 @@
 #include "MissionConstants.hpp"
 #include "cmath"
 
-Magnetometer::Magnetometer()
-{
-    //  If IMUFound is false which would be set in IMU constructor, set UseMagnometer to false by default;
-    if (!IMUFound)
-    {
-        useMagnometer = false;
-    }
-    else
-    {
-        useMagnometer = true;
-    }
-}
-
 std::tuple<double, double, double> Magnetometer::GetMagneticField()
 {
     double nMagX = (double)read16LE(fd, MissionConstants::REG_MAG_X) / 16.0f;

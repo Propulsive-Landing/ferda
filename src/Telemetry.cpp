@@ -234,7 +234,7 @@ void Telemetry::RunTelemetry(Navigation &navigation, Controller &controller, GPS
     const uint64_t gps_update_count = gps.GetUpdateCount();
     if (gps_update_count != last_gps_update_count)
     {
-        if (gps.GPSAvailable() && gps.GPSUsed())
+        if (gps.GPSAvailable())
         {
             GPSSaveFrame(gps);
         }

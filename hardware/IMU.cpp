@@ -22,13 +22,7 @@ IMU::IMU()
     if (chip_id != MissionConstants::CHIP_ID)
     {
         Telemetry::GetInstance().Log("Warning: BMO055 was not detected at address " + ss.str());
-        // TODO: MAYBE ADD CHECK TO SEE IF USER WANTS TO CONTINUE
-        IMUFound = false;
         return;
-    }
-    else
-    {
-        IMUFound = true;
     }
 
     // Set power mode

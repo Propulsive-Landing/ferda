@@ -61,13 +61,9 @@ GPS::GPS()
     if (fd < 0)
     {
         Telemetry::GetInstance().Log("Warning: GPS port unavailable, continuing without GPS");
-        found_gps = false;
-        useGPSPosition = false;
-        useGPSVelocity = false;
     }
     else
     {
-        found_gps = true;
         auto t = std::time(nullptr);
         auto tm = *std::localtime(&t);
 
@@ -98,6 +94,15 @@ GPS::~GPS()
 
 void GPS::Update()
 {
+    // Safety check
+    // NOTE: Could have used a boolean flag but to match magnometer, it is better to just have boolean flags for
+    //       gps position nd velocity controls rather than if GPS us actually plugged in. In main, the user will get
+    //       a warning and can decide to quit then but if not, then we will always return so no harm done
+    if (fd < 0)
+    {
+        return;
+    }
+
     fresh_position = false;
     fresh_velocity = false;
 
@@ -456,11 +461,6 @@ void GPS::read_data()
 bool GPS::GPSAvailable()
 {
     return valid;
-}
-
-bool GPS::GPSUsed()
-{
-    return found_gps;
 }
 
 bool GPS::HasFreshPosition() const

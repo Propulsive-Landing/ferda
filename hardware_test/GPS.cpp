@@ -61,11 +61,9 @@ GPS::GPS()
     if (fd < 0)
     {
         Telemetry::GetInstance().Log("Warning: GPS port unavailable, continuing without GPS");
-        found_gps = false;
     }
     else
     {
-        found_gps = true;
         auto t = std::time(nullptr);
         auto tm = *std::localtime(&t);
 
@@ -96,6 +94,11 @@ GPS::~GPS()
 
 void GPS::Update()
 {
+    if (fd < 0)
+    {
+        return;
+    }
+
     fresh_position = false;
     fresh_velocity = false;
 
@@ -454,11 +457,6 @@ void GPS::read_data()
 bool GPS::GPSAvailable()
 {
     return valid;
-}
-
-bool GPS::GPSUsed()
-{
-    return found_gps;
 }
 
 bool GPS::HasFreshPosition() const

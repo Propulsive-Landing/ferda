@@ -6,11 +6,11 @@
 class Magnetometer : public IMU
 {
 public:
-    Magnetometer();
+    Magnetometer() = default;
     std::tuple<double, double, double> GetMagneticField();
     bool getUseMagnometer() { return useMagnometer; }
     void setUseMagnometer(const bool &state) { useMagnometer = state; }
 
 private:
-    bool useMagnometer;
+    bool useMagnometer = false;
 };
