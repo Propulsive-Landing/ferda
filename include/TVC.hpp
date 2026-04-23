@@ -32,4 +32,8 @@ public:
     void SetTVCY(double angle_rad);
     void UpdateActuatorPositions();
     void Stop();
+    Eigen::Vector2d GetActuatorSetpointErrorInches() const
+    {
+        return desired_actuator_lengths - current_actuator_lengths;
+    }
 };

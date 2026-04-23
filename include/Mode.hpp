@@ -53,7 +53,7 @@ private:
     Mode::Phase UpdateTestTVC(RF::Command &command, Navigation &navigation, Controller &controller, double currentTime);
     Mode::Phase UpdateChirpTVC(Navigation &navigation, Controller &controller, double currentTime);
     Mode::Phase UpdateIdle(RF::Command &command, Navigation &navigation, Controller &controller, double currentTime);
-    Mode::Phase UpdateLaunch(Navigation &navigation, Controller &controller, Igniter &igniter, float current_time);
+    Mode::Phase UpdateLaunch(RF::Command &command, Navigation &navigation, Controller &controller, Igniter &igniter, float current_time);
     Mode::Phase UpdateSafeMode(Navigation &navigation, Controller &controller, double currentTime);
     void UploadKmatrices();
     // Liquid Propulsion State Updates

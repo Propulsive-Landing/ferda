@@ -386,6 +386,7 @@ void Navigation::UpdateNavigation()
         }
         magnetometer_update_counter = 0; // Reset counter
     }
+
     ++gps_update_counter;
     if (gps_update_counter == kGPSUpdateCadence)
     {

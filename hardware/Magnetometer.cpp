@@ -5,6 +5,10 @@
 #include "MissionConstants.hpp"
 #include "cmath"
 
+Magnetometer::Magnetometer()
+{
+}
+
 std::tuple<double, double, double> Magnetometer::GetMagneticField()
 {
     double nMagX = (double)read16LE(fd, MissionConstants::REG_MAG_X) / 16.0f;

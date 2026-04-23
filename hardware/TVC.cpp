@@ -149,7 +149,7 @@ void TVC::SetTVCX(double angle_rad)
 {
     // Apply compile-time calibration trim before clamping.
     const double corrected_angle = angle_rad + MissionConstants::kTvcXInputCenterAngleRad;
-    stored_angle_x_rad = std::clamp(corrected_angle, -10.0 * MissionConstants::kDeg2Rad, 10.0 * MissionConstants::kDeg2Rad);
+    stored_angle_x_rad = std::clamp(corrected_angle, -MissionConstants::kMaximumTvcAngle, MissionConstants::kMaximumTvcAngle);
     last_command_time = std::chrono::steady_clock::now();
     has_recent_command = true;
 }
@@ -158,7 +158,7 @@ void TVC::SetTVCY(double angle_rad)
 {
     // Apply compile-time calibration trim before clamping.
     const double corrected_angle = angle_rad + MissionConstants::kTvcYInputCenterAngleRad;
-    stored_angle_y_rad = std::clamp(corrected_angle, -10.0 * MissionConstants::kDeg2Rad, 10.0 * MissionConstants::kDeg2Rad);
+    stored_angle_y_rad = std::clamp(corrected_angle, -MissionConstants::kMaximumTvcAngle, MissionConstants::kMaximumTvcAngle);
     last_command_time = std::chrono::steady_clock::now();
     has_recent_command = true;
 }

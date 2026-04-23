@@ -336,7 +336,7 @@ Mode::Phase Mode::UpdateIdle(RF::Command &command, Navigation &navigation, Contr
     return Mode::Idle;
 }
 
-Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, Igniter &igniter, float currentTime)
+Mode::Phase Mode::UpdateLaunch(RF::Command &command, Navigation &navigation, Controller &controller, Igniter &igniter, float currentTime)
 {
     // Manage ignition and controller start on first call, then delegate launch behavior
     static double startTime = currentTime;
@@ -358,7 +358,7 @@ Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, I
         igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAUNCH);
     }
 
-    bool handoffToSafe = this->launchManager.Step(navigation, controller, igniter, currentTime);
+    bool handoffToSafe = this->launchManager.Step(command, navigation, controller, igniter, currentTime);
     if (handoffToSafe)
     {
         return Mode::Safe;
@@ -640,7 +640,7 @@ bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igni
         break;
     case Launch:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
-        this->eCurrentMode = UpdateLaunch(navigation, controller, igniter, currentTime);
+        this->eCurrentMode = UpdateLaunch(command, navigation, controller, igniter, currentTime);
         break;
     case HotfireIdle:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);

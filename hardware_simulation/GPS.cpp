@@ -2,7 +2,11 @@
 #include "GPS.hpp"
 #include "UDPClient.hpp"
 
-GPS::GPS() : update_count(0) {}
+GPS::GPS() : update_count(0)
+{
+    useGPSPosition = true;
+    useGPSVelocity = true;
+}
 
 GPS::~GPS() {}
 

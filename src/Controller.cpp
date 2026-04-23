@@ -20,13 +20,17 @@ void Controller::Start(double current_time)
     translation_error_integral = Eigen::Vector2d::Zero();
     setpoint_angles = Eigen::Vector2d::Zero();
     setpoint_angles_prev = Eigen::Vector2d::Zero();
+    current_rcs_command_N = 0.0;
+    current_attitude_setpoint_error = Eigen::Vector3d::Zero();
+    current_guidance_altitude_error = 0.0;
+    current_guidance_translation_error = Eigen::Vector2d::Zero();
 }
 
 void Controller::UpdateTestTVC(double testTime)
 {
 
-    double angleA = 0 * sin(testTime) * MissionConstants::kMaximumTvcAngle; // Rad
-    double angleB = 0 * cos(testTime) * MissionConstants::kMaximumTvcAngle; // Rad
+    double angleA = sin(testTime) * MissionConstants::kMaximumTvcAngle; // Rad
+    double angleB = cos(testTime) * MissionConstants::kMaximumTvcAngle; // Rad
 
     input(0) = angleA;
     input(1) = angleB;
@@ -40,10 +44,52 @@ void Controller::UpdateTestTVC(double testTime)
 void Controller::UpdateLaunch(Navigation &navigation, double current_time)
 {
     // Use the TVC to stabilize the rocket for landing
+    const Eigen::Matrix<double, 16, 1> stateEstimate = navigation.GetNavigation();
+    const Eigen::Quaterniond q(
+        stateEstimate(6), // w
+        stateEstimate(7), // x
+        stateEstimate(8), // y
+        stateEstimate(9)  // z
+    );
+    const Eigen::Vector3d omega_b = navigation.GetAngularVelocity();
+    RcsControl(q, omega_b);
 
     TranslationControl(navigation);
     AttitudeControl(navigation);
     HeightControl(navigation);
+}
+
+//TODO: This is untested, please check with SIL first
+void Controller::RcsControl(const Eigen::Quaterniond &q, const Eigen::Vector3d &omega_b)
+{
+    const Eigen::Quaterniond qNormalized = q.normalized();
+    const double yaw = std::atan2(
+        2.0 * (qNormalized.w() * qNormalized.z() + qNormalized.x() * qNormalized.y()),
+        1.0 - 2.0 * (qNormalized.y() * qNormalized.y() + qNormalized.z() * qNormalized.z()));
+    const double yaw_dot = omega_b(2);
+
+    int pos = 0;
+    if (yaw > MissionConstants::kControlRcsDeadbandRad)
+    {
+        pos = -1;
+    }
+    else if (yaw < -MissionConstants::kControlRcsDeadbandRad)
+    {
+        pos = 1;
+    }
+
+    int deriv = 0;
+    if (yaw_dot > MissionConstants::kControlRcsDerivativeDeadbandRadPerSec)
+    {
+        deriv = -1;
+    }
+    else if (yaw_dot < -MissionConstants::kControlRcsDerivativeDeadbandRadPerSec)
+    {
+        deriv = 1;
+    }
+
+    //TODO: Implement the hardware interface to actually fire the RCS thrusters
+    current_rcs_command_N = static_cast<double>(pos + deriv) * MissionConstants::kControlRcsThrustCommand;
 }
 
 void Controller::AttitudeControl(Navigation &navigation)
@@ -63,6 +109,9 @@ void Controller::AttitudeControl(Navigation &navigation)
 
     Eigen::Vector2d theta = 2 * Eigen::Vector2d(q_error.x(), q_error.y());
     Eigen::Vector2d theta_error = setpoint_angles - theta;
+    current_attitude_setpoint_error(0) = theta_error(0);
+    current_attitude_setpoint_error(1) = theta_error(1);
+    current_attitude_setpoint_error(2) = 0.0;
     error_integral = error_integral + theta_error * loopTime;
 
     // Approximate the derivative of theta_error using finite differences
@@ -84,6 +133,7 @@ void Controller::AttitudeControl(Navigation &navigation)
 // shut down rocket functions
 void Controller::UpdateSafe()
 {
+    current_rcs_command_N = 0.0;
     tvc.Stop();
 }
 
@@ -128,6 +178,9 @@ Eigen::Matrix<double, 16, 1> x = navigation.GetNavigation();
     double e_vx = refVelocityX - vx;
     double e_vy = refVelocityY - vy;
 
+    current_guidance_translation_error(0) = e_x;
+    current_guidance_translation_error(1) = e_y;
+
     // Integral update
     translation_error_integral(0) += e_x * loopTime;
     translation_error_integral(1) += e_y * loopTime;
@@ -167,6 +220,8 @@ void Controller::HeightControl(Navigation& navigation)
     double e_z    = z_ref - z;
     double e_zdot = zdot_ref - zdot;
 
+    current_guidance_altitude_error = e_z;
+
     // Integral update
     height_error_integral += e_z * loopTime;
 
@@ -201,6 +256,12 @@ void Controller::Center()
     tvc.SetTVCX(input(0));
     tvc.SetTVCY(input(1));
     tvc.UpdateActuatorPositions();
+}
+
+void Controller::ZeroTranslationalSetpointAngles()
+{
+    setpoint_angles = Eigen::Vector2d::Zero();
+    setpoint_angles_prev = Eigen::Vector2d::Zero();
 }
 
 void Controller::ImportHeightParameters(std::string file_name)
@@ -322,4 +383,24 @@ Eigen::Matrix<double, 2, 1> Controller::GetCurrentTVCCommand()
 double Controller::GetCurrentThrustCommand()
 {
     return current_thrust_command_N;
+}
+
+double Controller::GetCurrentRcsCommand()
+{
+    return current_rcs_command_N;
+}
+
+Eigen::Vector3d Controller::GetCurrentAttitudeSetpointError()
+{
+    return current_attitude_setpoint_error;
+}
+
+double Controller::GetCurrentGuidanceAltitudeError()
+{
+    return current_guidance_altitude_error;
+}
+
+Eigen::Vector2d Controller::GetCurrentGuidanceTranslationError()
+{
+    return current_guidance_translation_error;
 }

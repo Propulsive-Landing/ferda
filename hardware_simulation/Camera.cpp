@@ -2,7 +2,10 @@
 #include "Camera.hpp"
 #include "UDPClient.hpp"
 
-Camera::Camera() {}
+Camera::Camera()
+{
+    setUseCamera(true);
+}
 
 void Camera::RequestCapture()
 {

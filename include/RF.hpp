@@ -25,6 +25,8 @@ public:
     {
         None,
         ABORT,
+        ABORT_PAD,
+        ABORT_GROUND,
         TestTVC,
         ChirpTVC,
         GoIdle,
@@ -85,6 +87,10 @@ public:
         RF::Command ParsedCommand = RF::Command::None;
         if (input_line == "ABORT")
             ParsedCommand = RF::Command::ABORT;
+        else if (input_line == "ABORT_PAD")
+            ParsedCommand = RF::Command::ABORT_PAD;
+        else if (input_line == "ABORT_GROUND")
+            ParsedCommand = RF::Command::ABORT_GROUND;
         else if (input_line == "TestTVC")
             ParsedCommand = RF::Command::TestTVC;
         else if (input_line == "ChirpTVC")

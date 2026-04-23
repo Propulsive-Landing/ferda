@@ -29,10 +29,28 @@ void LaunchManager::Reset()
     eDescendPhase = ChangeAltitudePhase::Accelerate;
 }
 
-bool LaunchManager::Step(Navigation &navigation, Controller &controller, Igniter &igniter, double currentTime)
+bool LaunchManager::Step(RF::Command command, Navigation &navigation, Controller &controller, Igniter &igniter, double currentTime)
 {
     // keep navigation updated
     navigation.UpdateNavigation();
+
+    if (command == RF::Command::ABORT_PAD && eLaunchPhase != LaunchPhase::Descend)
+    {
+        Telemetry::GetInstance().Log("ABORT_PAD received, transitioning immediately to DESCEND");
+        eLaunchPhase = LaunchPhase::Descend;
+        eDescendPhase = ChangeAltitudePhase::Accelerate;
+        launchPhaseStartTime = currentTime;
+    }
+
+    if (command == RF::Command::ABORT_GROUND && eLaunchPhase != LaunchPhase::Descend)
+    {
+        Telemetry::GetInstance().Log("ABORT_GROUND received, transitioning immediately to DESCEND and zeroing translational setpoint angles");
+        controller.ZeroTranslationalSetpointAngles();
+        eLaunchPhase = LaunchPhase::Descend;
+        eDescendPhase = ChangeAltitudePhase::Accelerate;
+        launchPhaseStartTime = currentTime;
+    }
+
     Eigen::Matrix<double, 16, 1> testState = navigation.GetNavigation();
     double currentAltitude = testState(2);
     double currentVelocityZ = testState(5);

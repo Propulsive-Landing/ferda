@@ -3,6 +3,7 @@
 #include "Navigation.hpp"
 #include "Controller.hpp"
 #include "Igniter.hpp"
+#include "RF.hpp"
 
 class LaunchManager
 {
@@ -14,7 +15,7 @@ public:
     LaunchManager();
 
     // Step the launch manager. Returns true when the manager requests handing off to top-level Land mode.
-    bool Step(Navigation &navigation, Controller &controller, Igniter &igniter, double currentTime);
+    bool Step(RF::Command command, Navigation &navigation, Controller &controller, Igniter &igniter, double currentTime);
 
     // configuration
     void SetHoverTargetAltitude(double alt) { hoverTargetAltitude = alt; }
