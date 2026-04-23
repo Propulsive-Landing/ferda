@@ -106,6 +106,11 @@ namespace MissionConstants
     const double kThrottleToMassFlowScale = -5.6e-4; // kg/(N*s)
     const Eigen::Vector3d kEngineThrustLocationBodyM = Eigen::Vector3d(0.0, 0.0, -1.13);
 
+    // RCS yaw controller constants
+    const double kControlRcsThrustCommand = 1.0;
+    const double kControlRcsDeadbandRad = 2.0 * kDeg2Rad;
+    const double kControlRcsDerivativeDeadbandRadPerSec = 2.0 * kDeg2Rad;
+
     // Shared PCA9685 constants
     inline const std::string PCA9685_I2C_ADDR = "/dev/i2c-1";
 

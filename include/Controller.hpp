@@ -28,6 +28,11 @@ private:
     Eigen::Vector2d setpoint_angles = Eigen::Vector2d::Zero(); // [roll, pitch] from translation controller
     Eigen::Vector2d setpoint_angles_prev = Eigen::Vector2d::Zero(); // Previous setpoint angles for derivative term
     double current_thrust_command_N = 0.0;
+    double current_rcs_command_N = 0.0;
+    Eigen::Vector3d current_attitude_setpoint_error = Eigen::Vector3d::Zero();
+    double current_guidance_altitude_error = 0.0;
+    Eigen::Vector2d current_guidance_translation_error = Eigen::Vector2d::Zero();
+    void RcsControl(const Eigen::Quaterniond &q, const Eigen::Vector3d &omega_b);
 
 public:
     TVC &tvc;
@@ -53,9 +58,14 @@ public:
     Eigen::Vector2d TvcMath(Eigen::Vector2d input);
     void Start(double current_time);
     void Center();
+    void ZeroTranslationalSetpointAngles();
     void ImportAngleParameters(std::string file_name);
     void ImportHeightParameters(std::string file_name);
     void ImportTranslationParameters(std::string file_name);
     Eigen::Matrix<double, 2, 1> GetCurrentTVCCommand();
     double GetCurrentThrustCommand();
+    double GetCurrentRcsCommand();
+    Eigen::Vector3d GetCurrentAttitudeSetpointError();
+    double GetCurrentGuidanceAltitudeError();
+    Eigen::Vector2d GetCurrentGuidanceTranslationError();
 };

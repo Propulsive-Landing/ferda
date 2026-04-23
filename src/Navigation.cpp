@@ -376,19 +376,22 @@ void Navigation::UpdateNavigation()
 
     // Update magnetometer on fixed cadence
     ++magnetometer_update_counter;
-    if (magnetometer_update_counter >= kMagnetometerUpdateCadence && false)
+    if (magnetometer_update_counter >= kMagnetometerUpdateCadence)
     {
-        magneticField = magnetometer.GetMagneticField();
-        Eigen::Vector3d magneticFieldVector(std::get<0>(magneticField), std::get<1>(magneticField), std::get<2>(magneticField));
-        magnetometerUpdate(magneticFieldVector, R);
+        if (magnetometer.GetUseMagnetometer())
+        {
+            magneticField = magnetometer.GetMagneticField();
+            Eigen::Vector3d magneticFieldVector(std::get<0>(magneticField), std::get<1>(magneticField), std::get<2>(magneticField));
+            magnetometerUpdate(magneticFieldVector, R);
+        }
         magnetometer_update_counter = 0; // Reset counter
     }
+    
     ++gps_update_counter;
     if (gps_update_counter == kGPSUpdateCadence)
     {
         if (gps.GPSUsed())
         {
-
             gps.Update();
 
             if (gps.GPSAvailable())

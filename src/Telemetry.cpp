@@ -9,6 +9,8 @@
 #include <tuple>
 #include <cstdint>
 
+#include <Eigen/Geometry>
+
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
@@ -19,6 +21,13 @@ using json = nlohmann::json;
 
 namespace
 {
+    Eigen::Vector3d QuaternionToEulerXyzRad(const Eigen::Quaterniond &q)
+    {
+        const Eigen::Quaterniond qNormalized = q.normalized();
+        // Returns roll, pitch, yaw in radians for XYZ sequence.
+        return qNormalized.toRotationMatrix().eulerAngles(0, 1, 2);
+    }
+
     void WriteElapsedSecondsPrefix(
         std::ofstream &stream,
         const std::chrono::steady_clock::time_point &startTime)
@@ -146,53 +155,67 @@ void Telemetry::Log(std::string message)
 void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
 {
     // TODO: MAKE SURE THIS FOLLOWS WHAT GROUND CONTROL EXPECTS
+    const Eigen::Matrix<double, 16, 1> navState = navigation.GetNavigation();
+    const Eigen::Vector3d angularVelocity = navigation.GetAngularVelocity();
+    const Eigen::Quaterniond q(
+        navState(6), // w
+        navState(7), // x
+        navState(8), // y
+        navState(9)  // z
+    );
+    const Eigen::Vector3d eulerXyz = QuaternionToEulerXyzRad(q);
+    const Eigen::Vector2d actuatorSetpointError = controller.tvc.GetActuatorSetpointErrorInches();
+    const Eigen::Vector3d attitudeSetpointError = controller.GetCurrentAttitudeSetpointError();
+    const double guidanceAltitudeError = controller.GetCurrentGuidanceAltitudeError();
+    const Eigen::Vector2d guidanceTranslationError = controller.GetCurrentGuidanceTranslationError();
+
     json json_msg;
     json_msg["data_type"] = "telem";
     json_msg["type"] = "GNC";
     json_msg["payload"] = {
         // Position
-        navigation.GetNavigation()(0),
-        navigation.GetNavigation()(1),
-        navigation.GetNavigation()(2),
+        navState(0),
+        navState(1),
+        navState(2),
         // Velocity
-        navigation.GetNavigation()(3),
-        navigation.GetNavigation()(4),
-        navigation.GetNavigation()(5),
+        navState(3),
+        navState(4),
+        navState(5),
         // Eulers
-        0,
-        0,
-        0,
+        eulerXyz(0),
+        eulerXyz(1),
+        eulerXyz(2),
         // Omegas
-        0,
-        0,
-        0,
+        angularVelocity(0),
+        angularVelocity(1),
+        angularVelocity(2),
         // Accel Bias
-        navigation.GetNavigation()(10),
-        navigation.GetNavigation()(11),
-        navigation.GetNavigation()(12),
+        navState(10),
+        navState(11),
+        navState(12),
         // Omega Bias
-        navigation.GetNavigation()(13),
-        navigation.GetNavigation()(14),
-        navigation.GetNavigation()(15),
+        navState(13),
+        navState(14),
+        navState(15),
         // Tvc commands
         controller.GetCurrentTVCCommand()(0),
         controller.GetCurrentTVCCommand()(1),
         // Rcs command
-        0,
+        controller.GetCurrentRcsCommand(),
         // Thrust command,
         controller.GetCurrentThrustCommand(),
         // Actuator setpoint errors
-        0,
-        0,
+        actuatorSetpointError(0),
+        actuatorSetpointError(1),
         // Attitude Setpoint errors
-        0,
-        0,
-        0,
+        attitudeSetpointError(0),
+        attitudeSetpointError(1),
+        attitudeSetpointError(2),
         // Guidance altitude error
-        0,
+        guidanceAltitudeError,
         // Guidiance translation errors
-        0,
-        0
+        guidanceTranslationError(0),
+        guidanceTranslationError(1)
 
     };
 

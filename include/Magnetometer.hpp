@@ -12,5 +12,5 @@ public:
     void setUseMagnometer(const bool &state) { useMagnometer = state; }
 
 private:
-    bool useMagnometer;
+    bool useMagnometer = false;
 };

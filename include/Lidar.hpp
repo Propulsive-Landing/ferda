@@ -11,5 +11,5 @@ public:
     void SetUseLidar(const bool &state) { useLidar = state; }
 
 private:
-    bool useLidar;
+    bool useLidar = false;
 };
