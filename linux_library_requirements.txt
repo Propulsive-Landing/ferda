@@ -1,0 +1,8 @@
+build-essential
+cmake
+pybind11-dev
+python3-dev
+libi2c-dev
+libgtest-dev
+libeigen3-dev
+libopencv-dev

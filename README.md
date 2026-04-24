@@ -13,11 +13,13 @@ This codebase now supports both solid and liquid propulsion systems. For detaile
 - **[Liquid Propulsion Port Documentation](LIQUID_PROPULSION_PORT.md)** - Comprehensive guide covering architecture, implementation, and remaining work
 - **[Liquid Propulsion Quick Start](LIQUID_PROPULSION_QUICK_START.md)** - Quick reference for operators
 
-**Note:** Liquid propulsion hardware requires ADC implementation and pin configuration before use. See the documentation for details.
 
 ## Table of Contents
 
 1. [How to Run](#how-to-run)
+   - [How to Run On Linux (Raspberry Pi)](#how-to-run-on-linux-raspberry-pi)
+   - [How to Run On Mac](#how-to-run-Mac)
+   - [How to Run On Windows](#how-to-run-Windows)
 2. [Building the Source Code](#building-the-source-code)
 3. [Hardware Configuration](#hardware-configuration)
    - [Serial Port Setup](#serial-port-setup)
@@ -25,17 +27,34 @@ This codebase now supports both solid and liquid propulsion systems. For detaile
 4. [Software-in-the-Loop Testing](#software-in-the-loop-testing)
    - [SIL Testing Using Windows + WSL2](#sil-testing-using-windows--wsl2)
    - [SIL Testing Using Windows](#sil-testing-using-windows)
-5. [Systemd Service Setup](#systemd-service-setup)
+5. [Design](#design)
+   - [Flow](#flow)
+   - [Architectire](#architecture)
 
-## How to Run
+# How to Run 
+
+### How to Run on Linux (Raspberry Pi)
 
 1. Clone this repo.
 2. Install the CMake Tools extension on VS Code.
-3. Run `sudo apt install`
-4. Run `sudo apt update`
-5. Run `sudo apt install libeigen3-dev`.
-6. Build the repo (ensure you're in either debug or release mode depending on your need).
-7. Run the executable that gets created in the `build/` folder.
+3. Run `sudo apt update`
+4. Run `xargs -a linux_library_requirements.txt sudo apt-get install -y`
+5. Run `mkdir ThirdPartyLibraries` and then `cd ThirdPartyLibraries`
+6. Clone WiringPi library with `git clone https://github.com/WiringPi/WiringPi.git` 
+7. Run `cd WiringPi/wiringPi`
+8. Run `make`
+9. Run `sudo make install`
+10. Go back to `ThirdPartyLibraries` directory
+11. Clone PCA9685 library with `git clone https://github.com/barulicm/PiPCA9685.git`
+12. Run `cd PiPCA9685`
+13. Run `sudo cmake --workflow --preset install`
+14. Build the repo (ensure you're in either debug, simulation, or release mode depending on your need).
+15. Create a logs folder inside repo directory with `mkdir logs`
+15. Run the executable that gets created in the `build/` folder. (NOTE: If working with GPS, build gps_setup.sh)
+
+### How to Run on Mac
+
+### How to Run on Windows
 
 ## Building the Source Code
 
@@ -90,9 +109,9 @@ The Xbee module is a radio module which is used by our flight computer to send a
 1. Xbee is currently (9/28/2024) configured to act as a terminal that only outputs values when there is a newline character.
 2. Use `stty` to configure the device:
    ```bash
-   stty -F /dev/ttyS0
+   stty -F /dev/ttyUSB0
    ```
-   (`/dev/ttyS0` may change per device).
+   (`/dev/ttyUSB0` may change per device).
 3. Configure settings:
    ```bash
    stty -F /dev/ttyS0 -settingToDisable settingToEnable
@@ -106,60 +125,7 @@ The Xbee module is a radio module which is used by our flight computer to send a
 
 ### Startup Script
 
-Our Custom PCB communicates with various sensors through different protocols which generate multiple device files which may change. To account for the device files changing, we have a script which creates symbolic links (shortcuts) to each of the devices and each link is in a predictable location which is then referenced from the flight software. Here's how to add that script:
-
-1. Create a shell script to perform device detection and symbolic link creation:
-   `/home/pi/fsw_startup.sh`
-
-   ```bash
-   #!/bin/bash
-
-   # Define the home directory for symbolic links
-   HOME_DIR="/home/pi"
-   LOG_FILE="/home/pi/fsw_startup.log"
-
-   # Log function to append messages to the log file
-   log() {
-       echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
-   }
-
-   # Define the symbolic links
-   ACCEL_LINK="${HOME_DIR}/accel_device"
-   GYROSCOPE_LINK="${HOME_DIR}/gyroscope_device"
-
-   # Remove old links if they exist
-   rm -f "$ACCEL_LINK" "$GYROSCOPE_LINK"
-
-   log "Starting device linking script..."
-
-   sleep 0.5
-
-   # Iterate over the IIO device directories
-   for device in /sys/bus/iio/devices/iio:device*; do
-       if [[ -d "$device" ]]; then
-           if [[ -f "$device/in_accel_scale_available" ]]; then
-               ln -s "$device" "$ACCEL_LINK"
-               echo "IMU device found: $device"
-               log "IMU device found and linked: $device"
-           elif [[ -f "$device/in_anglvel_scale" ]]; then
-               ln -s "$device" "$GYROSCOPE_LINK"
-               echo "Gyroscope device found: $device"
-               log "Gyro device found and linked: $device"
-           fi
-       fi
-   done
-
-   sleep 2.0
-
-   # Uncomment if you want fsw to start automatically on next boot
-   # cd /home/pi/ferda/build
-   # /home/pi/ferda/build/Ferda
-   ```
-
-2. Make the script executable:
-   ```bash
-   sudo chmod +x fsw_startup.sh
-   ```
+## TODO (TALK ABOUT GPS AND XBEE)
 
 ## Camera Calibration
 
@@ -385,33 +351,36 @@ Notes:
   
 The flight software should be connected with the Simulink simulation, sending actuator commands and receiving simulated sensor data.
 
-## Systemd Service Setup
+# Design
 
-For convenience, it is preferable to have the startup script run automatically. We can accomplish this by using systemd as demonstrated below.
+## Flow
+1. Look for command through RF.cpp
+2. Change mode based on command 
 
-1. Create the service file to run the startup script at boot:
-   `/etc/systemd/system/fsw_startup.service`
+## Architecture
 
-   ```ini
-   [Unit]
-   Description=Link IIO Devices
-   After=local-fs.target
+We use the **State machine pattern** where we have defined several modes/states and one while loop in main
 
-   [Service]
-   Type=oneshot
-   ExecStart=/home/pi/fsw_startup.sh
-   RemainAfterExit=yes
-
-   [Install]
-   WantedBy=multi-user.target
-   ```
-
-2. Enable the service:
-   ```bash
-   sudo systemctl enable fsw_startup.service
-   ```
-
-3. Start the service (optional):
-   ```bash
-   sudo systemctl start fsw_startup.service
-   ```
+```
+enum Phase
+    {
+        Calibration,
+        ActuatorCalibration,
+        TestTVC,
+        ChirpTVC,
+        Idle,
+        Launch,
+        Land,
+        Terminate,
+        Safe,
+        HotfireIdle,
+        ASITest,
+        WaterFlow,
+        ThreeSecondHotfire
+    };
+```
+```
+while (mode.Update(navigation, controller, gps, igniter, imu, magnetometer, valveControl,  sparkPlug, pressureTransducer, loadCell, camera))
+    {
+    }
+```
