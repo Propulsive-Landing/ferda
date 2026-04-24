@@ -99,8 +99,7 @@ namespace MissionConstants
     const double kGuidanceAccelerationMargin = 0.75; // Use fraction of max acceleration/deceleration for safety margin
 
     // Throttle control constants, TODO: USER EDIT PRE-FLIGHT
-    const double kMaximumTvcAngle = 7.5 * kDeg2Rad;
-    const double kMaximumTvcAngleDeg = 7.5;
+    const double kMaximumTvcAngle = 10.0 * kDeg2Rad;
     const double kEngineMinThrust = 461.0;           // N
     const double kEngineMaxThrust = 1107;            // N
     const double kThrottleToMassFlowScale = -5.6e-4; // kg/(N*s)
