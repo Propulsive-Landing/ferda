@@ -179,6 +179,7 @@ Mode::Phase Mode::UpdateCalibration(RF::Command &command, Navigation &navigation
         exit(0);
     }
 
+    std::cout << "Calibration Mode" << std::endl;
     controller.tvc.UpdateActuatorPositions();
     return Mode::Calibration;
 }
