@@ -22,8 +22,8 @@ This codebase now supports both solid and liquid propulsion systems. For detaile
    - [How to Run On Windows](#how-to-run-Windows)
 2. [Building the Source Code](#building-the-source-code)
 3. [Hardware Configuration](#hardware-configuration)
-   - [Serial Port Setup](#serial-port-setup)
-   - [Startup Script](#startup-script)
+   - [Xbee Port Setup](#xbee-port-setup)
+   - [GPS Port Script](#gps-port-setup)
 4. [Software-in-the-Loop Testing](#software-in-the-loop-testing)
    - [SIL Testing Using Windows + WSL2](#sil-testing-using-windows--wsl2)
    - [SIL Testing Using Windows](#sil-testing-using-windows)
@@ -102,11 +102,14 @@ This codebase now supports both solid and liquid propulsion systems. For detaile
 
 ## Hardware Configuration
 
-### Serial Port Setup
+### Xbee Port Setup
 
 The Xbee module is a radio module which is used by our flight computer to send and receive data from the ground control, such as when we want to instruct the rocket to launch, or when we want to tell it to abort. To use the Xbee from our Raspberry Pi, we must configure it properly, here's how:
 
-1. Xbee is currently (9/28/2024) configured to act as a terminal that only outputs values when there is a newline character.
+1. Xbee is currently (4/24/2026) configured to act as a terminal that only outputs values when there is a newline character.
+2. In hardware/RF.cpp, we configure serial port settings to most importantly have it be baud 38400, but make sure that the Xbees are configured properly using XCTU software
+3. For debugging, use `stty -F /dev/{RFPort} -a` to see all serial line settings because
+   most of the time, the baud rate is not set to what the other XBee is or echo is not turned off
 2. Use `stty` to configure the device:
    ```bash
    stty -F /dev/ttyUSB0
@@ -119,13 +122,28 @@ The Xbee module is a radio module which is used by our flight computer to send a
    Disable settings using a minus sign and enable settings without it.
 4. The device configuration should resemble:
    ```
-   speed 9600 baud; line = 0;
+   speed 3800 baud; line = 0;
    -echo
    ```
 
-### Startup Script
+### GPS Port Setup
+We use Adafruit's GPS module with a USBC port to help with our navigation, but first we need
+to configure the GPS to specific settings. Every GPS receiver uses NMEA sentences which are
+ASCII text strings that display information such as position, speed, and time. The ones that we care about are:
+   - RMC (Recommended Minimum Specific GNSS Data)
+   - GGA (Global Positioning System Fix Data)
+To write settings, we use the talker ID `PMTK`. In every PMTK sentence we write, we need to compute the checksum which is the xors of every bit and we need o end with `\r\n`
+There are steps to configure which are taken care of in `gps_setup.sh`
+1. In `gps_setup.sh`, we call `gps_startup.py` to make sure the GPS has fix because in my testing, the settings only applied if there was a fix and there are nice libraries dealing witb Adafruit GPS in python 
+2. Then we configure the baud rate to 9600 and disable echo
+3. Then we use printf to write the setting, `$PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n'` which enables which sentences we want 
+4. Then we use printf to write the setting, `$PMTK251,38400*27\r\n'` which changes the baud rate to 38400
+5. Then we need to change the baud rate for our serial port so we do `stty -F "$PORT" 38400 raw -echo -ixon`
+6. Lastly, we change the update rate to be 10HZ using `'$PMTK220,100*2F\r\n'`
 
-## TODO (TALK ABOUT GPS AND XBEE)
+Documentation on PMTK command packets can be at `https://cdn-shop.adafruit.com/datasheets/PMTK_A11.pdf` 
+Documentation on the NMEA sentences can be found at `https://cdn-shop.adafruit.com/product-files/746/CD+PA1616S+Datasheet.v03.pdf`
+
 
 ## Camera Calibration
 

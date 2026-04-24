@@ -41,6 +41,14 @@ void ValveControl::OpenValve(ValveType valve)
         servo_driver->set_pwm(MissionConstants::kMainNitrousServoPin, 0, ticks);
         mainNitrousOpen = true;
         break;
+    case NitrousFill:
+        Telemetry::GetInstance().Log("Opening Nitrous Fill Valve");
+
+        // NOTE: We do not handle if servo_driver is a null pointer meaninf the PCA9685 is not connected
+        servo_driver->set_pwm(MissionConstants::kNitrousFillServoPin, 0, ticks);
+        nitrousFillOpen = true;
+        break;
+
     case ASIEthanol:
         Telemetry::GetInstance().Log("Opening ASI Ethanol Valve");
         digitalWrite(MissionConstants::kASIEthanolPin, 0); // LOW = OPEN (normally-closed solenoid)
@@ -93,6 +101,13 @@ void ValveControl::CloseValve(ValveType valve)
         servo_driver->set_pwm(MissionConstants::kMainNitrousServoPin, 0, ticks);
         mainNitrousOpen = false;
         break;
+    case NitrousFill:
+        Telemetry::GetInstance().Log("Closing Nitrous Fill Valve");
+
+        // NOTE: We do not handle if servo_driver is a null pointer meaninf the PCA9685 is not connected
+        servo_driver->set_pwm(MissionConstants::kNitrousFillServoPin, 0, ticks);
+        nitrousFillOpen = false;
+        break;
     case ASIEthanol:
         Telemetry::GetInstance().Log("Closing Main Ethanol Valve");
         digitalWrite(MissionConstants::kASIEthanolPin, 1); // HIGH = CLOSED
@@ -123,6 +138,8 @@ bool ValveControl::IsValveOpen(ValveType valve) const
         return mainEthanolOpen;
     case MainNitrous:
         return mainNitrousOpen;
+    case NitrousFill:
+        return nitrousFillOpen;
     case ASIEthanol:
         return asiEthanolOpen;
     case ASIOxygen:

@@ -53,6 +53,8 @@ public:
         ValveMainEthanolClose,
         ValveMainNitrousOpen,
         ValveMainNitrousClose,
+        ValveNitrousFillOpen,
+        ValveNitrousFillClose,
         ValveASIEthanolOpen,
         ValveASIEthanolClose,
         ValveASIOxygenOpen,
@@ -159,6 +161,10 @@ public:
             ParsedCommand = RF::Command::ValveMainNitrousOpen;
         else if (input_line == "VALVE: main nitrous close")
             ParsedCommand = RF::Command::ValveMainNitrousClose;
+        else if (input_line == "VALVE: nitrous fill open")
+            ParsedCommand = RF::Command::ValveNitrousFillOpen;
+        else if (input_line == "VALVE: nitrous fill close")
+            ParsedCommand = RF::Command::ValveNitrousFillClose;
         else if (input_line == "VALVE: ASI ethanol open")
             ParsedCommand = RF::Command::ValveASIEthanolOpen;
         else if (input_line == "VALVE: ASI ethanol close")

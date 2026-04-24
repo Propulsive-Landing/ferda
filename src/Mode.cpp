@@ -439,6 +439,14 @@ Mode::Phase Mode::UpdateHotfireIdle(RF::Command &command, Navigation &navigation
     {
         valveControl.CloseValve(ValveControl::MainNitrous);
     }
+    else if (command == RF::Command::ValveNitrousFillOpen)
+    {
+        valveControl.OpenValve(ValveControl::NitrousFill);
+    }
+    else if (command == RF::Command::ValveNitrousFillClose)
+    {
+        valveControl.CloseValve(ValveControl::NitrousFill);
+    }
     else if (command == RF::Command::ValveASIEthanolOpen)
     {
         valveControl.OpenValve(ValveControl::ASIEthanol);

@@ -11,6 +11,7 @@ public:
         Purge,
         MainEthanol,
         MainNitrous,
+        NitrousFill,
         ASIEthanol,
         ASIOxygen,
         NitrogenBleed
@@ -33,6 +34,7 @@ private:
     bool purgeOpen = false;
     bool mainEthanolOpen = false;
     bool mainNitrousOpen = false;
+    bool nitrousFillOpen = false;
     bool asiEthanolOpen = false;
     bool asiOxygenOpen = false;
     bool nitrogenBleedOpen = false;

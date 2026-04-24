@@ -182,6 +182,7 @@ namespace MissionConstants
     const int kPurgeServoPin = 0;        // servo driver row [0-15]
     const int kMainEthanolServoPin = 11; // servo driver row [0-15]
     const int kMainNitrousServoPin = 0;  // servo driver row [0-15]
+    const int kNitrousFillServoPin = 5;  // servo driver row [0-15]
 
     // Valve Solenoid Pins (GPIO)
     const int kASIEthanolPin = 0;

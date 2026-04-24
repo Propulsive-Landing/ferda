@@ -21,6 +21,10 @@ void ValveControl::OpenValve(ValveType valve)
         std::cout << "Main Nitrous valve OPENED" << std::endl;
         mainNitrousOpen = true;
         break;
+    case NitrousFill:
+        std::cout << "Nitrous fill valve OPENED" << std::endl;
+        nitrousFillOpen = true;
+        break;
     case ASIEthanol:
         std::cout << "ASI Ethanol valve OPENED" << std::endl;
         asiEthanolOpen = true;
@@ -56,6 +60,10 @@ void ValveControl::CloseValve(ValveType valve)
         std::cout << "Main Nitrous valve CLOSED" << std::endl;
         mainNitrousOpen = false;
         break;
+    case NitrousFill:
+        std::cout << "Nitrous fill valve CLOSED" << std::endl;
+        nitrousFillOpen = false;
+        break;
     case ASIEthanol:
         std::cout << "ASI Ethanol valve CLOSED" << std::endl;
         asiEthanolOpen = false;
@@ -83,6 +91,8 @@ bool ValveControl::IsValveOpen(ValveType valve) const
         return mainEthanolOpen;
     case MainNitrous:
         return mainNitrousOpen;
+    case NitrousFill:
+        return nitrousFillOpen;
     case ASIEthanol:
         return asiEthanolOpen;
     case ASIOxygen:
@@ -93,4 +103,3 @@ bool ValveControl::IsValveOpen(ValveType valve) const
         return false;
     }
 }
-
