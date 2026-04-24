@@ -12,7 +12,7 @@ echo "GPS has fix"
 # Configure terminal settings for both ports to be raw
 sudo stty -F "$GPSPORT" 9600 raw -echo -ixon
 sleep 3  # let GPS boot
-sudo stty -F "$RFPORT" 9600 raw -echo -ixon
+sudo stty -F "$RFPORT" 38400 raw -echo -ixon
 
 # Configure GPS Settings
 printf '$PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n' > "$PORT"

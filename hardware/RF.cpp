@@ -41,8 +41,38 @@ RF::RF()
     }
     else
     {
+        // Non-blocking
         int flags = fcntl(SerialFd, F_GETFL, 0);
         fcntl(SerialFd, F_SETFL, flags | O_NONBLOCK);
+
+        struct termios tty;
+        tcgetattr(SerialFd, &tty);
+
+        // Set baud rate
+        cfsetispeed(&tty, B38400);
+        cfsetospeed(&tty, B38400);
+
+        // 8N1
+        tty.c_cflag &= ~PARENB;
+        tty.c_cflag &= ~CSTOPB;
+        tty.c_cflag &= ~CSIZE;
+        tty.c_cflag |= CS8;
+        tty.c_cflag |= (CLOCAL | CREAD);
+
+        // Disable echo + canonical mode
+        tty.c_lflag &= ~(ECHO | ICANON | ECHOE | ISIG);
+
+        // Disable flow control
+        tty.c_iflag &= ~(IXON | IXOFF | IXANY);
+
+        // disable CR/LF translation
+        tty.c_iflag &= ~(ICRNL | INLCR | IGNCR);
+
+        // Raw output
+        tty.c_oflag &= ~OPOST;
+
+        // Apply
+        tcsetattr(SerialFd, TCSANOW, &tty);
     }
 }
 
@@ -63,7 +93,7 @@ void RF::SendString(std::string text)
 
     if (!terminal_switch)
     {
-        const char* data = text.c_str();
+        const char *data = text.c_str();
         size_t totalBytes = text.size();
         size_t bytesWritten = 0;
 
@@ -72,8 +102,7 @@ void RF::SendString(std::string text)
             ssize_t bytes = write(
                 SerialFd,
                 data + bytesWritten,
-                totalBytes - bytesWritten
-            );
+                totalBytes - bytesWritten);
 
             if (bytes > 0)
             {
@@ -96,12 +125,12 @@ void RF::SendString(std::string text)
                 }
             }
         }
-
     }
 
     // write time to file
     this->RFSent << std::put_time(std::localtime(&in_time_t), "%c") << ",";
-    this->RFSent << text << "\n" << std::flush;
+    this->RFSent << text << "\n"
+                 << std::flush;
 }
 
 RF::Command RF::GetCommand() // Will check for commands and return the received command. Non-blocking.
@@ -126,7 +155,7 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
 
                 std::cout << "FULL MSG: " << line << "\n";
 
-                cmd = ParseCommand(line);  // process ALL
+                cmd = ParseCommand(line); // process ALL
             }
         }
 
@@ -155,6 +184,4 @@ RF::Command RF::GetCommand() // Will check for commands and return the received 
 
         return ParseCommand(input_line);
     }
-
-    
 }
