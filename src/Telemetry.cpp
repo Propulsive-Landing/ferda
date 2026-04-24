@@ -219,6 +219,7 @@ void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
 
     };
 
+    std::cout << "GNC Telemetry: " << json_msg.dump().length() << std::endl;
     RF::GetInstance().SendString(json_msg.dump() + "\n");
 }
 
