@@ -63,6 +63,7 @@ public:
         SparkOff,
         ASITest,
         WaterFlow,
+        ThreeSecondHotfire,
         GoHotfireIdle,
         CameraOn,
         CameraOff,
@@ -178,6 +179,8 @@ public:
             ParsedCommand = RF::Command::ASITest;
         else if (input_line == "waterflow")
             ParsedCommand = RF::Command::WaterFlow;
+        else if (input_line == "3second")
+            ParsedCommand = RF::Command::ThreeSecondHotfire;
         else if (input_line == "GoHotfireIdle")
             ParsedCommand = RF::Command::GoHotfireIdle;
         else

@@ -22,8 +22,10 @@ public:
     bool IsValveOpen(ValveType valve) const;
     float convert_to_ticks(float angle)
     {
-        float pulse = 1500 + ((angle-90) / 90.0) * 1000;
-        return (pulse/MissionConstants::SERVO_PERIOD) * MissionConstants::MAX_TICKS;
+        // 1500 us is nuetral position (90 degrees)
+        // Figures out duty cycle with respect to the period
+        float pulse = 1500 + ((angle - 90) / 90.0) * 1000;
+        return (pulse / MissionConstants::SERVO_PERIOD) * MissionConstants::MAX_TICKS;
     }
 
 private:
@@ -35,4 +37,3 @@ private:
     bool asiOxygenOpen = false;
     bool nitrogenBleedOpen = false;
 };
-

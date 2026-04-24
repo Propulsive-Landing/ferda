@@ -66,8 +66,6 @@ void ValveControl::CloseValve(ValveType valve)
     switch (valve)
     {
     case Nitrogen:
-        // set_pwm takes pulse width in microseconds: 500-2500 us for 0-180 degrees
-        // 179 degrees = 500 + (179 * 2000 / 180) = ~510 us
         Telemetry::GetInstance().Log("Closing Nitrogen Valve");
 
         // NOTE: We do not handle if servo_driver is a null pointer meaninf the PCA9685 is not connected
