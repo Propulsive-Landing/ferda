@@ -165,19 +165,6 @@ void TVC::SetTVCY(double angle_rad)
 
 void TVC::UpdateActuatorPositions()
 {
-    const auto now = std::chrono::steady_clock::now();
-    if (!has_recent_command)
-    {
-        Stop();
-        return;
-    }
-
-    const double command_age_seconds = std::chrono::duration<double>(now - last_command_time).count();
-    if (command_age_seconds > MissionConstants::kTvcCommandTimeoutSeconds)
-    {
-        Stop();
-        return;
-    }
 
     // Compute desired actuator lengths from both stored angles (eliminates coupling ambiguity)
     double length_x, length_y;
