@@ -118,12 +118,12 @@ namespace MissionConstants
     inline const float MAX_TICKS = 4095;
     inline const int SERVO_FREQ = 50;        // hz
     inline const float SERVO_PERIOD = 20000; // (us)
-    inline const int SERVO_DRIVER_ADDR = 0x40;
+    inline const int SERVO_DRIVER_ADDR = 0x41;
 
     // 1000Hz PWM (PCA9685) constants
     inline const float PWM_FREQ = 1000;
     inline const float PWM_PERIOD = 0.01; // ms
-    inline const int PWM_DRIVER_ADDR = 0x41;
+    inline const int PWM_DRIVER_ADDR = 0x40;
 
     // ADS1115 constants
     const int ADS1ADDR = 0x48;
@@ -136,26 +136,26 @@ namespace MissionConstants
     // TVC Calibration Constants, TODO: USER EDIT PRE-FLIGHT
     const double kTvcYInputCenterAngleRad = 0.0;
     const double kTvcXInputCenterAngleRad = 0.0;
-
+    
     // Linear Actuator TVC Geometry (in inches, relative to u-joint origin)
-    const Eigen::Vector3d kTvcVehicleMountPoint0 = Eigen::Vector3d(4.183, 0.0, 5.563);
-    const Eigen::Vector3d kTvcVehicleMountPoint1 = Eigen::Vector3d(0, 4.183, 5.563);
-    const Eigen::Vector3d kTvcEngineMountPoint0 = Eigen::Vector3d(2.755, 0.0, -11.078);
-    const Eigen::Vector3d kTvcEngineMountPoint1 = Eigen::Vector3d(0.0, 2.755, -11.078);
+    const Eigen::Vector3d kTvcVehicleMountPoint0 = Eigen::Vector3d(5.688, 0.0, 6.408);
+    const Eigen::Vector3d kTvcVehicleMountPoint1 = Eigen::Vector3d(0, 5.688, 6.408);
+    const Eigen::Vector3d kTvcEngineMountPoint0 = Eigen::Vector3d(2.985, 0.0, -11.078);
+    const Eigen::Vector3d kTvcEngineMountPoint1 = Eigen::Vector3d(0.0, 2.985, -11.078);
 
     // Linear Actuator Control Parameters
     // PID output is commanded actuator speed in inches/second.
     const double kTvcPositionKpPerSecond = 3.0;                 // (in/s)/in = 1/s
-    const double kTvcPositionKiPerSecondSquared = 0.8;          // (in/s)/(in*s) = 1/s^2
-    const double kTvcPositionKdUnitless = 0.15;                 // (in/s)/(in/s) = unitless
+    const double kTvcPositionKiPerSecondSquared = 0.0;          // (in/s)/(in*s) = 1/s^2
+    const double kTvcPositionKdUnitless = 0.0;                 // (in/s)/(in/s) = unitless
     const double kTvcIntegralWindupLimitInchSeconds = 1.0;      // Clamp for integrated position error
     const double kTvcVelocityDeadbandInchesPerSecond = 0.01;    // Velocity deadband to avoid chatter
     const double kTvcMaxCommandedVelocityInchesPerSecond = 1.8; // Maps to max PWM command
     const int kTvcMaxMotorSpeed = 3686;                         // Max PWM speed (0-4095)
     const double kTvcStrokeLengthInches = 4.0;                  // Actuator stroke length
     const double kTvcZeroExtensionInches = 14.972;              // Actuator length when fully retracted (used to convert from absolute length to extension length)
-    const double kTvcMinLengthInches = 1.0;                     // Minimum actuator extension
-    const double kTvcMaxLengthInches = 3.0;                     // Maximum actuator extension
+    const double kTvcMinLengthInches = 2.0;                     // Minimum actuator extension
+    const double kTvcMaxLengthInches = 3.9;                    // Maximum actuator extension
     const int kTvcActuator0PotentiometerMinReading = 26054;     // ADC reading for actuator 0 at minimum extension (retracted)
     const int kTvcActuator0PotentiometerMaxReading = 2498;      // ADC reading for actuator 0 at maximum extension (extended)
     const int kTvcActuator1PotentiometerMinReading = 26054;     // ADC reading for actuator 1 at minimum extension (retracted)
