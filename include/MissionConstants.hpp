@@ -144,7 +144,7 @@ namespace MissionConstants
 
     // Linear Actuator Control Parameters
     // PID output is commanded actuator speed in inches/second.
-    const double kTvcPositionKpPerSecond = 3.0;                 // (in/s)/in = 1/s
+    const double kTvcPositionKpPerSecond = 8.0;                 // (in/s)/in = 1/s
     const double kTvcPositionKiPerSecondSquared = 0.0;          // (in/s)/(in*s) = 1/s^2
     const double kTvcPositionKdUnitless = 0.0;                 // (in/s)/(in/s) = unitless
     const double kTvcIntegralWindupLimitInchSeconds = 1.0;      // Clamp for integrated position error
