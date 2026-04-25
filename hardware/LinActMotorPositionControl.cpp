@@ -154,7 +154,7 @@ void applyLinearChirpVelocityCommand(float durationSec,
         }
 
         int speedCmd = static_cast<int>(std::abs(velocityCmd) * maxSpeed);
-        driveActuator(0, direction, speedCmd);
+        driveActuator(1, direction, speedCmd);
 
         float position = readPositionInches(0);
         logFile << t << "," << velocityCmd << "," << position << "\n";
