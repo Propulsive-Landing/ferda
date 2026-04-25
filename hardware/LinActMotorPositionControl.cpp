@@ -162,7 +162,7 @@ void applyLinearChirpVelocityCommand(float durationSec,
         delay(controlPeriodMs);
     }
 
-    driveActuator(0, 0, 0);
+    driveActuator(1, 0, 0);
 }
 
 void RunChirpTVCMode()
