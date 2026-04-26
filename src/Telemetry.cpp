@@ -38,11 +38,18 @@ namespace
         return payload;
     }
 
-    Eigen::Vector3d QuaternionToEulerXyzRad(const Eigen::Quaterniond &q)
+    Eigen::Vector3d QuaternionToAxisAngleRotationVector(const Eigen::Quaterniond &q)
     {
         const Eigen::Quaterniond qNormalized = q.normalized();
-        // Returns roll, pitch, yaw in radians for ZYX sequence.
-        return qNormalized.toRotationMatrix().eulerAngles(2, 1, 0);
+        const Eigen::Vector3d v = qNormalized.vec();
+        const double vNorm = v.norm();
+        if (vNorm < 1e-12)
+        {
+            return Eigen::Vector3d::Zero();
+        }
+
+        const double angleRad = 2.0 * std::atan2(vNorm, qNormalized.w());
+        return v * (angleRad / vNorm);
     }
 
     void WriteElapsedSecondsPrefix(
@@ -169,23 +176,6 @@ void Telemetry::Log(std::string message)
          << std::flush;
 }
 
-Eigen::Vector3d unwrapEuler(const Eigen::Vector3d& prev,
-                            const Eigen::Vector3d& current)
-{
-    Eigen::Vector3d unwrapped = current;
-
-    for (int i = 0; i < 3; ++i) {
-        double diff = current[i] - prev[i];
-
-        if (diff >  MissionConstants::kPi) {
-            unwrapped[i] -= 2.0 * MissionConstants::kPi;
-        } else if (diff < -MissionConstants::kPi) {
-            unwrapped[i] += 2.0 * MissionConstants::kPi;
-        }
-    }
-    return unwrapped;
-}
-
 void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
 {
     // TODO: MAKE SURE THIS FOLLOWS WHAT GROUND CONTROL EXPECTS
@@ -202,18 +192,8 @@ void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
     {
         q = Eigen::Quaterniond(-q.w(), -q.x(), -q.y(), -q.z());
     }
-    Eigen::Vector3d eulerXyz = QuaternionToEulerXyzRad(q);
-    static bool hasPreviousEuler = false;
-    static Eigen::Vector3d previousEulerXyz = Eigen::Vector3d::Zero();
-    if (hasPreviousEuler)
-    {
-        eulerXyz = unwrapEuler(previousEulerXyz, eulerXyz);
-    }
-    else
-    {
-        hasPreviousEuler = true;
-    }
-    previousEulerXyz = eulerXyz;
+    q.normalize();
+    const Eigen::Vector3d rotationVector = QuaternionToAxisAngleRotationVector(q);
     const Eigen::Vector2d actuatorSetpointError = controller.tvc.GetActuatorSetpointErrorInches();
     const Eigen::Vector3d attitudeSetpointError = controller.GetCurrentAttitudeSetpointError();
     const double guidanceAltitudeError = controller.GetCurrentGuidanceAltitudeError();
@@ -232,10 +212,10 @@ void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
         navState(3),
         navState(4),
         navState(5),
-        // Eulers
-        eulerXyz(0),
-        eulerXyz(1),
-        eulerXyz(2),
+        // True axis-angle rotation vector (axis * angle)
+        rotationVector(0),
+        rotationVector(1),
+        rotationVector(2),
         // Omegas
         angularVelocity(0),
         angularVelocity(1),
