@@ -183,7 +183,7 @@ void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
     // Ensure scalar part is non-negative for consistent representation
     if (q.w() < 0.0)
     {
-        q = Eigen::Quaterniond(-q.w(), -q.x(), -q.y(), -q.z());
+        q = Eigen::Quaterniond(q.w(), -q.x(), -q.y(), -q.z());
     }
     const Eigen::Vector3d eulerXyz = QuaternionToEulerXyzRad(q);
     const Eigen::Vector2d actuatorSetpointError = controller.tvc.GetActuatorSetpointErrorInches();
