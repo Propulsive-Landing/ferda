@@ -10,6 +10,7 @@ public:
         NitrogenLine,
         EthanolTank,
         NitrousLine,
+        NitrousTankLine,
         OxygenLine,
         FuelInlet,
         FuelOutlet,
