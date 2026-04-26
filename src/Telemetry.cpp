@@ -174,12 +174,17 @@ void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
     // TODO: MAKE SURE THIS FOLLOWS WHAT GROUND CONTROL EXPECTS
     const Eigen::Matrix<double, 16, 1> navState = navigation.GetNavigation();
     const Eigen::Vector3d angularVelocity = navigation.GetAngularVelocity();
-    const Eigen::Quaterniond q(
+    Eigen::Quaterniond q(
         navState(6), // w
         navState(7), // x
         navState(8), // y
         navState(9)  // z
     );
+    // Ensure scalar part is non-negative for consistent representation
+    if (q.w() < 0.0)
+    {
+        q = Eigen::Quaterniond(-q.w(), -q.x(), -q.y(), -q.z());
+    }
     const Eigen::Vector3d eulerXyz = QuaternionToEulerXyzRad(q);
     const Eigen::Vector2d actuatorSetpointError = controller.tvc.GetActuatorSetpointErrorInches();
     const Eigen::Vector3d attitudeSetpointError = controller.GetCurrentAttitudeSetpointError();
