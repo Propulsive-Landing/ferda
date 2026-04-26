@@ -112,10 +112,12 @@ void RF::SendString(std::string text)
             {
                 if (errno == EINTR)
                 {
+                    std::cout << "Write interrupted, retrying..." << std::endl;
                     continue; // interrupted, retry
                 }
                 else if (errno == EAGAIN || errno == EWOULDBLOCK)
                 {
+                    std::cout << "Write would block, retrying..." << std::endl;
                     continue; // would block, retry (or add sleep if needed)
                 }
                 else

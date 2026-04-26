@@ -95,8 +95,8 @@ namespace MissionConstants
     // (Eigen::Matrix3i() << 0, 1, 0, -1, 0, 0, 0, 0, 1).finished();
     inline const Eigen::Matrix3i kSensorImuBodyAxisMap =
         (Eigen::Matrix3i() << 1, 0, 0,
-         0, 1, 0,
-         0, 0, 1)
+         0, 0, -1,
+         0, 1, 0)
             .finished();
 
     // Guidance constants, TODO: USER EDIT PRE-FLIGHT
