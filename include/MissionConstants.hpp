@@ -127,12 +127,12 @@ namespace MissionConstants
     inline const float MAX_TICKS = 4095;
     inline const int SERVO_FREQ = 50;        // hz
     inline const float SERVO_PERIOD = 20000; // (us)
-    inline const int SERVO_DRIVER_ADDR = 0x41;
+    inline const int SERVO_DRIVER_ADDR = 0x40;
 
     // 1000Hz PWM (PCA9685) constants
     inline const float PWM_FREQ = 1000;
     inline const float PWM_PERIOD = 0.01; // ms
-    inline const int PWM_DRIVER_ADDR = 0x40;
+    inline const int PWM_DRIVER_ADDR = 0x41;
 
     // ADS1115 constants
     const int ADS1ADDR = 0x48;
@@ -145,7 +145,7 @@ namespace MissionConstants
     // TVC Calibration Constants, TODO: USER EDIT PRE-FLIGHT
     const double kTvcYInputCenterAngleRad = 0.0;
     const double kTvcXInputCenterAngleRad = 0.0;
-    
+
     // Linear Actuator TVC Geometry (in inches, relative to u-joint origin)
     const Eigen::Vector3d kTvcVehicleMountPoint0 = Eigen::Vector3d(5.688, 0.0, 6.408);
     const Eigen::Vector3d kTvcVehicleMountPoint1 = Eigen::Vector3d(0, 5.688, 6.408);
@@ -156,7 +156,7 @@ namespace MissionConstants
     // PID output is commanded actuator speed in inches/second.
     const double kTvcPositionKpPerSecond = 5.0;                 // (in/s)/in = 1/s
     const double kTvcPositionKiPerSecondSquared = 0.0;          // (in/s)/(in*s) = 1/s^2
-    const double kTvcPositionKdUnitless = 0.0;                 // (in/s)/(in/s) = unitless
+    const double kTvcPositionKdUnitless = 0.0;                  // (in/s)/(in/s) = unitless
     const double kTvcIntegralWindupLimitInchSeconds = 1.0;      // Clamp for integrated position error
     const double kTvcVelocityDeadbandInchesPerSecond = 0.01;    // Velocity deadband to avoid chatter
     const double kTvcMaxCommandedVelocityInchesPerSecond = 1.8; // Maps to max PWM command
@@ -164,7 +164,7 @@ namespace MissionConstants
     const double kTvcStrokeLengthInches = 4.0;                  // Actuator stroke length
     const double kTvcZeroExtensionInches = 14.972;              // Actuator length when fully retracted (used to convert from absolute length to extension length)
     const double kTvcMinLengthInches = 2.0;                     // Minimum actuator extension
-    const double kTvcMaxLengthInches = 3.9;                    // Maximum actuator extension
+    const double kTvcMaxLengthInches = 3.9;                     // Maximum actuator extension
     const int kTvcActuator0PotentiometerMinReading = 26054;     // ADC reading for actuator 0 at minimum extension (retracted)
     const int kTvcActuator0PotentiometerMaxReading = 2498;      // ADC reading for actuator 0 at maximum extension (extended)
     const int kTvcActuator1PotentiometerMinReading = 26054;     // ADC reading for actuator 1 at minimum extension (retracted)
@@ -187,32 +187,36 @@ namespace MissionConstants
 
     // Liquid Propulsion Hardware Pins, TODO: USER EDIT PRE-FLIGHT
     // Valve Servo Pins (PWM)
-    const int kNitrogenServoPin = 6;     // servo driver row [0-15]
-    const int kPurgeServoPin = 0;        // servo driver row [0-15]
-    const int kMainEthanolServoPin = 11; // servo driver row [0-15]
-    const int kMainNitrousServoPin = 0;  // servo driver row [0-15]
-    const int kNitrousFillServoPin = 5;  // servo driver row [0-15]
+    const int kMainNitrousServoPin = 0; // servo driver row [0-15]
+    const int kPurgeServoPin = 1;       // servo driver row [0-15]
+    const int kMainEthanolServoPin = 2; // servo driver row [0-15]
+    const int kNitrogenServoPin = 4;    // servo driver row [0-15]
+    const int kNitrousFillServoPin = 5; // servo driver row [0-15]
 
     // Valve Solenoid Pins (GPIO)
-    const int kASIEthanolPin = 0;
-    const int kASIOxygenPin = 5;
-    const int kNitrogenBleedPin = 0;
+    const int kASIEthanolPin = 16;
+    const int kASIOxygenPin = 12;
+    const int kNitrogenBleedPin = 20;
 
     // Spark Plug Pins
-    const int kSparkPin = 0; // Relay control
-    const int kRPMPin = 0;   // PWM output // servo driver row [0-15]
+    const int kSparkPin = 21; // Relay control
+    const int kRPMPin = 0;    // PWM output // servo driver row [0-15]
 
     // Pressure Transducer Pins (Analog)
     const int kNitrogenLinePTPin = ADS1BASE + 0;    // First ADS1115 A0
     const int kEthanolTankPTPin = ADS1BASE + 1;     // First ADS1115  A1
-    const int kNitrousLinePTPin = ADS1BASE + 2;     // First ADS1115 A2
-    const int kOxygenLinePTPin = ADS1BASE + 3;      // First ADS1115  A3
-    const int kFuelInletPTPin = ADS2BASE + 0;       // Second ADS1115 A0
-    const int kFuelOutletPTPin = ADS2BASE + 1;      // Second ADS1115 A1
-    const int kChamberPressurePTPin = ADS2BASE + 2; // Second ADS1115 A2
+    const int kNitrousTankLinePTPin = ADS1BASE + 2; // First ADS1115 A2
+    const int kNitrousLinePTPin = ADS1BASE + 3;     // First ADS1115 A2
+
+    // NOT USED AT THE MOMENT
+    const int kOxygenLinePTPin = ADS2BASE + 1; // Second ADS1115  A1
+    const int kFuelInletPTPin = ADS2BASE + 2;  // Second ADS1115 A2
+    const int kFuelOutletPTPin = ADS2BASE + 3; // Second ADS1115 A3
 
     // Load Cell Pin (Analog)
-    const int kLoadCellPin = ADS2BASE + 3; // Second ADS1115 A3
+    const int kLoadCellPin = ADS2BASE + 1; // Second ADS1115 A1
+
+    const int kChamberPressurePTPin = ADS2BASE + 0; // Second ADS1115 A0
 
     // Valve Servo Angles
     const int kValveClosedAngle = 179; // degrees

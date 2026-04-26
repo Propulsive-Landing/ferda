@@ -219,7 +219,6 @@ void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
 
     };
 
-    std::cout << "GNC Telemetry: " << json_msg["payload"].size() << std::endl;
     RF::GetInstance().SendString(json_msg.dump() + "\n");
 }
 
@@ -232,6 +231,7 @@ void Telemetry::RfSendLiquidFrame(PressureTransducer &pt, LoadCell &lc)
         pt.ReadPSI(PressureTransducer::NitrogenLine),    // 0-1000 PSI
         pt.ReadPSI(PressureTransducer::EthanolTank),     // 0-1000 PSI
         pt.ReadPSI(PressureTransducer::NitrousLine),     // 0-1000 PSI
+        pt.ReadPSI(PressureTransducer::NitrousTankLine), // 0-1000 PSI
         pt.ReadPSI(PressureTransducer::OxygenLine),      // 0-200 PSI
         pt.ReadPSI(PressureTransducer::FuelInlet),       // 0-1000 PSI
         pt.ReadPSI(PressureTransducer::FuelOutlet),      // 0-1000 PSI

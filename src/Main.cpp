@@ -139,15 +139,13 @@ int main()
 
     // // Spark plug pins
     // pinMode(MissionConstants::kSparkPin, OUTPUT);
-    // pinMode(MissionConstants::kRPMPin, OUTPUT);
+    // pwm_driver->set_pwm(MissionConstants::kRPMPin, 0, 0); // 0% duty cycle
 
     //  Initialize solenoids to closed state (HIGH for normally-closed, LOW for normally-open)
     // digitalWrite(MissionConstants::kASIEthanolPin, 1);     // HIGH = CLOSED
     // digitalWrite(MissionConstants::kASIOxygenPin, 1);      // HIGH = CLOSED
     // digitalWrite(MissionConstants::kNitrogenBleedPin, 0);  // LOW = CLOSED (normally-open valve)
     // digitalWrite(MissionConstants::kSparkPin, 1);          // HIGH = OFF
-
-    // pwm_driver->set_pwm(MissionConstants::kRPMPin, 0, 0); // 0% duty cycle
 
     //  Initialize servos to closed position (179 degrees)
     float pulse = 1500 + ((MissionConstants::kValveClosedAngle - 90) / 90.0) * 1000;
