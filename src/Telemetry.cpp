@@ -8,6 +8,7 @@
 #include <fstream>
 #include <tuple>
 #include <cstdint>
+#include <cmath>
 
 #include <Eigen/Geometry>
 
@@ -21,6 +22,22 @@ using json = nlohmann::json;
 
 namespace
 {
+    double RoundForRf(double value, int decimalPlaces)
+    {
+        const double scale = std::pow(10.0, decimalPlaces);
+        return std::round(value * scale) / scale;
+    }
+
+    json BuildRoundedPayload(std::initializer_list<double> values, int decimalPlaces)
+    {
+        json payload = json::array();
+        for (const double value : values)
+        {
+            payload.push_back(RoundForRf(value, decimalPlaces));
+        }
+        return payload;
+    }
+
     Eigen::Vector3d QuaternionToEulerXyzRad(const Eigen::Quaterniond &q)
     {
         const Eigen::Quaterniond qNormalized = q.normalized();
@@ -168,11 +185,12 @@ void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
     const Eigen::Vector3d attitudeSetpointError = controller.GetCurrentAttitudeSetpointError();
     const double guidanceAltitudeError = controller.GetCurrentGuidanceAltitudeError();
     const Eigen::Vector2d guidanceTranslationError = controller.GetCurrentGuidanceTranslationError();
+    const int decimalPlaces = MissionConstants::kRfGncPayloadDecimalPlaces;
 
     json json_msg;
     json_msg["data_type"] = "telem";
     json_msg["type"] = "GNC";
-    json_msg["payload"] = {
+    json_msg["payload"] = BuildRoundedPayload({
         // Position
         navState(0),
         navState(1),
@@ -217,7 +235,7 @@ void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
         guidanceTranslationError(0),
         guidanceTranslationError(1)
 
-    };
+    }, decimalPlaces);
 
     std::cout << "GNC Telemetry: " << json_msg["payload"].size() << std::endl;
     RF::GetInstance().SendString(json_msg.dump() + "\n");
@@ -225,10 +243,12 @@ void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
 
 void Telemetry::RfSendLiquidFrame(PressureTransducer &pt, LoadCell &lc)
 {
+    const int decimalPlaces = MissionConstants::kRfLiquidPayloadDecimalPlaces;
+
     json json_msg;
     json_msg["data_type"] = "telem";
     json_msg["type"] = "Liquid";
-    json_msg["payload"] = {
+    json_msg["payload"] = BuildRoundedPayload({
         pt.ReadPSI(PressureTransducer::NitrogenLine),    // 0-1000 PSI
         pt.ReadPSI(PressureTransducer::EthanolTank),     // 0-1000 PSI
         pt.ReadPSI(PressureTransducer::NitrousLine),     // 0-1000 PSI
@@ -237,7 +257,7 @@ void Telemetry::RfSendLiquidFrame(PressureTransducer &pt, LoadCell &lc)
         pt.ReadPSI(PressureTransducer::FuelOutlet),      // 0-1000 PSI
         pt.ReadPSI(PressureTransducer::ChamberPressure), // 0-1000 PSI
         lc.ReadLBS()                                     // Load cell in pounds
-    };
+    }, decimalPlaces);
 
     RF::GetInstance().SendString(json_msg.dump() + "\n");
 }

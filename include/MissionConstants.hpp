@@ -226,6 +226,8 @@ namespace MissionConstants
     const int BAUD_RATE = 9600;
     const int HARDWARE_SAVE_DELTA = 100;
     const int RF_SEND_DELTA = 300;
+    const int kRfGncPayloadDecimalPlaces = 3;
+    const int kRfLiquidPayloadDecimalPlaces = 2;
 
     // Time after launch until active stabalization begins.
     const float timeAtOffset = 0.0;
