@@ -169,6 +169,23 @@ void Telemetry::Log(std::string message)
          << std::flush;
 }
 
+Eigen::Vector3d unwrapEuler(const Eigen::Vector3d& prev,
+                            const Eigen::Vector3d& current)
+{
+    Eigen::Vector3d unwrapped = current;
+
+    for (int i = 0; i < 3; ++i) {
+        double diff = current[i] - prev[i];
+
+        if (diff >  MissionConstants::kPi) {
+            unwrapped[i] -= 2.0 * MissionConstants::kPi;
+        } else if (diff < -MissionConstants::kPi) {
+            unwrapped[i] += 2.0 * MissionConstants::kPi;
+        }
+    }
+    return unwrapped;
+}
+
 void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
 {
     // TODO: MAKE SURE THIS FOLLOWS WHAT GROUND CONTROL EXPECTS
@@ -185,7 +202,18 @@ void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
     {
         q = Eigen::Quaterniond(-q.w(), -q.x(), -q.y(), -q.z());
     }
-    const Eigen::Vector3d eulerXyz = QuaternionToEulerXyzRad(q);
+    Eigen::Vector3d eulerXyz = QuaternionToEulerXyzRad(q);
+    static bool hasPreviousEuler = false;
+    static Eigen::Vector3d previousEulerXyz = Eigen::Vector3d::Zero();
+    if (hasPreviousEuler)
+    {
+        eulerXyz = unwrapEuler(previousEulerXyz, eulerXyz);
+    }
+    else
+    {
+        hasPreviousEuler = true;
+    }
+    previousEulerXyz = eulerXyz;
     const Eigen::Vector2d actuatorSetpointError = controller.tvc.GetActuatorSetpointErrorInches();
     const Eigen::Vector3d attitudeSetpointError = controller.GetCurrentAttitudeSetpointError();
     const double guidanceAltitudeError = controller.GetCurrentGuidanceAltitudeError();
