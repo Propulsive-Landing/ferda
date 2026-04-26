@@ -34,6 +34,7 @@ public:
         ActuatorCalibration,
         StopTVC,
         CenterTVC,
+        NAV_RESTART,
         MoveXTVCToLimitExtend,
         MoveXTVCToLimitRetract,
         MoveYTVCToLimitExtend,
@@ -108,6 +109,8 @@ public:
             ParsedCommand = RF::Command::StopTVC;
         else if (input_line == "CenterTVC" || input_line == "CENTER" || input_line == "center")
             ParsedCommand = RF::Command::CenterTVC;
+        else if (input_line == "NAV_RESTART")
+            ParsedCommand = RF::Command::NAV_RESTART;
         else if (input_line == "MoveXTVCToLimitExtend" || input_line == "MoveXToLimitExtend" || input_line == "MOVE_X_TO_LIMIT")
             ParsedCommand = RF::Command::MoveXTVCToLimitExtend;
         else if (input_line == "MoveXTVCToLimitRetract" || input_line == "MoveXToLimitRetract")

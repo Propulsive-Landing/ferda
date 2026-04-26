@@ -242,6 +242,25 @@ Navigation::Navigation(IMU &inputImu, Magnetometer &inputMagnetometer, GPS &inpu
     // dataFile.open("data.csv", std::ios::app);
 }
 
+void Navigation::hard_reset()
+{
+    stateMat = Eigen::Matrix<double, 16, 1>::Zero();
+    // Initializes Quaternion to [1,0,0,0] equivalent to 0 roll, 0 pitch, 0 yaw
+    stateMat(6) = 1;
+
+    Eigen::VectorXd d(15);
+    d << MissionConstants::kNavInitialPositionVariance, MissionConstants::kNavInitialPositionVariance, MissionConstants::kNavInitialPositionVariance,   // Position variances
+        MissionConstants::kNavInitialVelocityVariance, MissionConstants::kNavInitialVelocityVariance, MissionConstants::kNavInitialVelocityVariance,    // Velocity variances
+        MissionConstants::kNavInitialAttitudeVariance, MissionConstants::kNavInitialAttitudeVariance, MissionConstants::kNavInitialAttitudeVariance,    // Attitude variances
+        MissionConstants::kNavInitialAccelBiasVariance, MissionConstants::kNavInitialAccelBiasVariance, MissionConstants::kNavInitialAccelBiasVariance, // Accelerometer bias variances
+        MissionConstants::kNavInitialGyroBiasVariance, MissionConstants::kNavInitialGyroBiasVariance, MissionConstants::kNavInitialGyroBiasVariance;    // Gyroscope bias variances
+
+    P = d.asDiagonal();
+    estimatedMassKg = MissionConstants::kStructuresWetMassKg;
+    estimatedMassFraction = 1.0;
+    UpdateMassPropertyEstimates();
+}
+
 void Navigation::reset()
 {
     estimatedMassKg = MissionConstants::kStructuresWetMassKg;
