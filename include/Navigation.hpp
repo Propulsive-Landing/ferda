@@ -54,6 +54,7 @@ public:
     double loopTime = 0.005;
     Navigation(IMU &imu, Magnetometer &magnetometer, GPS &gps, Lidar &lidar, Camera &camera, TVC &tvc);
     void reset();
+    void hard_reset();
     Eigen::MatrixXd P;
     Eigen::Matrix<double, 16, 1> GetNavigation(); // Defintion of state matrix: TODO (determine dimensions and document form)
     void UpdateNavigation();                      // Defintion updates: TODO (determine dimensions and document form)
