@@ -71,8 +71,7 @@ namespace
             return sensorVector;
         }
 
-        //return MissionConstants::kSensorImuBodyAxisMap.cast<double>() * sensorVector;
-        return sensorVector;
+        return MissionConstants::kSensorImuBodyAxisMap.cast<double>() * sensorVector;
 
     }
 }

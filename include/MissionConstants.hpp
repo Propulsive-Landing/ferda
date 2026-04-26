@@ -49,8 +49,8 @@ namespace MissionConstants
     const double kNavCameraAssociationUnassignedPenaltyRad = 0.10;
     const double kNavInitialPositionVariance = 1e-5;
     const double kNavInitialVelocityVariance = 1e-6;
-    const double kNavInitialAttitudeVariance = 1e-1;
-    const double kNavInitialAccelBiasVariance = 0.5;
+    const double kNavInitialAttitudeVariance = 3e-4;
+    const double kNavInitialAccelBiasVariance = 0.86;
     const double kNavInitialGyroBiasVariance = 1e-6;
     inline const Eigen::Matrix<double, 3, 4> kMarkerData =
         (Eigen::Matrix<double, 3, 4>() << -0.042, 0.042, -0.042, 0.042,
