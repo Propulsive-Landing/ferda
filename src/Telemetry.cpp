@@ -41,8 +41,8 @@ namespace
     Eigen::Vector3d QuaternionToEulerXyzRad(const Eigen::Quaterniond &q)
     {
         const Eigen::Quaterniond qNormalized = q.normalized();
-        // Returns roll, pitch, yaw in radians for XYZ sequence.
-        return qNormalized.toRotationMatrix().eulerAngles(0, 1, 2);
+        // Returns roll, pitch, yaw in radians for ZYX sequence.
+        return qNormalized.toRotationMatrix().eulerAngles(2, 1, 0);
     }
 
     void WriteElapsedSecondsPrefix(
@@ -183,7 +183,7 @@ void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
     // Ensure scalar part is non-negative for consistent representation
     if (q.w() < 0.0)
     {
-        q = Eigen::Quaterniond(q.w(), -q.x(), -q.y(), -q.z());
+        q = Eigen::Quaterniond(-q.w(), -q.x(), -q.y(), -q.z());
     }
     const Eigen::Vector3d eulerXyz = QuaternionToEulerXyzRad(q);
     const Eigen::Vector2d actuatorSetpointError = controller.tvc.GetActuatorSetpointErrorInches();
