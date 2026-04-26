@@ -79,9 +79,7 @@ void TVC::AnglesToActuatorLengths(double angle_x_rad, double angle_y_rad,
 }
 
 void TVC::ProportionalPositionControl(int actuator_index, double dt_seconds)
-{
-    std::cout << "Update Actuator Positions" << std::endl;
-    
+{   
     // actuator_index: 0 = X axis, 1 = Y axis
     double current_length = current_actuator_lengths(actuator_index);
     double desired_length = desired_actuator_lengths(actuator_index);
@@ -168,8 +166,6 @@ void TVC::SetTVCY(double angle_rad)
 void TVC::UpdateActuatorPositions()
 {
     const auto now = std::chrono::steady_clock::now();
-
-    std::cout << "Update Actuator Positions" << std::endl;
 
     // Compute desired actuator lengths from both stored angles (eliminates coupling ambiguity)
     double length_x, length_y;

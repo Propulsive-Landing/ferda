@@ -8,7 +8,72 @@
 #include <stdexcept>
 #include <sstream>
 #include <iomanip>
+#include <cmath>
 #include "MissionConstants.hpp"
+
+namespace
+{
+    bool IsRightAngleAxisMap(const Eigen::Matrix3i &axisMap)
+    {
+        for (int row = 0; row < 3; ++row)
+        {
+            int nonZeroCount = 0;
+            for (int col = 0; col < 3; ++col)
+            {
+                const int value = axisMap(row, col);
+                if (value != 0)
+                {
+                    if (value != 1 && value != -1)
+                    {
+                        return false;
+                    }
+                    ++nonZeroCount;
+                }
+            }
+            if (nonZeroCount != 1)
+            {
+                return false;
+            }
+        }
+
+        for (int col = 0; col < 3; ++col)
+        {
+            int nonZeroCount = 0;
+            for (int row = 0; row < 3; ++row)
+            {
+                if (axisMap(row, col) != 0)
+                {
+                    ++nonZeroCount;
+                }
+            }
+            if (nonZeroCount != 1)
+            {
+                return false;
+            }
+        }
+
+        const int determinant = axisMap.determinant();
+        return std::abs(determinant) == 1;
+    }
+
+    Eigen::Vector3d MapImuSensorToBody(const Eigen::Vector3d &sensorVector)
+    {
+        static const bool kAxisMapValid = IsRightAngleAxisMap(MissionConstants::kSensorImuBodyAxisMap);
+        static bool warnedInvalidAxisMap = false;
+
+        if (!kAxisMapValid)
+        {
+            if (!warnedInvalidAxisMap)
+            {
+                Telemetry::GetInstance().Log("Warning: kSensorImuBodyAxisMap is invalid. Falling back to identity IMU axis mapping.");
+                warnedInvalidAxisMap = true;
+            }
+            return sensorVector;
+        }
+
+        return MissionConstants::kSensorImuBodyAxisMap.cast<double>() * sensorVector;
+    }
+}
 
 IMU::IMU()
 {
@@ -63,7 +128,10 @@ std::tuple<double, double, double> IMU::GetBodyAcceleration()
     double nAccelY = (double)read16LE(fd, MissionConstants::REG_ACC_Y);
     double nAccelZ = (double)read16LE(fd, MissionConstants::REG_ACC_Z);
 
-    return std::make_tuple(nAccelX / 100.0f, nAccelY / 100.0f, nAccelZ / 100.0f);
+    const Eigen::Vector3d accelSensor(nAccelX / 100.0f, nAccelY / 100.0f, nAccelZ / 100.0f);
+    const Eigen::Vector3d accelBody = MapImuSensorToBody(accelSensor);
+
+    return std::make_tuple(accelBody.x(), accelBody.y(), accelBody.z());
 }
 
 std::tuple<double, double, double> IMU::GetBodyAngularRate()
@@ -73,5 +141,8 @@ std::tuple<double, double, double> IMU::GetBodyAngularRate()
     double nAnglVelY = (double)read16LE(fd, MissionConstants::REG_GYRO_Y);
     double nAnglVelZ = (double)read16LE(fd, MissionConstants::REG_GYRO_Z);
 
-    return std::make_tuple(nAnglVelX / 900.0f, nAnglVelY / 900.0f, nAnglVelZ / 900.0f);
+    const Eigen::Vector3d gyroSensor(nAnglVelX / 900.0f, nAnglVelY / 900.0f, nAnglVelZ / 900.0f);
+    const Eigen::Vector3d gyroBody = MapImuSensorToBody(gyroSensor);
+
+    return std::make_tuple(gyroBody.x(), gyroBody.y(), gyroBody.z());
 }

@@ -88,6 +88,16 @@ namespace MissionConstants
     const Eigen::Vector3d kSensorCameraPosition = Eigen::Vector3d(0.0, 0.0, 0.0);                     // Position of the camera in the body frame (in meters)
     const Eigen::Vector3d kSensorCameraOrientationRad = Eigen::Vector3d(3.141592653589793, 0.0, 0.0); // XYZ Euler orientation from camera frame to body frame
     const Eigen::Vector3d kSensorMagnetometerPosition = Eigen::Vector3d(0.0, 0.0, 0.0);               // Position of magnetometer in the body frame (in meters)
+    // IMU axis remap from IMU sensor frame to vehicle body frame.
+    // Must remain a right-angle transform: each row/column has exactly one +/-1 and zeros elsewhere.
+    // Rows are body X/Y/Z, columns are sensor X/Y/Z.
+    // Example swap and flip: body X = sensor Y, body Y = -sensor X, body Z = sensor Z
+    // (Eigen::Matrix3i() << 0, 1, 0, -1, 0, 0, 0, 0, 1).finished();
+    inline const Eigen::Matrix3i kSensorImuBodyAxisMap =
+        (Eigen::Matrix3i() << 1, 0, 0,
+         0, 1, 0,
+         0, 0, 1)
+            .finished();
 
     // Guidance constants, TODO: USER EDIT PRE-FLIGHT
     const double kGuidanceHoverDurationSeconds = 15.0;
@@ -243,11 +253,11 @@ namespace MissionConstants
     const int RAD = 0x02;
 
     // RF consants
-    inline const char *RF_Port = "/dev/ttyUSB0";
+    inline const char *RF_Port = "/dev/ttyUSB1";
 
     // GPS constants
     const int MAX_SIZE = 1000;
-    inline const char *GPS_Port = "/dev/ttyUSB1";
+    inline const char *GPS_Port = "/dev/ttyUSB0";
 
     namespace NMEA
     {
