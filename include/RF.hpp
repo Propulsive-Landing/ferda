@@ -131,21 +131,21 @@ public:
             ParsedCommand = RF::Command::CameraOn;
         else if (input_line == "SENSOR: camera OFF" || input_line == "CameraOff")
             ParsedCommand = RF::Command::CameraOff;
-        else if (input_line == "SENSOR: lidar ON")
+        else if (input_line == "SENSOR: lidar ON" || input_line == "LidarOn")
             ParsedCommand = RF::Command::LidarOn;
-        else if (input_line == "SENSOR: lidar OFF")
+        else if (input_line == "SENSOR: lidar OFF" || input_line == "LidarOff")
             ParsedCommand = RF::Command::LidarOff;
-        else if (input_line == "SENSOR: gps_velocity ON")
+        else if (input_line == "SENSOR: gps_velocity ON" || input_line == "GPSVelocityOn")
             ParsedCommand = RF::Command::GPSVelocityOn;
-        else if (input_line == "SENSOR: gps_velocity OFF")
+        else if (input_line == "SENSOR: gps_velocity OFF" || input_line == "GPSVelocityOff")
             ParsedCommand = RF::Command::GPSVelocityOff;
-        else if (input_line == "SENSOR: gps_position ON")
+        else if (input_line == "SENSOR: gps_position ON" || input_line == "GPSPositionOn")
             ParsedCommand = RF::Command::GPSPositionOn;
-        else if (input_line == "SENSOR: gps_position OFF")
+        else if (input_line == "SENSOR: gps_position OFF" || input_line == "GPSPositionOff")
             ParsedCommand = RF::Command::GPSPositionOff;
-        else if (input_line == "SENSOR: magnetometer ON")
+        else if (input_line == "SENSOR: magnetometer ON" || input_line == "MagnetometerOn")
             ParsedCommand = RF::Command::MagnetometerOn;
-        else if (input_line == "SENSOR: magnetometer OFF")
+        else if (input_line == "SENSOR: magnetometer OFF" || input_line == "MagnetometerOff")
             ParsedCommand = RF::Command::MagnetometerOff;
         // Liquid Propulsion Commands
         else if (input_line == "VALVE: nitrogen open")
