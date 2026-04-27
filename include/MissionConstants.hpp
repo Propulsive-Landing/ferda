@@ -46,7 +46,7 @@ namespace MissionConstants
     const double kNavGyroWhiteNoiseSigma = 0.0025;
     const double kNavAccelBiasRandomWalkSigma = 0.0;
     const double kNavGyroBiasRandomWalkSigma = 0.0;
-    const double kNavCameraAssociationUnassignedPenaltyRad = 0.10;
+    const double kNavCameraAssociationUnassignedPenaltyRad = 0.25;
     const double kNavInitialPositionVariance = 1e-5;
     const double kNavInitialVelocityVariance = 1e-6;
     const double kNavInitialAttitudeVariance = 3e-4;
