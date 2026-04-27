@@ -14,6 +14,7 @@
 
 #include "Navigation.hpp"
 #include "MissionConstants.hpp"
+#include "CameraRecovery.hpp"
 #include <iostream>
 
 namespace
@@ -700,6 +701,43 @@ void Navigation::cameraUpdate(const std::vector<Eigen::Vector3d> &cameraDirectio
         measurementToMarkerMatches.emplace_back(measurementIdx, predictions[predictionIdx].markerIdx);
     }
     camera.AnnotateDebugFrameMatches(frameId, measurementToMarkerMatches);
+
+    if (matchedPairs.empty())
+    {
+        if (static_cast<int>(measuredBody.size()) >= MissionConstants::kNavCameraRecoveryMinDetectedMarkers)
+        {
+            const MarkerRecovery::RecoveryResult recovery = MarkerRecovery::RecoverPositionFromDetectedMarkers(measuredBody, R);
+            if (recovery.valid && recovery.averageAngularErrorRad <= MissionConstants::kNavCameraRecoveryMaxAverageAngularErrorRad)
+            {
+                x_e = recovery.recoveredPosition;
+                std::cerr << "[NAV] Marker recovery accepted: detections=" << measuredBody.size()
+                          << ", score_rad=" << recovery.averageAngularErrorRad
+                          << ", score_deg=" << recovery.averageAngularErrorRad * MissionConstants::kRad2Deg
+                          << ", position=[" << x_e.transpose() << "]" << std::endl;
+                camera.AnnotateDebugFrameMatches(frameId, recovery.measurementToMarkerMatches);
+            }
+            else
+            {
+                std::cerr << "[NAV] Marker recovery rejected: detections=" << measuredBody.size();
+                if (recovery.valid)
+                {
+                    std::cerr << ", score_rad=" << recovery.averageAngularErrorRad
+                              << ", threshold_rad=" << MissionConstants::kNavCameraRecoveryMaxAverageAngularErrorRad;
+                }
+                else
+                {
+                    std::cerr << ", solver failed";
+                }
+                std::cerr << std::endl;
+                camera.AnnotateDebugFrameMatches(frameId, {});
+            }
+        }
+        else
+        {
+            camera.AnnotateDebugFrameMatches(frameId, {});
+        }
+        return;
+    }
 
     if (!matchedPairs.empty())
     {

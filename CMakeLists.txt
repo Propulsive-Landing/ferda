@@ -43,6 +43,10 @@ if(OpenCV_FOUND)
     target_include_directories(CameraCalibrate PRIVATE include ${OpenCV_INCLUDE_DIRS})
 endif()
 
+add_executable(CameraMarkerRecoveryTests tests/camera_marker_recovery_tests.cpp)
+target_include_directories(CameraMarkerRecoveryTests PRIVATE include)
+target_link_libraries(CameraMarkerRecoveryTests Eigen3::Eigen)
+
 if(MSVC)
   target_compile_options(Ferda PRIVATE /W4 /WX)
 else()
