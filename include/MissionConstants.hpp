@@ -19,7 +19,6 @@ namespace MissionConstants
     //     YAML::Node constants = YAML::LoadFile(filepath);
     //     return constants;
     // }
-
     // Physical constants
     const double kPi = 3.1415926535897932384626433;
     const double kGravity = 9.80298; // calculated at Ashford Town Park using https://www.sensorsone.com/local-gravity-calculator/#height

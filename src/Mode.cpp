@@ -93,7 +93,7 @@ Mode::Phase Mode::UpdateCalibration(RF::Command &command, Navigation &navigation
         controller.tvc.Stop();
         return Mode::Calibration;
     }
-    if (command == RF::Command::CenterTVC)
+    else if (command == RF::Command::CenterTVC)
     {
         Telemetry::GetInstance().Log("CENTER TVC command received in calibration");
         XTVC = 0.0;
@@ -101,19 +101,19 @@ Mode::Phase Mode::UpdateCalibration(RF::Command &command, Navigation &navigation
         controller.Center();
         return Mode::Calibration;
     }
-    if (command == RF::Command::ActuatorCalibration)
+    else if (command == RF::Command::ActuatorCalibration)
     {
         Telemetry::GetInstance().Log("Switching mode from calibration to actuator calibration");
         LogActuatorCalibrationInstructions();
         controller.Center();
         return Mode::ActuatorCalibration;
     }
-    if (command == RF::Command::ChirpTVC)
+    else if (command == RF::Command::ChirpTVC)
     {
         Telemetry::GetInstance().Log("Switching mode from calibration to chirp tvc");
         return Mode::ChirpTVC;
     }
-    if (command == RF::Command::IncrementXTVC)
+    else if (command == RF::Command::IncrementXTVC)
     {
         XTVC += 0.01;
         std::ostringstream os;
@@ -123,7 +123,7 @@ Mode::Phase Mode::UpdateCalibration(RF::Command &command, Navigation &navigation
         controller.tvc.SetTVCX(XTVC);
         return Mode::Calibration;
     }
-    if (command == RF::Command::IncrementYTVC)
+    else if (command == RF::Command::IncrementYTVC)
     {
         YTVC += 0.01;
         std::ostringstream os;
@@ -133,7 +133,7 @@ Mode::Phase Mode::UpdateCalibration(RF::Command &command, Navigation &navigation
         controller.tvc.SetTVCY(YTVC);
         return Mode::Calibration;
     }
-    if (command == RF::Command::DecrementXTVC)
+    else if (command == RF::Command::DecrementXTVC)
     {
         XTVC -= 0.01;
         std::ostringstream os;
@@ -153,7 +153,7 @@ Mode::Phase Mode::UpdateCalibration(RF::Command &command, Navigation &navigation
         controller.tvc.SetTVCY(YTVC);
         return Mode::Calibration;
     }
-    if (command == RF::Command::TestTVC)
+    else if (command == RF::Command::TestTVC)
     {
         Telemetry::GetInstance().Log("Switching mode from calibration to test tvc");
         UploadKmatrices();

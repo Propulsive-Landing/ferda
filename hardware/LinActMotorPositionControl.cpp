@@ -68,7 +68,7 @@ void driveActuator(int actuator_index, int direction, int speed)
     {
     case 1: // extend
 
-        ss << "Driving actuator " << actuator_index << " to extend at speed " << speed;
+        ss << "Actuator: Driving actuator " << actuator_index << " to extend at speed " << speed;
 
         Telemetry::GetInstance().Log(ss.str());
 
@@ -78,7 +78,7 @@ void driveActuator(int actuator_index, int direction, int speed)
 
     case 0: // stop
 
-        ss << "Stopping actuator " << actuator_index << " to extend at speed " << speed;
+        ss << "Actuator: Stopping actuator " << actuator_index << " to extend at speed " << speed;
 
         Telemetry::GetInstance().Log(ss.str());
 
@@ -87,7 +87,7 @@ void driveActuator(int actuator_index, int direction, int speed)
         break;
 
     case -1: // retract
-        ss << "Retracting actuator " << actuator_index << " to retract at speed " << speed;
+        ss << "Actuator: Retracting actuator " << actuator_index << " to retract at speed " << speed;
 
         Telemetry::GetInstance().Log(ss.str());
         pwm_driver->set_pwm(rpwmChannel, 0, 0);
@@ -261,7 +261,7 @@ int moveToLimit(int actuator_index, int direction)
         curr = analogRead(sensorPin);
 
         float voltage = (curr / 32767.0) * 6.144;
-        ss << "Actuator " << actuator_index << " Raw: " << curr << " Voltage: " << voltage;
+        ss << "Actuator:  " << actuator_index << " Raw: " << curr << " Voltage: " << voltage;
         Telemetry::GetInstance().Log(ss.str());
 
     } while (abs(curr - prev) > 10); // tolerance for noise

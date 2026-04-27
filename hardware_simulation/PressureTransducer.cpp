@@ -30,7 +30,7 @@ double PressureTransducer::ReadPSI(PTSensor sensor)
         maxPSI = 1000.0;
         break;
     case NitrousTankLine:
-        pin = MissionConstants::kNitrousTankinePTPin;
+        pin = MissionConstants::kNitrousTankLinePTPin;
         maxPSI = 1000.0;
         break;
     case OxygenLine:
