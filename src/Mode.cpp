@@ -515,7 +515,7 @@ Mode::Phase Mode::UpdateASITest(RF::Command &command, Navigation &navigation, Va
     if (seconds_since_start >= 0.3 && seconds_since_start < 2.3)
     {
         // Open ASI ethanol after 300ms
-        if (seconds_since_start < 0.31 && !firstPartDone)
+        if (!firstPartDone)
         {
             // Uncomment for debugging
             // std::cout << "Time: " << seconds_since_start << "\n";
@@ -527,7 +527,7 @@ Mode::Phase Mode::UpdateASITest(RF::Command &command, Navigation &navigation, Va
     else if (seconds_since_start >= 2.3 && seconds_since_start < 2.6)
     {
         // Close ASI ethanol and turn off spark after 2 seconds
-        if (seconds_since_start < 2.31 && !secondPartDone)
+        if (!secondPartDone)
         {
             // Uncomment for debugging
             // std::cout << "Time: " << seconds_since_start << "\n";
@@ -540,7 +540,7 @@ Mode::Phase Mode::UpdateASITest(RF::Command &command, Navigation &navigation, Va
     else if (seconds_since_start >= 2.6)
     {
         // Close ASI oxygen after 2.3 seconds
-        if (seconds_since_start < 2.61 && !thirdPartDone)
+        if (!thirdPartDone)
         {
             // Uncomment for debugging
             // std::cout << "Time: " << seconds_since_start << "\n";
@@ -596,10 +596,10 @@ Mode::Phase Mode::UpdateWaterFlow(RF::Command &command, Navigation &navigation, 
     if (seconds_since_start >= 1.0 && seconds_since_start < 2.0)
     {
         // Open main ethanol after 1 seconds
-        if (seconds_since_start < 1.01 && !firstPartDone)
+        if (!firstPartDone)
         {
             // Uncomment for debugging
-            std::cout << "Time: " << seconds_since_start << "\n";
+            // std::cout << "Time: " << seconds_since_start << "\n";
 
             valveControl.OpenValve(ValveControl::MainEthanol);
             firstPartDone = true;
@@ -608,10 +608,10 @@ Mode::Phase Mode::UpdateWaterFlow(RF::Command &command, Navigation &navigation, 
     else if (seconds_since_start >= 3.0)
     {
         // Close both valves after 3 seconds
-        if (seconds_since_start < 3.01 && !secondPartDone)
+        if (!secondPartDone)
         {
             // Uncomment for debugging
-            std::cout << "Time: " << seconds_since_start << "\n";
+            // std::cout << "Time: " << seconds_since_start << "\n";
 
             valveControl.CloseValve(ValveControl::MainNitrous);
             valveControl.CloseValve(ValveControl::MainEthanol);
@@ -671,7 +671,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
     if (seconds_since_start >= 1.0 && seconds_since_start < 1.3)
     {
         //  Close Purge valve and turn on asi oxygen and spark plug on
-        if (seconds_since_start < 1.01 && !firstPartDone)
+        if (!firstPartDone)
         {
             // Uncomment for debugging
             // std::cout << "Time: " << seconds_since_start << "\n";
@@ -685,7 +685,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
     else if (seconds_since_start >= 1.3 && seconds_since_start < 1.8)
     {
         // Turn on asi ethonol
-        if (seconds_since_start < 1.31 && !secondPartDone)
+        if (!secondPartDone)
         {
             // Uncomment for debugging
             // std::cout << "Time: " << seconds_since_start << "\n";
@@ -697,7 +697,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
     else if (seconds_since_start >= 1.8 && seconds_since_start < 2.0)
     {
         // Open main nitrous valve
-        if (seconds_since_start < 1.81 && !thirdPartDone)
+        if (!thirdPartDone)
         {
             // Uncomment for debugging
             // std::cout << "Time: " << seconds_since_start << "\n";
@@ -709,7 +709,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
     else if (seconds_since_start >= 2.0 && seconds_since_start < 3.3)
     {
         // Open main ethonol valve
-        if (seconds_since_start < 2.01 && !fourthPartDone)
+        if (!fourthPartDone)
         {
             // Uncomment for debugging
             // std::cout << "Time: " << seconds_since_start << "\n";
@@ -721,7 +721,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
     else if (seconds_since_start >= 3.3 && seconds_since_start < 4.5)
     {
         // Turn off spark plug and asi oxygen
-        if (seconds_since_start < 3.31 && !fifthPartDone)
+        if (!fifthPartDone)
         {
             // Uncomment for debugging
             // std::cout << "Time: " << seconds_since_start << "\n";
@@ -734,7 +734,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
     else if (seconds_since_start >= 4.5 && seconds_since_start < 4.7)
     {
         // Turn off asi ethonol and main ethonol
-        if (seconds_since_start < 4.51 && !sixthPartDone)
+        if (!sixthPartDone)
         {
             // Uncomment for debugging
             // std::cout << "Time: " << seconds_since_start << "\n";
@@ -747,7 +747,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
     else if (seconds_since_start >= 4.7 && seconds_since_start < 5.2)
     {
         // Turn off Main nitrous
-        if (seconds_since_start < 4.71 && !seventhPartDone)
+        if (!seventhPartDone)
         {
             // Uncomment for debugging
             //  std::cout << "Time: " << seconds_since_start << "\n";
@@ -759,7 +759,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
     else if (seconds_since_start >= 5.2 && seconds_since_start < 6.7)
     {
         // Open purge
-        if (seconds_since_start < 5.21 && !eigthPartDone)
+        if (!eigthPartDone)
         {
             // Uncomment for debugging
             // std::cout << "Time: " << seconds_since_start << "\n";
@@ -772,7 +772,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
     else if (seconds_since_start >= 6.7)
     {
         // Close purge
-        if (seconds_since_start < 6.71 && !ninthPartDone)
+        if (!ninthPartDone)
         {
             // Uncomment for debugging
             // std::cout << "Time: " << seconds_since_start << "\n";

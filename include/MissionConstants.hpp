@@ -85,9 +85,9 @@ namespace MissionConstants
     const double kSensorGPSPositionNoiseM = 3.0;
     const double kSensorGPSVelocityNoiseMps = 0.1;
     const double kSensorLidarNoiseM = 0.005;
-    const Eigen::Vector3d kSensorCameraPosition = Eigen::Vector3d(0.0, 0.0, 0.0);                     // Position of the camera in the body frame (in meters)
-    const Eigen::Vector3d kSensorCameraOrientationRad = Eigen::Vector3d(3.141592653589793/2.0, -3.141592653589793/2.0, 0.0); // XYZ Euler orientation from camera frame to body frame
-    const Eigen::Vector3d kSensorMagnetometerPosition = Eigen::Vector3d(0.0, 0.0, 0.0);               // Position of magnetometer in the body frame (in meters)
+    const Eigen::Vector3d kSensorCameraPosition = Eigen::Vector3d(0.0, 0.0, 0.0);                                                // Position of the camera in the body frame (in meters)
+    const Eigen::Vector3d kSensorCameraOrientationRad = Eigen::Vector3d(3.141592653589793 / 2.0, -3.141592653589793 / 2.0, 0.0); // XYZ Euler orientation from camera frame to body frame
+    const Eigen::Vector3d kSensorMagnetometerPosition = Eigen::Vector3d(0.0, 0.0, 0.0);                                          // Position of magnetometer in the body frame (in meters)
     // IMU axis remap from IMU sensor frame to vehicle body frame.
     // Must remain a right-angle transform: each row/column has exactly one +/-1 and zeros elsewhere.
     // Rows are body X/Y/Z, columns are sensor X/Y/Z.
@@ -179,8 +179,8 @@ namespace MissionConstants
     const float kTvcChirpEndFreqHz = 15.0f;
     const int kTvcChirpMaxSpeed = kTvcMaxMotorSpeed;
     const int kTvcChirpControlPeriodMs = 20;
-    const int kTVCXPotentiometerReading = ADS3BASE + 0; // Third ADS1115 A0
-    const int kTVCYPotentiometerReading = ADS3BASE + 1; // Third ADS1115 A1
+    const int kTVCXPotentiometerReading = ADS3BASE + 1; // Third ADS1115 A1
+    const int kTVCYPotentiometerReading = ADS3BASE + 2; // Third ADS1115 A2
 
     // Ignition constants, TODO: USER EDIT PRE-FlIGHT
     const int kIgnitionPin = 6;
@@ -190,12 +190,12 @@ namespace MissionConstants
     const int kMainNitrousServoPin = 0; // servo driver row [0-15]
     const int kPurgeServoPin = 1;       // servo driver row [0-15]
     const int kMainEthanolServoPin = 2; // servo driver row [0-15]
-    const int kNitrogenServoPin = 4;    // servo driver row [0-15]
-    const int kNitrousFillServoPin = 5; // servo driver row [0-15]
+    const int kNitrogenServoPin = 3;    // servo driver row [0-15]
+    const int kNitrousFillServoPin = 4; // servo driver row [0-15]
 
     // Valve Solenoid Pins (GPIO)
-    const int kASIEthanolPin = 16;
     const int kASIOxygenPin = 12;
+    const int kASIEthanolPin = 16;
     const int kNitrogenBleedPin = 20;
 
     // Spark Plug Pins
@@ -209,13 +209,12 @@ namespace MissionConstants
     const int kNitrousLinePTPin = ADS1BASE + 3;     // First ADS1115 A2
 
     // NOT USED AT THE MOMENT
-    const int kOxygenLinePTPin = ADS2BASE + 1; // Second ADS1115  A1
-    const int kFuelInletPTPin = ADS2BASE + 2;  // Second ADS1115 A2
-    const int kFuelOutletPTPin = ADS2BASE + 3; // Second ADS1115 A3
+    const int kOxygenLinePTPin = ADS2BASE + 2; // Second ADS1115  A2
+    const int kFuelInletPTPin = ADS2BASE + 3;  // Second ADS1115 A3
+    const int kFuelOutletPTPin = ADS3BASE + 0; // Third ADS1115 A0
 
     // Load Cell Pin (Analog)
-    const int kLoadCellPin = ADS2BASE + 1; // Second ADS1115 A1
-
+    const int kLoadCellPin = ADS2BASE + 1;          // Second ADS1115 A1
     const int kChamberPressurePTPin = ADS2BASE + 0; // Second ADS1115 A0
 
     // Valve Servo Angles

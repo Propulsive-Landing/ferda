@@ -132,7 +132,7 @@ int main()
              SO THAT IS PROBABLY UNSAFE
              */
 
-    // // Liquid propulsion GPIO setup (solenoid pins)
+    // Liquid propulsion GPIO setup (solenoid pins)
     // pinMode(MissionConstants::kASIEthanolPin, OUTPUT);
     // pinMode(MissionConstants::kASIOxygenPin, OUTPUT);
     // pinMode(MissionConstants::kNitrogenBleedPin, OUTPUT);
