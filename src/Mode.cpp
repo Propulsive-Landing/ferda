@@ -332,6 +332,12 @@ Mode::Phase Mode::UpdateIdle(RF::Command &command, Navigation &navigation, Contr
         Telemetry::GetInstance().Log("Switching mode from idle to chirp tvc");
         return Mode::ChirpTVC;
     }
+    else if (command == RF::Command::NAV_RESTART)
+    {
+        Telemetry::GetInstance().Log("NAV_RESTART command received, resetting navigation");
+        navigation.hard_reset();
+        command = RF::Command::None;
+    }
 
     return Mode::Idle;
 }
@@ -835,7 +841,6 @@ bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igni
     // Get command and first see if it is to toggle any fusion sensors
     RF::Command command = RF::GetInstance().GetCommand();
     CheckForToggleSensorCommands(command, gps, camera, magnetometer);
-
     /* Handle behavior based on current phase. Update phase*/
     switch (this->eCurrentMode)
     {
