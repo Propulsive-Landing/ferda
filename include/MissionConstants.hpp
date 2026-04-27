@@ -79,7 +79,7 @@ namespace MissionConstants
     const double kSensorCameraDistortionK3 = 0.0;
     const int kSensorCameraImageWidthPx = 1920;
     const int kSensorCameraImageHeightPx = 1080;
-    const int kSensorCameraMaxDetections = 5;
+    const int kSensorCameraMaxDetections = 8;
     const int kSensorCameraMarkerMinAreaPx = 2000;
     const double kSensorMagnetometerNoise = 1; // Magnetometer measurement noise (Tesla)
     const double kSensorGPSPositionNoiseM = 3.0;
