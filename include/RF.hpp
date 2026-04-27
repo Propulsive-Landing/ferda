@@ -127,9 +127,9 @@ public:
             ParsedCommand = RF::Command::DecrementXTVC;
         else if (input_line == "DecrementYTVC")
             ParsedCommand = RF::Command::DecrementYTVC;
-        else if (input_line == "SENSOR: camera ON")
+        else if (input_line == "SENSOR: camera ON" || input_line == "CameraOn")
             ParsedCommand = RF::Command::CameraOn;
-        else if (input_line == "SENSOR: camera OFF")
+        else if (input_line == "SENSOR: camera OFF" || input_line == "CameraOff")
             ParsedCommand = RF::Command::CameraOff;
         else if (input_line == "SENSOR: lidar ON")
             ParsedCommand = RF::Command::LidarOn;
