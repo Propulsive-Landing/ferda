@@ -53,7 +53,7 @@ namespace MissionConstants
     const double kNavInitialAccelBiasVariance = 0.86;
     const double kNavInitialGyroBiasVariance = 1e-6;
     inline const Eigen::Matrix<double, 3, 4> kMarkerData =
-        (Eigen::Matrix<double, 3, 4>() << -0.2575 + 1.68, 0.2575 + 1.68, -0.2575 + 1.68, 0.2575 + 1.68,
+        (Eigen::Matrix<double, 3, 4>() << -0.2575 - 1.68, 0.2575 - 1.68, -0.2575 - 1.68, 0.2575 - 1.68,
          0.2575, 0.2575, -0.2575, -0.2575,
          0.0, 0.0, 0.0, 0.0)
             .finished();
