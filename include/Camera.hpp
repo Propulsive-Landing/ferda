@@ -25,7 +25,7 @@ public:
 
 private:
     std::vector<Eigen::Vector3d> latestUnitVectorList;
-    bool useCamera = true;
+    bool useCamera = false;
     double latestFrameId = -1.0;
     bool capturePending = false;
     double nextCaptureFrameId = 0.0;

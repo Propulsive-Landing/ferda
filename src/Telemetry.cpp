@@ -250,7 +250,7 @@ void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
 
     }, decimalPlaces);
 
-    std::cout << "GNC Telemetry: " << json_msg["payload"].size() << std::endl;
+    //std::cout << "GNC Telemetry: " << json_msg["payload"].size() << std::endl;
     RF::GetInstance().SendString(json_msg.dump() + "\n");
 }
 
