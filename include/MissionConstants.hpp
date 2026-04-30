@@ -168,18 +168,18 @@ namespace MissionConstants
     const int kTvcActuator0PotentiometerMaxReading = 2498;      // ADC reading for actuator 0 at maximum extension (extended)
     const int kTvcActuator1PotentiometerMinReading = 26054;     // ADC reading for actuator 1 at minimum extension (retracted)
     const int kTvcActuator1PotentiometerMaxReading = 2498;      // ADC reading for actuator 1 at maximum extension (extended)
-    const int kTvcActuator0RpwmChannel = 0;                     // PCA9685 RPWM channel for actuator 0 (X)
-    const int kTvcActuator0LpwmChannel = 1;                     // PCA9685 LPWM channel for actuator 0 (X)
-    const int kTvcActuator1RpwmChannel = 2;                     // PCA9685 RPWM channel for actuator 1 (Y)
-    const int kTvcActuator1LpwmChannel = 3;                     // PCA9685 LPWM channel for actuator 1 (Y)
+    const int kTvcActuator0RpwmChannel = 1;                     // PCA9685 RPWM channel for actuator 0 (X)
+    const int kTvcActuator0LpwmChannel = 2;                     // PCA9685 LPWM channel for actuator 0 (X)
+    const int kTvcActuator1RpwmChannel = 3;                     // PCA9685 RPWM channel for actuator 1 (Y)
+    const int kTvcActuator1LpwmChannel = 4;                     // PCA9685 LPWM channel for actuator 1 (Y)
     const double kTvcCommandTimeoutSeconds = 0.100;             // Max command age before actuator output is forced to neutral
     const float kTvcChirpDurationSec = 10.0f;
     const float kTvcChirpStartFreqHz = 1.0f;
     const float kTvcChirpEndFreqHz = 15.0f;
     const int kTvcChirpMaxSpeed = kTvcMaxMotorSpeed;
     const int kTvcChirpControlPeriodMs = 20;
-    const int kTVCXPotentiometerReading = ADS3BASE + 1; // Third ADS1115 A1
-    const int kTVCYPotentiometerReading = ADS3BASE + 2; // Third ADS1115 A2
+    const int kTVCXPotentiometerReading = ADS2BASE + 2; // Third ADS1115 A2
+    const int kTVCYPotentiometerReading = ADS2BASE + 3; // Third ADS1115 A3
 
     // Ignition constants, TODO: USER EDIT PRE-FlIGHT
     const int kIgnitionPin = 6;

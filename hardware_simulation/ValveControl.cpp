@@ -35,7 +35,7 @@ void ValveControl::OpenValve(ValveType valve)
         asiOxygenOpen = true;
         break;
     case NitrogenBleed:
-        std::cout << "[SIM] Nitrogen Bleed valve OPENED" << std::endl;
+        std::cout << "[SIM] Nitrogen Bleed valve OPENED (normally-open valve)" << std::endl;
         nitrogenBleedOpen = true;
         break;
     }
@@ -74,7 +74,7 @@ void ValveControl::CloseValve(ValveType valve)
         asiOxygenOpen = false;
         break;
     case NitrogenBleed:
-        std::cout << "[SIM] Nitrogen Bleed valve CLOSED" << std::endl;
+        std::cout << "[SIM] Nitrogen Bleed valve CLOSED (normally-open valve)" << std::endl;
         nitrogenBleedOpen = false;
         break;
     }

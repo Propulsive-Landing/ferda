@@ -27,6 +27,24 @@ namespace
     }
 }
 
+void CloseAllValvesAndSparkPlug(ValveControl &valveControl, SparkPlug &sparkPlug)
+{
+    // TODO: MIGHT HAVE TO DO DELAYS
+
+    valveControl.CloseValve(ValveControl::ASIEthanol);
+    valveControl.CloseValve(ValveControl::ASIOxygen);
+    // Might have to do OpenValve because I think we want this to be written HIGH to be turned off but honestly I have
+    // no idea
+    valveControl.CloseValve(ValveControl::NitrogenBleed);
+    sparkPlug.TurnOff();
+
+    valveControl.CloseValve(ValveControl::Nitrogen);
+    valveControl.CloseValve(ValveControl::Purge);
+    valveControl.CloseValve(ValveControl::MainEthanol);
+    valveControl.CloseValve(ValveControl::MainNitrous);
+    valveControl.CloseValve(ValveControl::NitrousFill);
+}
+
 Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
 void Mode::UploadKmatrices()

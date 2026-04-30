@@ -144,7 +144,7 @@ int main()
     //  Initialize solenoids to closed state (HIGH for normally-closed, LOW for normally-open)
     // digitalWrite(MissionConstants::kASIEthanolPin, 1);     // HIGH = CLOSED
     // digitalWrite(MissionConstants::kASIOxygenPin, 1);      // HIGH = CLOSED
-    // digitalWrite(MissionConstants::kNitrogenBleedPin, 0);  // LOW = CLOSED (normally-open valve)
+    // digitalWrite(MissionConstants::kNitrogenBleedPin, 1);   // HIGH = CLOSED
     // digitalWrite(MissionConstants::kSparkPin, 1);          // HIGH = OFF
 
     //  Initialize servos to closed position (179 degrees)
