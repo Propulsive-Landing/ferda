@@ -62,7 +62,7 @@ private:
     Mode::Phase UpdateHotfireIdle(RF::Command &command, Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug);
     Mode::Phase UpdateASITest(RF::Command &command, Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug, double currentTime);
     Mode::Phase UpdateWaterFlow(RF::Command &command, Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug, double currentTime);
-    Mode::Phase Update3SecondHotfire(RF::Command &command, Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug, double currentTime);
+    Mode::Phase Update3SecondHotfire(RF::Command &command, Navigation &navigation, Controller &controller, ValveControl &valveControl, SparkPlug &sparkPlug, double currentTime);
     Mode::Phase UpdateAbort(ValveControl &valvecontrol, SparkPlug &sparkplug);
     void CheckForToggleSensorCommands(RF::Command &command, GPS &gps, Camera &camera, Magnetometer &magnetometer);
     void CloseAllValvesAndSparkPlug(ValveControl &valveControl, SparkPlug &sparkPlug);

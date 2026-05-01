@@ -25,7 +25,7 @@ private:
     Eigen::Vector2d error_integral = Eigen::Vector2d::Zero();
     double height_error_integral = 0.0;
     Eigen::Vector2d translation_error_integral = Eigen::Vector2d::Zero();
-    Eigen::Vector2d setpoint_angles = Eigen::Vector2d::Zero(); // [roll, pitch] from translation controller
+    Eigen::Vector2d setpoint_angles = Eigen::Vector2d::Zero();      // [roll, pitch] from translation controller
     Eigen::Vector2d setpoint_angles_prev = Eigen::Vector2d::Zero(); // Previous setpoint angles for derivative term
     double current_thrust_command_N = 0.0;
     double current_rcs_command_N = 0.0;
@@ -39,16 +39,17 @@ public:
     Engine &engine;
     Eigen::Vector2d input;
     double loopTime = 0.005;
-    double refPositionX = 0.0;      // reference position in x (meters)
-    double refPositionY = 0.0;      // reference position in y (meters)
-    double refPositionZ = 0.0;      // reference altitude / position in z (meters)
-    double refVelocityX = 0.0;      // reference velocity in x (m/s)
-    double refVelocityY = 0.0;      // reference velocity in y (m/s)
-    double refVelocityZ = 0.0;      // reference velocity in z (m/s, positive is up)
-    double refAccelerationZ = 0.0;   // feedforward acceleration in z (m/s^2, positive is up)
+    double refPositionX = 0.0;     // reference position in x (meters)
+    double refPositionY = 0.0;     // reference position in y (meters)
+    double refPositionZ = 0.0;     // reference altitude / position in z (meters)
+    double refVelocityX = 0.0;     // reference velocity in x (m/s)
+    double refVelocityY = 0.0;     // reference velocity in y (m/s)
+    double refVelocityZ = 0.0;     // reference velocity in z (m/s, positive is up)
+    double refAccelerationZ = 0.0; // feedforward acceleration in z (m/s^2, positive is up)
     Controller(TVC &tvc, Engine &engine);
     void UpdateLaunch(Navigation &navigation, double current_time);
     void UpdateTestTVC(double testTime);
+    void HotFireTestTVC(double testTime);
     void AttitudeControl(Navigation &navigation);
     void HeightControl(Navigation &navigation);
     void TranslationControl(Navigation &navigation);

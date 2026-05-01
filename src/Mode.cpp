@@ -658,7 +658,8 @@ Mode::Phase Mode::UpdateWaterFlow(RF::Command &command, Navigation &navigation, 
     return Mode::WaterFlow;
 }
 
-Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug,
+Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigation, Controller &controller,
+                                       ValveControl &valveControl, SparkPlug &sparkPlug,
                                        double currentTime)
 {
     static double startTime;
@@ -672,7 +673,12 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
     static bool seventhPartDone = false;
     static bool eigthPartDone = false;
     static bool ninthPartDone = false;
+    static bool tenthPartDone = false;
+    static bool eleventhPartDone = false;
 
+    /*
+
+    */
     if (!sequenceStarted)
     {
         startTime = currentTime;
@@ -686,13 +692,13 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
     navigation.UpdateNavigation();
 
     // Sequence timing (matching original hotfire.ino logic)
-    if (seconds_since_start >= 1.0 && seconds_since_start < 1.3)
+    if (seconds_since_start >= 0.5 && seconds_since_start < 0.65)
     {
         //  Close Purge valve and turn on asi oxygen and spark plug on
         if (!firstPartDone)
         {
             // Uncomment for debugging
-            // std::cout << "Time: " << seconds_since_start << "\n";
+            std::cout << "Time: " << seconds_since_start << "\n";
 
             valveControl.CloseValve(ValveControl::Purge);
             valveControl.OpenValve(ValveControl::ASIOxygen);
@@ -700,109 +706,135 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             firstPartDone = true;
         }
     }
-    else if (seconds_since_start >= 1.3 && seconds_since_start < 1.8)
+    else if (seconds_since_start >= 0.65 && seconds_since_start < 0.90)
     {
         // Turn on asi ethonol
         if (!secondPartDone)
         {
             // Uncomment for debugging
-            // std::cout << "Time: " << seconds_since_start << "\n";
+            std::cout << "Time: " << seconds_since_start << "\n";
 
             valveControl.OpenValve(ValveControl::ASIEthanol);
             secondPartDone = true;
         }
     }
-    else if (seconds_since_start >= 1.8 && seconds_since_start < 2.0)
+    else if (seconds_since_start >= 0.90 && seconds_since_start < 1.1)
     {
         // Open main nitrous valve
         if (!thirdPartDone)
         {
             // Uncomment for debugging
-            // std::cout << "Time: " << seconds_since_start << "\n";
+            std::cout << "Time: " << seconds_since_start << "\n";
 
             valveControl.OpenValve(ValveControl::MainNitrous);
             thirdPartDone = true;
         }
     }
-    else if (seconds_since_start >= 2.0 && seconds_since_start < 3.3)
+    else if (seconds_since_start >= 1.1 && seconds_since_start < 1.6)
     {
         // Open main ethonol valve
         if (!fourthPartDone)
         {
             // Uncomment for debugging
-            // std::cout << "Time: " << seconds_since_start << "\n";
+            std::cout << "Time: " << seconds_since_start << "\n";
 
             valveControl.OpenValve(ValveControl::MainEthanol);
             fourthPartDone = true;
         }
     }
-    else if (seconds_since_start >= 3.3 && seconds_since_start < 4.5)
+
+    else if (seconds_since_start >= 1.6 && seconds_since_start < 2.6)
     {
         // Turn off spark plug and asi oxygen
         if (!fifthPartDone)
         {
             // Uncomment for debugging
-            // std::cout << "Time: " << seconds_since_start << "\n";
-
-            sparkPlug.TurnOff();
-            valveControl.CloseValve(ValveControl::ASIOxygen);
+            std::cout << "Time: " << seconds_since_start << "\n";
+            controller.HotFireTestTVC(seconds_since_start);
             fifthPartDone = true;
         }
     }
-    else if (seconds_since_start >= 4.5 && seconds_since_start < 4.7)
+    else if (seconds_since_start >= 2.6 && seconds_since_start < 3.6)
     {
-        // Turn off asi ethonol and main ethonol
+        // Turn off spark plug and asi oxygen
         if (!sixthPartDone)
         {
             // Uncomment for debugging
-            // std::cout << "Time: " << seconds_since_start << "\n";
-
-            valveControl.CloseValve(ValveControl::ASIEthanol);
-            valveControl.CloseValve(ValveControl::MainEthanol);
+            std::cout << "Time: " << seconds_since_start << "\n";
+            controller.HotFireTestTVC(seconds_since_start);
             sixthPartDone = true;
         }
     }
-    else if (seconds_since_start >= 4.7 && seconds_since_start < 5.2)
+    else if (seconds_since_start >= 3.6 && seconds_since_start < 4.6)
     {
-        // Turn off Main nitrous
+        // Turn off spark plug and asi oxygen
         if (!seventhPartDone)
         {
             // Uncomment for debugging
-            //  std::cout << "Time: " << seconds_since_start << "\n";
+            std::cout << "Time: " << seconds_since_start << "\n";
+            // Nuetral ??
+            // controller.HotFireTestTVC(seconds_since_start);
+            controller.tvc.SetTVCX(0);
+            controller.tvc.SetTVCY(0);
+            controller.tvc.UpdateActuatorPositions();
 
-            valveControl.CloseValve(ValveControl::MainNitrous);
             seventhPartDone = true;
         }
     }
-    else if (seconds_since_start >= 5.2 && seconds_since_start < 6.7)
+    else if (seconds_since_start >= 4.6 && seconds_since_start < 4.8)
     {
-        // Open purge
+        // Turn off spark plug and asi oxygen
         if (!eigthPartDone)
         {
             // Uncomment for debugging
-            // std::cout << "Time: " << seconds_since_start << "\n";
-
-            // Open purge
-            valveControl.OpenValve(ValveControl::Purge);
+            std::cout << "Time: " << seconds_since_start << "\n";
+            controller.tvc.Stop();
+            valveControl.CloseValve(ValveControl::ASIEthanol);
+            valveControl.CloseValve(ValveControl::MainEthanol);
             eigthPartDone = true;
         }
     }
-    else if (seconds_since_start >= 6.7)
+    else if (seconds_since_start >= 4.8 && seconds_since_start < 5.3)
     {
-        // Close purge
+        // Turn off Main nitrous
         if (!ninthPartDone)
         {
             // Uncomment for debugging
-            // std::cout << "Time: " << seconds_since_start << "\n";
+            std::cout << "Time: " << seconds_since_start << "\n";
+
+            valveControl.CloseValve(ValveControl::MainNitrous);
+            ninthPartDone = true;
+        }
+    }
+    else if (seconds_since_start >= 5.3 && seconds_since_start < 6.8)
+    {
+        // Open purge
+        if (!tenthPartDone)
+        {
+            // Uncomment for debugging
+            std::cout << "Time: " << seconds_since_start << "\n";
+
+            // Open purge
+            valveControl.OpenValve(ValveControl::Purge);
+            tenthPartDone = true;
+        }
+    }
+    else if (seconds_since_start >= 6.8)
+    {
+        // Close purge
+        if (!eleventhPartDone)
+        {
+            // Uncomment for debugging
+            std::cout << "Time: " << seconds_since_start << "\n";
 
             // Close purge
             valveControl.CloseValve(ValveControl::Purge);
-            ninthPartDone = true;
+            eleventhPartDone = true;
         }
         if (seconds_since_start >= 7)
         {
             // Uncomment for debugging
-            // std::cout << "Time: " << seconds_since_start << "\n";
+            std::cout << "Time: " << seconds_since_start << "\n";
 
             Telemetry::GetInstance().Log("3 Second Hotfire sequence completed, returning to HotfireIdle");
             sequenceStarted = false;
@@ -815,6 +847,8 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             seventhPartDone = false;
             eigthPartDone = false;
             ninthPartDone = false;
+            tenthPartDone = false;
+            eleventhPartDone = false;
             return Mode::HotfireIdle;
         }
     }
@@ -906,7 +940,7 @@ bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igni
         break;
     case ThreeSecondHotfire:
         Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
-        this->eCurrentMode = Update3SecondHotfire(command, navigation, valveControl, sparkPlug, currentTime);
+        this->eCurrentMode = Update3SecondHotfire(command, navigation, controller, valveControl, sparkPlug, currentTime);
         break;
     case Safe:
         this->eCurrentMode = UpdateSafeMode(navigation, controller, currentTime);

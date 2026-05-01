@@ -41,6 +41,20 @@ void Controller::UpdateTestTVC(double testTime)
     tvc.UpdateActuatorPositions();
 }
 
+void Controller::HotFireTestTVC(double testTime)
+{
+    double angleA = sin(3 * testTime) * MissionConstants::kMaximumTvcAngle / 2.0; // Rad
+    double angleB = sin(3 * testTime) * MissionConstants::kMaximumTvcAngle / 2.0; // Rad
+
+    input(0) = angleA;
+    input(1) = angleB;
+    // [TOD] Move to hardware tvc_angles = TvcMath(input);
+
+    tvc.SetTVCX(input(0));
+    tvc.SetTVCY(input(1));
+    tvc.UpdateActuatorPositions();
+}
+
 void Controller::UpdateLaunch(Navigation &navigation, double current_time)
 {
     // Use the TVC to stabilize the rocket for landing
@@ -59,7 +73,7 @@ void Controller::UpdateLaunch(Navigation &navigation, double current_time)
     HeightControl(navigation);
 }
 
-//TODO: This is untested, please check with SIL first
+// TODO: This is untested, please check with SIL first
 void Controller::RcsControl(const Eigen::Quaterniond &q, const Eigen::Vector3d &omega_b)
 {
     const Eigen::Quaterniond qNormalized = q.normalized();
@@ -88,7 +102,7 @@ void Controller::RcsControl(const Eigen::Quaterniond &q, const Eigen::Vector3d &
         deriv = 1;
     }
 
-    //TODO: Implement the hardware interface to actually fire the RCS thrusters
+    // TODO: Implement the hardware interface to actually fire the RCS thrusters
     current_rcs_command_N = static_cast<double>(pos + deriv) * MissionConstants::kControlRcsThrustCommand;
 }
 
@@ -99,10 +113,10 @@ void Controller::AttitudeControl(Navigation &navigation)
     Eigen::Vector3d angularVelocity = navigation.GetAngularVelocity();
 
     q_current = Eigen::Quaterniond(
-        stateEstimate(6),   // w
-        stateEstimate(7),   // x
-        stateEstimate(8),   // y
-        stateEstimate(9)    // z
+        stateEstimate(6), // w
+        stateEstimate(7), // x
+        stateEstimate(8), // y
+        stateEstimate(9)  // z
     );
     Eigen::Quaterniond q_ref = Eigen::Quaterniond::Identity();
     q_error = q_current * q_ref.inverse();
@@ -116,16 +130,16 @@ void Controller::AttitudeControl(Navigation &navigation)
 
     // Approximate the derivative of theta_error using finite differences
     Eigen::Vector2d setpoint_angles_dot = (setpoint_angles - setpoint_angles_prev) / loopTime;
-    
+
     // Calculate velocity error: derivative of setpoint angles minus current angular velocity
     Eigen::Vector2d velocity_error = setpoint_angles_dot - angularVelocity.segment(0, 2);
 
     // Update previous setpoint_angles for next iteration
     setpoint_angles_prev = setpoint_angles;
 
-    x_control.segment(0, 2) =  error_integral;                 // Body frame x and y velocities
-    x_control.segment(2, 2) =  theta_error;                    // Roll and pitch error relative to setpoint
-    x_control.segment(4, 2) =  velocity_error;                 // Velocity error term
+    x_control.segment(0, 2) = error_integral; // Body frame x and y velocities
+    x_control.segment(2, 2) = theta_error;    // Roll and pitch error relative to setpoint
+    x_control.segment(4, 2) = velocity_error; // Velocity error term
 
     CalculateInput(navigation);
 }
@@ -164,17 +178,17 @@ void Controller::CalculateInput(Navigation &navigation)
 
 void Controller::TranslationControl(Navigation &navigation)
 {
-Eigen::Matrix<double, 16, 1> x = navigation.GetNavigation();
+    Eigen::Matrix<double, 16, 1> x = navigation.GetNavigation();
 
     // States (earth frame)
-    double px = x(0);   // x position [m]
-    double py = x(1);   // y position [m]
-    double vx = x(3);   // x velocity [m/s]
-    double vy = x(4);   // y velocity [m/s]
+    double px = x(0); // x position [m]
+    double py = x(1); // y position [m]
+    double vx = x(3); // x velocity [m/s]
+    double vy = x(4); // y velocity [m/s]
 
     // Errors
-    double e_x  = refPositionX - px;
-    double e_y  = refPositionY - py;
+    double e_x = refPositionX - px;
+    double e_y = refPositionY - py;
     double e_vx = refVelocityX - vx;
     double e_vy = refVelocityY - vy;
 
@@ -188,9 +202,9 @@ Eigen::Matrix<double, 16, 1> x = navigation.GetNavigation();
     // Build state vector: [x_int_err, y_int_err, e_x, e_y, e_vx, e_vy]
     Eigen::Matrix<double, 6, 1> x_translation;
     x_translation << translation_error_integral(0),
-                     translation_error_integral(1),
-                     e_x, e_y,
-                     e_vx, e_vy;
+        translation_error_integral(1),
+        e_x, e_y,
+        e_vx, e_vy;
 
     // Compute setpoint angles: [roll_setpoint, pitch_setpoint]
     double mass = navigation.GetEstimatedMassKg();
@@ -202,22 +216,22 @@ Eigen::Matrix<double, 16, 1> x = navigation.GetNavigation();
     setpoint_angles = translation_controller_gains * x_translation * (mass / thrust);
 }
 
-void Controller::HeightControl(Navigation& navigation)
+void Controller::HeightControl(Navigation &navigation)
 {
     const double g = MissionConstants::kGravity; // m/s^2
 
     Eigen::Matrix<double, 16, 1> x = navigation.GetNavigation();
 
     // States
-    double z     = x(2);   // position [m]
-    double zdot  = x(5);   // velocity [m/s]
+    double z = x(2);    // position [m]
+    double zdot = x(5); // velocity [m/s]
 
     // References
-    double z_ref    = refPositionZ;
+    double z_ref = refPositionZ;
     double zdot_ref = refVelocityZ;
 
     // Errors
-    double e_z    = z_ref - z;
+    double e_z = z_ref - z;
     double e_zdot = zdot_ref - zdot;
 
     current_guidance_altitude_error = e_z;
@@ -267,34 +281,43 @@ void Controller::ZeroTranslationalSetpointAngles()
 void Controller::ImportHeightParameters(std::string file_name)
 {
     // Imports the kmatrix file into controller_gains
-    
+
     char separator = ',';
     std::string row, item;
     std::ifstream in(file_name);
 
-    if (!in.is_open()) {
+    if (!in.is_open())
+    {
         throw std::runtime_error("Could not open file");
     }
 
     // Get the controller values of the k-matrix
     int rows_read = 0;
-    while (rows_read < 1 && std::getline(in, row)) {
+    while (rows_read < 1 && std::getline(in, row))
+    {
         row.erase(std::remove_if(row.begin(), row.end(), ::isspace), row.end());
-        if (row.empty()) continue;
+        if (row.empty())
+            continue;
         std::stringstream controllerValueStringStream(row);
-        for (int j = 0; j < 3; j++) {
-            if (!std::getline(controllerValueStringStream, item, separator)) {
+        for (int j = 0; j < 3; j++)
+        {
+            if (!std::getline(controllerValueStringStream, item, separator))
+            {
                 throw std::runtime_error("Not enough columns in row for height_controller_gains");
             }
-            try {
+            try
+            {
                 height_controller_gains(rows_read, j) = std::stod(item);
-            } catch (const std::invalid_argument& e) {
+            }
+            catch (const std::invalid_argument &e)
+            {
                 throw std::runtime_error("Invalid number in CSV for height_controller_gains: '" + item + "'");
             }
         }
         rows_read++;
     }
-    if (rows_read < 1) {
+    if (rows_read < 1)
+    {
         throw std::runtime_error("Not enough rows in height_controller_gains CSV");
     }
 
@@ -309,29 +332,38 @@ void Controller::ImportTranslationParameters(std::string file_name)
     std::string row, item;
     std::ifstream in(file_name);
 
-    if (!in.is_open()) {
+    if (!in.is_open())
+    {
         throw std::runtime_error("Could not open file");
     }
 
     // Get the controller values of the k-matrix
     int rows_read = 0;
-    while (rows_read < 2 && std::getline(in, row)) {
+    while (rows_read < 2 && std::getline(in, row))
+    {
         row.erase(std::remove_if(row.begin(), row.end(), ::isspace), row.end());
-        if (row.empty()) continue;
+        if (row.empty())
+            continue;
         std::stringstream controllerValueStringStream(row);
-        for (int j = 0; j < 6; j++) {
-            if (!std::getline(controllerValueStringStream, item, separator)) {
+        for (int j = 0; j < 6; j++)
+        {
+            if (!std::getline(controllerValueStringStream, item, separator))
+            {
                 throw std::runtime_error("Not enough columns in row for translation_controller_gains");
             }
-            try {
+            try
+            {
                 translation_controller_gains(rows_read, j) = std::stod(item);
-            } catch (const std::invalid_argument& e) {
+            }
+            catch (const std::invalid_argument &e)
+            {
                 throw std::runtime_error("Invalid number in CSV for translation_controller_gains: '" + item + "'");
             }
         }
         rows_read++;
     }
-    if (rows_read < 2) {
+    if (rows_read < 2)
+    {
         throw std::runtime_error("Not enough rows in translation_controller_gains CSV");
     }
 
@@ -346,29 +378,38 @@ void Controller::ImportAngleParameters(std::string file_name)
     std::string row, item;
     std::ifstream in(file_name);
 
-    if (!in.is_open()) {
+    if (!in.is_open())
+    {
         throw std::runtime_error("Could not open file");
     }
 
     // Get the controller values of the k-matrix
     int rows_read = 0;
-    while (rows_read < 2 && std::getline(in, row)) {
+    while (rows_read < 2 && std::getline(in, row))
+    {
         row.erase(std::remove_if(row.begin(), row.end(), ::isspace), row.end());
-        if (row.empty()) continue;
+        if (row.empty())
+            continue;
         std::stringstream controllerValueStringStream(row);
-        for (int j = 0; j < 6; j++) {
-            if (!std::getline(controllerValueStringStream, item, separator)) {
+        for (int j = 0; j < 6; j++)
+        {
+            if (!std::getline(controllerValueStringStream, item, separator))
+            {
                 throw std::runtime_error("Not enough columns in row for angle_controller_gains");
             }
-            try {
+            try
+            {
                 angle_controller_gains(rows_read, j) = std::stod(item);
-            } catch (const std::invalid_argument& e) {
+            }
+            catch (const std::invalid_argument &e)
+            {
                 throw std::runtime_error("Invalid number in CSV for angle_controller_gains: '" + item + "'");
             }
         }
         rows_read++;
     }
-    if (rows_read < 2) {
+    if (rows_read < 2)
+    {
         throw std::runtime_error("Not enough rows in angle_controller_gains CSV");
     }
 
