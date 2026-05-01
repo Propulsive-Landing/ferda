@@ -393,6 +393,9 @@ void Navigation::UpdateNavigation()
 
     // Update state estimates with available measurements
 
+    // Debug pseudo-measurement: softly anchor horizontal position to launch-frame origin.
+    debugZeroXYPositionUpdate();
+
     // Update magnetometer on fixed cadence
     ++magnetometer_update_counter;
     if (magnetometer_update_counter >= kMagnetometerUpdateCadence)
@@ -539,6 +542,21 @@ void Navigation::gpsVelocityUpdate(const Eigen::Vector2d &gpsVelocity)
     V.block<2, 2>(0, 0) = MissionConstants::kNavGPSVelocityNoiseFactor *
                           MissionConstants::kSensorGPSVelocityNoiseMps * MissionConstants::kSensorGPSVelocityNoiseMps *
                           Eigen::Matrix2d::Identity();
+
+    kalmanUpdate(H, V, y, y_pred);
+}
+
+void Navigation::debugZeroXYPositionUpdate()
+{
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(2, 15);
+    H.block<2, 2>(0, 0) = Eigen::Matrix2d::Identity();
+
+    Eigen::VectorXd y = Eigen::VectorXd::Zero(2);
+    Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(2);
+    y_pred << x_e(0), x_e(1);
+
+    const double variance = MissionConstants::kNavDebugXYZeroPositionVariance;
+    Eigen::MatrixXd V = variance * Eigen::Matrix2d::Identity();
 
     kalmanUpdate(H, V, y, y_pred);
 }
