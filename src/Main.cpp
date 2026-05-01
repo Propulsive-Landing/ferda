@@ -209,8 +209,6 @@ int main()
     digitalWrite(MissionConstants::kNitrogenBleedPin, 1);
     digitalWrite(MissionConstants::kSparkPin, 1);
     pwm_driver->set_pwm(MissionConstants::kRPMPin, 0, 0); // 0% duty cycle
-    float pulse = 1500 + ((MissionConstants::kValveClosedAngle - 90) / 90.0) * 1000;
-    int ticks = (pulse / MissionConstants::SERVO_PERIOD) * MissionConstants::MAX_TICKS;
     servo_driver->set_pwm(MissionConstants::kNitrogenServoPin, 0, ticks);
     servo_driver->set_pwm(MissionConstants::kPurgeServoPin, 0, ticks);
     servo_driver->set_pwm(MissionConstants::kMainEthanolServoPin, 0, ticks);
