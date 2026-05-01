@@ -548,15 +548,15 @@ void Navigation::gpsVelocityUpdate(const Eigen::Vector2d &gpsVelocity)
 
 void Navigation::debugZeroXYPositionUpdate()
 {
-    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(2, 15);
-    H.block<2, 2>(0, 0) = Eigen::Matrix2d::Identity();
+    Eigen::MatrixXd H = Eigen::MatrixXd::Zero(3, 15);
+    H.block<3, 3>(0, 0) = Eigen::Matrix3d::Identity();
 
-    Eigen::VectorXd y = Eigen::VectorXd::Zero(2);
-    Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(2);
-    y_pred << x_e(0), x_e(1);
+    Eigen::VectorXd y = Eigen::VectorXd::Zero(3);
+    Eigen::VectorXd y_pred = Eigen::VectorXd::Zero(3);
+    y_pred << x_e(0), x_e(1), x_e(2);
 
     const double variance = MissionConstants::kNavDebugXYZeroPositionVariance;
-    Eigen::MatrixXd V = variance * Eigen::Matrix2d::Identity();
+    Eigen::MatrixXd V = variance * Eigen::Matrix3d::Identity();
 
     kalmanUpdate(H, V, y, y_pred);
 }
