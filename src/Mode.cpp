@@ -27,14 +27,12 @@ namespace
     }
 }
 
-void CloseAllValvesAndSparkPlug(ValveControl &valveControl, SparkPlug &sparkPlug)
+void Mode::CloseAllValvesAndSparkPlug(ValveControl &valveControl, SparkPlug &sparkPlug)
 {
     // TODO: MIGHT HAVE TO DO DELAYS
 
     valveControl.CloseValve(ValveControl::ASIEthanol);
     valveControl.CloseValve(ValveControl::ASIOxygen);
-    // Might have to do OpenValve because I think we want this to be written HIGH to be turned off but honestly I have
-    // no idea
     valveControl.CloseValve(ValveControl::NitrogenBleed);
     sparkPlug.TurnOff();
 
@@ -194,7 +192,7 @@ Mode::Phase Mode::UpdateCalibration(RF::Command &command, Navigation &navigation
     else if (command == RF::Command::ABORT)
     {
         Telemetry::GetInstance().Log("ABORT, EXITING");
-        exit(0);
+        return Mode::Abort;
     }
 
     controller.tvc.UpdateActuatorPositions();
@@ -208,7 +206,7 @@ Mode::Phase Mode::UpdateActuatorCalibration(RF::Command &command, Navigation &na
     if (command == RF::Command::ABORT)
     {
         Telemetry::GetInstance().Log("ABORT, EXITING");
-        exit(0);
+        return Mode::Abort;
     }
     else if (command == RF::Command::GoIdle)
     {
@@ -272,7 +270,7 @@ Mode::Phase Mode::UpdateTestTVC(RF::Command &command, Navigation &navigation, Co
     if (command == RF::Command::ABORT)
     {
         Telemetry::GetInstance().Log("ABORT, EXITING");
-        exit(0);
+        return Mode::Abort;
     }
     else if (command == RF::Command::StopTVC)
     {
@@ -319,7 +317,7 @@ Mode::Phase Mode::UpdateIdle(RF::Command &command, Navigation &navigation, Contr
     if (command == RF::Command::ABORT)
     {
         Telemetry::GetInstance().Log("ABORT, EXITING");
-        exit(0);
+        return Mode::Abort;
     }
     else if (command == RF::Command::StopTVC)
     {
@@ -408,7 +406,7 @@ Mode::Phase Mode::UpdateHotfireIdle(RF::Command &command, Navigation &navigation
     if (command == RF::Command::ABORT)
     {
         Telemetry::GetInstance().Log("ABORT, EXITING");
-        exit(0);
+        return Mode::Abort;
     }
     else if (command == RF::Command::ASITest)
     {
@@ -579,6 +577,7 @@ Mode::Phase Mode::UpdateASITest(RF::Command &command, Navigation &navigation, Va
     }
     if (command == RF::Command::ABORT)
     {
+        // TODO I think we should just return to Idle??
         Telemetry::GetInstance().Log("ABORT during ASI Test, EXITING");
         // Close all valves and turn off spark
         valveControl.CloseValve(ValveControl::ASIOxygen);
@@ -648,6 +647,7 @@ Mode::Phase Mode::UpdateWaterFlow(RF::Command &command, Navigation &navigation, 
 
     if (command == RF::Command::ABORT)
     {
+        // TODO I think we should just return to Idle??
         Telemetry::GetInstance().Log("ABORT during Water Flow, EXITING");
         // Close all valves
         valveControl.CloseValve(ValveControl::MainNitrous);
@@ -821,18 +821,25 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
 
     if (command == RF::Command::ABORT)
     {
+        // TODO I think we should just return to Idle??
         Telemetry::GetInstance().Log("ABORT during 3 Second Hotfire, EXITING");
         // Close all valves
         valveControl.CloseValve(ValveControl::ASIEthanol);
         valveControl.CloseValve(ValveControl::MainEthanol);
         valveControl.CloseValve(ValveControl::MainNitrous);
-        // TODO: MIGHT HAVE TO DELAY FIRST
         valveControl.CloseValve(ValveControl::Purge);
 
         exit(0);
     }
 
     return Mode::ThreeSecondHotfire;
+}
+
+Mode::Phase Mode::UpdateAbort(ValveControl &valvecontrol, SparkPlug &sparkplug)
+{
+    Telemetry::GetInstance().Log("Closing all Valves and Sparkplug");
+    CloseAllValvesAndSparkPlug(valvecontrol, sparkplug);
+    exit(0);
 }
 
 bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igniter &igniter, IMU &imu,
@@ -904,6 +911,8 @@ bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igni
     case Safe:
         this->eCurrentMode = UpdateSafeMode(navigation, controller, currentTime);
         break;
+    case Abort:
+        this->eCurrentMode = UpdateAbort(valveControl, sparkPlug);
     case Terminate:
         return false;
     }

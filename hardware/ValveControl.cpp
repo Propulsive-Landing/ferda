@@ -61,7 +61,7 @@ void ValveControl::OpenValve(ValveType valve)
         break;
     case NitrogenBleed:
         Telemetry::GetInstance().Log("Opening Nitrogen Bleed Valve");
-        digitalWrite(MissionConstants::kNitrogenBleedPin, 1); // HIGH = CLOSED (normally-open valve)
+        digitalWrite(MissionConstants::kNitrogenBleedPin, 1); // HIGH = OPEN (normally-open valve)
         nitrogenBleedOpen = true;
         break;
     }
@@ -120,7 +120,7 @@ void ValveControl::CloseValve(ValveType valve)
         break;
     case NitrogenBleed:
         Telemetry::GetInstance().Log("Closing Nitrogen Bleed Valve");
-        digitalWrite(MissionConstants::kNitrogenBleedPin, 0); // LOW = OPEN (normally-open valve)
+        digitalWrite(MissionConstants::kNitrogenBleedPin, 0); // LOW = CLOSED (normally-open valve)
         nitrogenBleedOpen = false;
         break;
     }

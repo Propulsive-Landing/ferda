@@ -26,6 +26,7 @@
 #include <sstream>
 #include <string>
 #include <tuple>
+#include <csignal>
 
 #ifdef NDEBUG
 #include <wiringPi.h>
@@ -33,12 +34,23 @@
 #include "PCA9685Driver.hpp"
 #endif
 
-// TODO: THINK ABOUT ABORTING PROCEDURES AND WHAT WE NEED TO TURN OFF LIKE TURN PINS TO LOW AND CLOSE
-//         VALVES AND TURN SPARK PLUG OFF AND THINGS LIKE THAT: (ONE POSSIBLE SOLUTION IS TO ADD DIFFERENT ABORT MODES
-//          AND DO WHAT WE NEED TO DO
+static volatile sig_atomic_t stopRequested = 0;
+
+void signalHanlder(int sig)
+{
+    stopRequested = 1;
+}
 
 int main()
 {
+    // Set signal action behvaior for when user does ctr+c
+    struct sigaction sa{};
+    sa.sa_handler = signalHanlder;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+
+    sigaction(SIGINT, &sa, nullptr);
+
     // Set floating point precision for print statements
     std::cout << std::setprecision(8) << std::fixed;
 
@@ -132,28 +144,36 @@ int main()
              SO THAT IS PROBABLY UNSAFE
              */
 
-    // Liquid propulsion GPIO setup (solenoid pins)
-    // pinMode(MissionConstants::kASIEthanolPin, OUTPUT);
-    // pinMode(MissionConstants::kASIOxygenPin, OUTPUT);
-    // pinMode(MissionConstants::kNitrogenBleedPin, OUTPUT);
+    /* Liquid propulsion GPIO setup (solenoid pins) */
 
-    // // Spark plug pins
-    // pinMode(MissionConstants::kSparkPin, OUTPUT);
-    // pwm_driver->set_pwm(MissionConstants::kRPMPin, 0, 0); // 0% duty cycle
+    // Configure Solenoid ASIEthanolPin, and immidetely write HIGH to command it CLOSED on relay
+    pinMode(MissionConstants::kASIEthanolPin, OUTPUT);
+    digitalWrite(MissionConstants::kASIEthanolPin, 1); // HIGH = CLOSED
 
-    //  Initialize solenoids to closed state (HIGH for normally-closed, LOW for normally-open)
-    // digitalWrite(MissionConstants::kASIEthanolPin, 1);     // HIGH = CLOSED
-    // digitalWrite(MissionConstants::kASIOxygenPin, 1);      // HIGH = CLOSED
-    // digitalWrite(MissionConstants::kNitrogenBleedPin, 1);   // HIGH = CLOSED
-    // digitalWrite(MissionConstants::kSparkPin, 1);          // HIGH = OFF
+    // Configure Solenoid kASIOxygenPin, and immidetely write HIGH to command it CLOSED on relay
+    pinMode(MissionConstants::kASIOxygenPin, OUTPUT);
+    digitalWrite(MissionConstants::kASIOxygenPin, 1); // HIGH = CLOSED
+
+    // Configure Solenoid kNitrogenBleedPin, and immidetely write HIGH
+    // which in this cases turns on NitrogenBleed because it is normally OPEN which
+    // is ok because we want the default state for all the solenoids
+    pinMode(MissionConstants::kNitrogenBleedPin, OUTPUT);
+    digitalWrite(MissionConstants::kNitrogenBleedPin, 1);
+
+    // Spark plug pins
+    // Configure kSparkPin, immidetely write HIGH to command it CLOSED on relay,
+    // and send a 0% duty cycle wave to the kRPMPin
+    pinMode(MissionConstants::kSparkPin, OUTPUT);
+    digitalWrite(MissionConstants::kSparkPin, 1);
+    pwm_driver->set_pwm(MissionConstants::kRPMPin, 0, 0); // 0% duty cycle
 
     //  Initialize servos to closed position (179 degrees)
     float pulse = 1500 + ((MissionConstants::kValveClosedAngle - 90) / 90.0) * 1000;
     int ticks = (pulse / MissionConstants::SERVO_PERIOD) * MissionConstants::MAX_TICKS;
-    // servo_driver->set_pwm(MissionConstants::kNitrogenServoPin, 0, ticks);
-    // servo_driver->set_pwm(MissionConstants::kPurgeServoPin, 0, ticks);
-    // servo_driver->set_pwm(MissionConstants::kMainEthanolServoPin, 0, ticks);
-    // servo_driver->set_pwm(MissionConstants::kMainNitrousServoPin, 0, ticks);
+    servo_driver->set_pwm(MissionConstants::kNitrogenServoPin, 0, ticks);
+    servo_driver->set_pwm(MissionConstants::kPurgeServoPin, 0, ticks);
+    servo_driver->set_pwm(MissionConstants::kMainEthanolServoPin, 0, ticks);
+    servo_driver->set_pwm(MissionConstants::kMainNitrousServoPin, 0, ticks);
 
 #endif
     IMU imu;
@@ -178,14 +198,25 @@ int main()
 
     Telemetry::GetInstance().Log("Starting program...");
 
-    while (mode.Update(navigation, controller, gps, igniter, imu, magnetometer, valveControl,
-                       sparkPlug, pressureTransducer, loadCell, camera))
+    while (!stopRequested && mode.Update(navigation, controller, gps, igniter, imu, magnetometer, valveControl,
+                                         sparkPlug, pressureTransducer, loadCell, camera))
     {
     }
+// Turn off everything now that everything is safe
+#ifdef NDEBUG
+    digitalWrite(MissionConstants::kASIEthanolPin, 1); // HIGH = CLOSED
+    digitalWrite(MissionConstants::kASIOxygenPin, 1);  // HIGH = CLOSED
+    digitalWrite(MissionConstants::kNitrogenBleedPin, 1);
+    digitalWrite(MissionConstants::kSparkPin, 1);
+    pwm_driver->set_pwm(MissionConstants::kRPMPin, 0, 0); // 0% duty cycle
+    float pulse = 1500 + ((MissionConstants::kValveClosedAngle - 90) / 90.0) * 1000;
+    int ticks = (pulse / MissionConstants::SERVO_PERIOD) * MissionConstants::MAX_TICKS;
+    servo_driver->set_pwm(MissionConstants::kNitrogenServoPin, 0, ticks);
+    servo_driver->set_pwm(MissionConstants::kPurgeServoPin, 0, ticks);
+    servo_driver->set_pwm(MissionConstants::kMainEthanolServoPin, 0, ticks);
+    servo_driver->set_pwm(MissionConstants::kMainNitrousServoPin, 0, ticks);
 
-    // #ifdef NDEBUG
-    //
-    // #endif
+#endif
 
     return 0;
 }
