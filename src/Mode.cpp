@@ -106,8 +106,9 @@ Mode::Phase Mode::UpdateCalibration(RF::Command &command, Navigation &navigation
     if (command == RF::Command::StopTVC)
     {
         Telemetry::GetInstance().Log("STOP TVC command received in calibration");
+        Telemetry::GetInstance().Log("ABORTING, EXITING");
         controller.tvc.Stop();
-        return Mode::Calibration;
+        return Mode::Abort;
     }
     else if (command == RF::Command::CenterTVC)
     {
