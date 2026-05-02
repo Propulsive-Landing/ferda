@@ -50,11 +50,11 @@ Edit `hardware/PressureTransducer.cpp` and `hardware/LoadCell.cpp`:
 ## Typical Operation Flow
 
 1. **Startup:** System begins in `Calibration` state
-2. **Go to Idle:** Send `"GoIdle"` command
+2. **Go to Idle:** Send `"Idle"` command
 3. **Enter Liquid Mode:** Send `"GoHotfireIdle"` command
 4. **Manual Control:** Send valve/spark commands as needed
 5. **Or Run Sequence:** Send `"asitest"` or `"waterflow"`
-6. **Return to Idle:** Send `"GoIdle"` when done
+6. **Return to Idle:** Send `"Idle"` when done
 
 ## Troubleshooting
 

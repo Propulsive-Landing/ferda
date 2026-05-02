@@ -195,7 +195,7 @@ int main()
     PressureTransducer pressureTransducer;
     LoadCell loadCell;
 
-    Mode mode(Mode::Calibration);
+    Mode mode(Mode::Standby);
 
     Telemetry::GetInstance().Log("Starting program...");
 
@@ -205,16 +205,8 @@ int main()
     }
 // Turn off everything now that everything is safe
 #ifdef NDEBUG
-    digitalWrite(MissionConstants::kASIEthanolPin, 1); // HIGH = CLOSED
-    digitalWrite(MissionConstants::kASIOxygenPin, 1);  // HIGH = CLOSED
-    digitalWrite(MissionConstants::kNitrogenBleedPin, 1);
-    digitalWrite(MissionConstants::kSparkPin, 1);
-    pwm_driver->set_pwm(MissionConstants::kRPMPin, 0, 0); // 0% duty cycle
-    // servo_driver->set_pwm(MissionConstants::kNitrogenServoPin, 0, ticks);
-    // servo_driver->set_pwm(MissionConstants::kPurgeServoPin, 0, ticks);
-    // servo_driver->set_pwm(MissionConstants::kMainEthanolServoPin, 0, ticks);
-    // servo_driver->set_pwm(MissionConstants::kMainNitrousServoPin, 0, ticks);
-    // servo_driver->set_pwm(MissionConstants::kNitrousFillServoPin, 0, ticks);
+    mode.CloseAllValvesAndSparkPlug(valveControl, sparkPlug);
+    tvc.Stop();
 
 #endif
 

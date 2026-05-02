@@ -23,7 +23,7 @@ namespace
         Telemetry::GetInstance().Log("ACTUATOR CALIBRATION MODE");
         Telemetry::GetInstance().Log("WARNING: Actuators should NOT be connected to the TVC linkage in this mode.");
         Telemetry::GetInstance().Log("Commands: MoveXTVCToLimitExtend, MoveXTVCToLimitRetract, MoveYTVCToLimitExtend, MoveYTVCToLimitRetract");
-        Telemetry::GetInstance().Log("Use StopTVC to halt motion, CenterTVC to center, and GoIdle to exit.");
+        Telemetry::GetInstance().Log("Use StopTVC to halt motion, CenterTVC to center, and Idle to exit.");
     }
 }
 
@@ -48,14 +48,14 @@ Mode::Phase Mode::UpdateStandby(RF::Command &command, Controller &controller)
     // Stop TVC
     controller.tvc.Stop();
 
-    if (command == RF::GoCalibration)
+    if (command == RF::Calibration)
     {
         Telemetry::GetInstance().Log("Switching mode from standby to calibration");
         return Mode::Calibration;
     }
-    if (command == RF::GoIdle)
+    if (command == RF::Idle)
     {
-        Telemetry::GetInstance().Log("Switching mode from standby to GoIdle");
+        Telemetry::GetInstance().Log("Switching mode from standby to Idle");
         return Mode::Idle;
     }
 
@@ -113,6 +113,83 @@ void Mode::CheckForToggleSensorCommands(RF::Command &command, GPS &gps, Camera &
     {
         Telemetry::GetInstance().Log("Switching Magnometer off");
         magnetometer.setUseMagnometer(false);
+    }
+}
+
+void Mode::CheckForToggleValveCommands(RF::Command &command, ValveControl &valveControl, SparkPlug &sparkPlug)
+{
+    if (command == RF::Command::ValveNitrogenOpen)
+    {
+        valveControl.OpenValve(ValveControl::Nitrogen);
+    }
+    else if (command == RF::Command::ValveNitrogenClose)
+    {
+        valveControl.CloseValve(ValveControl::Nitrogen);
+    }
+    else if (command == RF::Command::ValvePurgeOpen)
+    {
+        valveControl.OpenValve(ValveControl::Purge);
+    }
+    else if (command == RF::Command::ValvePurgeClose)
+    {
+        valveControl.CloseValve(ValveControl::Purge);
+    }
+    else if (command == RF::Command::ValveMainEthanolOpen)
+    {
+        valveControl.OpenValve(ValveControl::MainEthanol);
+    }
+    else if (command == RF::Command::ValveMainEthanolClose)
+    {
+        valveControl.CloseValve(ValveControl::MainEthanol);
+    }
+    else if (command == RF::Command::ValveMainNitrousOpen)
+    {
+        valveControl.OpenValve(ValveControl::MainNitrous);
+    }
+    else if (command == RF::Command::ValveMainNitrousClose)
+    {
+        valveControl.CloseValve(ValveControl::MainNitrous);
+    }
+    else if (command == RF::Command::ValveNitrousFillOpen)
+    {
+        valveControl.OpenValve(ValveControl::NitrousFill);
+    }
+    else if (command == RF::Command::ValveNitrousFillClose)
+    {
+        valveControl.CloseValve(ValveControl::NitrousFill);
+    }
+    else if (command == RF::Command::ValveASIEthanolOpen)
+    {
+        valveControl.OpenValve(ValveControl::ASIEthanol);
+    }
+    else if (command == RF::Command::ValveASIEthanolClose)
+    {
+        valveControl.CloseValve(ValveControl::ASIEthanol);
+    }
+    else if (command == RF::Command::ValveASIOxygenOpen)
+    {
+        valveControl.OpenValve(ValveControl::ASIOxygen);
+    }
+    else if (command == RF::Command::ValveASIOxygenClose)
+    {
+        valveControl.CloseValve(ValveControl::ASIOxygen);
+    }
+    else if (command == RF::Command::ValveNitrogenBleedOpen)
+    {
+        valveControl.OpenValve(ValveControl::NitrogenBleed);
+    }
+    else if (command == RF::Command::ValveNitrogenBleedClose)
+    {
+        valveControl.CloseValve(ValveControl::NitrogenBleed);
+    }
+    // Handle spark commands
+    else if (command == RF::Command::SparkOn)
+    {
+        sparkPlug.TurnOn();
+    }
+    else if (command == RF::Command::SparkOff)
+    {
+        sparkPlug.TurnOff();
     }
 }
 
@@ -203,7 +280,7 @@ Mode::Phase Mode::UpdateCalibration(RF::Command &command, Navigation &navigation
         controller.Center();
         return Mode::TestTVC;
     }
-    else if (command == RF::Command::GoIdle)
+    else if (command == RF::Command::Idle)
     {
         Telemetry::GetInstance().Log("Switching mode from calibration to idle");
         UploadKmatrices();
@@ -237,7 +314,7 @@ Mode::Phase Mode::UpdateActuatorCalibration(RF::Command &command, Navigation &na
         Telemetry::GetInstance().Log("Switching mode from updateActuatorCalibration to Standby");
         return Mode::Standby;
     }
-    else if (command == RF::Command::GoIdle)
+    else if (command == RF::Command::Idle)
     {
         Telemetry::GetInstance().Log("Leaving actuator calibration for idle");
         controller.tvc.Stop();
@@ -314,16 +391,16 @@ Mode::Phase Mode::UpdateTestTVC(RF::Command &command, Navigation &navigation, Co
     {
         Telemetry::GetInstance().Log("CENTER TVC command received in test mode");
         controller.Center();
-        return Mode::Idle;
+        return Mode::Calibration;
     }
     else if (seconds_since_start >= 10)
     {
-        Telemetry::GetInstance().Log("Switching mode from test to idle");
+        Telemetry::GetInstance().Log("Switching mode from test to calibration");
         controller.Center();
         // Command both Actuators to stop
         driveActuator(0, 0, 0);
         driveActuator(1, 0, 0);
-        return Mode::Idle;
+        return Mode::Calibration;
     }
 
     return Mode::TestTVC;
@@ -333,9 +410,9 @@ Mode::Phase Mode::UpdateChirpTVC(Navigation &navigation, Controller &controller,
 {
     Telemetry::GetInstance().Log("Starting fixed-parameter chirp TVC test");
     RunChirpTVCMode();
-    Telemetry::GetInstance().Log("Finished chirp TVC test");
     controller.Center();
-    return Mode::Idle;
+    Telemetry::GetInstance().Log("Switching mode from chirp tvc to calibration");
+    return Mode::Calibration;
 }
 
 Mode::Phase Mode::UpdateIdle(RF::Command &command, Navigation &navigation, Controller &controller,
@@ -374,7 +451,7 @@ Mode::Phase Mode::UpdateIdle(RF::Command &command, Navigation &navigation, Contr
         navigation.reset();
         return Mode::Launch;
     }
-    else if (command == RF::Command::GoHotfireIdle)
+    else if (command == RF::Command::HotfireIdle)
     {
         Telemetry::GetInstance().Log("Switching mode from idle to HotfireIdle");
         return Mode::HotfireIdle;
@@ -464,84 +541,10 @@ Mode::Phase Mode::UpdateHotfireIdle(RF::Command &command, Navigation &navigation
         Telemetry::GetInstance().Log("Switching mode from HotfireIdle to ThreeSecondHotfire");
         return Mode::ThreeSecondHotfire;
     }
-    else if (command == RF::Command::GoIdle)
+    else if (command == RF::Command::Idle)
     {
         Telemetry::GetInstance().Log("Switching mode from HotfireIdle to Idle");
         return Mode::Idle;
-    }
-    // Handle Valve commands
-    else if (command == RF::Command::ValveNitrogenOpen)
-    {
-        valveControl.OpenValve(ValveControl::Nitrogen);
-    }
-    else if (command == RF::Command::ValveNitrogenClose)
-    {
-        valveControl.CloseValve(ValveControl::Nitrogen);
-    }
-    else if (command == RF::Command::ValvePurgeOpen)
-    {
-        valveControl.OpenValve(ValveControl::Purge);
-    }
-    else if (command == RF::Command::ValvePurgeClose)
-    {
-        valveControl.CloseValve(ValveControl::Purge);
-    }
-    else if (command == RF::Command::ValveMainEthanolOpen)
-    {
-        valveControl.OpenValve(ValveControl::MainEthanol);
-    }
-    else if (command == RF::Command::ValveMainEthanolClose)
-    {
-        valveControl.CloseValve(ValveControl::MainEthanol);
-    }
-    else if (command == RF::Command::ValveMainNitrousOpen)
-    {
-        valveControl.OpenValve(ValveControl::MainNitrous);
-    }
-    else if (command == RF::Command::ValveMainNitrousClose)
-    {
-        valveControl.CloseValve(ValveControl::MainNitrous);
-    }
-    else if (command == RF::Command::ValveNitrousFillOpen)
-    {
-        valveControl.OpenValve(ValveControl::NitrousFill);
-    }
-    else if (command == RF::Command::ValveNitrousFillClose)
-    {
-        valveControl.CloseValve(ValveControl::NitrousFill);
-    }
-    else if (command == RF::Command::ValveASIEthanolOpen)
-    {
-        valveControl.OpenValve(ValveControl::ASIEthanol);
-    }
-    else if (command == RF::Command::ValveASIEthanolClose)
-    {
-        valveControl.CloseValve(ValveControl::ASIEthanol);
-    }
-    else if (command == RF::Command::ValveASIOxygenOpen)
-    {
-        valveControl.OpenValve(ValveControl::ASIOxygen);
-    }
-    else if (command == RF::Command::ValveASIOxygenClose)
-    {
-        valveControl.CloseValve(ValveControl::ASIOxygen);
-    }
-    else if (command == RF::Command::ValveNitrogenBleedOpen)
-    {
-        valveControl.OpenValve(ValveControl::NitrogenBleed);
-    }
-    else if (command == RF::Command::ValveNitrogenBleedClose)
-    {
-        valveControl.CloseValve(ValveControl::NitrogenBleed);
-    }
-    // Handle spark commands
-    else if (command == RF::Command::SparkOn)
-    {
-        sparkPlug.TurnOn();
-    }
-    else if (command == RF::Command::SparkOff)
-    {
-        sparkPlug.TurnOff();
     }
 
     return Mode::HotfireIdle;
@@ -912,9 +915,10 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
     return Mode::ThreeSecondHotfire;
 }
 
-Mode::Phase Mode::UpdateAbort(ValveControl &valvecontrol, SparkPlug &sparkplug)
+Mode::Phase Mode::UpdateAbort(Controller &controller, ValveControl &valvecontrol, SparkPlug &sparkplug)
 {
     Telemetry::GetInstance().Log("Closing all Valves and Sparkplug");
+    controller.tvc.Stop();
     CloseAllValvesAndSparkPlug(valvecontrol, sparkplug);
     exit(0);
 }
@@ -943,6 +947,7 @@ bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igni
     // Get command and first see if it is to toggle any fusion sensors
     RF::Command command = RF::GetInstance().GetCommand();
     CheckForToggleSensorCommands(command, gps, camera, magnetometer);
+    CheckForToggleValveCommands(command, valveControl, sparkPlug);
     /* Handle behavior based on current phase. Update phase*/
     switch (this->eCurrentMode)
     {
@@ -993,7 +998,7 @@ bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igni
         this->eCurrentMode = UpdateSafeMode(navigation, controller, currentTime);
         break;
     case Abort:
-        this->eCurrentMode = UpdateAbort(valveControl, sparkPlug);
+        this->eCurrentMode = UpdateAbort(controller, valveControl, sparkPlug);
     case Terminate:
         return false;
     }

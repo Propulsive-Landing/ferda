@@ -37,18 +37,14 @@ void driveActuator(int actuator_index, int direction, int speed)
     {
     case 1: // extend
 
-        std::cout << "Driving actuator " << actuator_index << " to extend at speed " << speed << std::endl;
-
         break;
 
     case 0: // stop
 
-        std::cout << "Stopping actuator " << actuator_index << " to extend at speed " << speed << std::endl;
-
         break;
 
     case -1: // retract
-        std::cout << "Retracting actuator " << actuator_index << " to retract at speed " << speed << std::endl;
+
         break;
     }
 }

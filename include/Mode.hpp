@@ -44,6 +44,7 @@ public:
     std::string AngleKMatrix;
     std::string HeightKMatrix;
     std::string TranslationKMatrix;
+    void CloseAllValvesAndSparkPlug(ValveControl &valveControl, SparkPlug &sparkPlug);
 
 private:
     Mode::Phase eCurrentMode;
@@ -65,7 +66,7 @@ private:
     Mode::Phase UpdateASITest(RF::Command &command, Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug, double currentTime);
     Mode::Phase UpdateWaterFlow(RF::Command &command, Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug, double currentTime);
     Mode::Phase Update3SecondHotfire(RF::Command &command, Navigation &navigation, Controller &controller, ValveControl &valveControl, SparkPlug &sparkPlug, double currentTime);
-    Mode::Phase UpdateAbort(ValveControl &valvecontrol, SparkPlug &sparkplug);
+    Mode::Phase UpdateAbort(Controller &controller, ValveControl &valvecontrol, SparkPlug &sparkplug);
+    void CheckForToggleValveCommands(RF::Command &command, ValveControl &valveControl, SparkPlug &sparkPlug);
     void CheckForToggleSensorCommands(RF::Command &command, GPS &gps, Camera &camera, Magnetometer &magnetometer);
-    void CloseAllValvesAndSparkPlug(ValveControl &valveControl, SparkPlug &sparkPlug);
 };
