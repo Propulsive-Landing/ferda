@@ -133,7 +133,8 @@ std::tuple<double, double, double> IMU::GetBodyAcceleration()
         nAccelX / 100.0f,
         nAccelY / 100.0f,
         nAccelZ / 100.0f);
-    const Eigen::Vector3d accelBody = MapImuSensorToBody(accelSensor) - MissionConstants::kSensorImuAccelBiasSensorMps2;
+    
+    const Eigen::Vector3d accelBody = (MapImuSensorToBody(accelSensor) - MissionConstants::kSensorImuAccelBiasBodyMps2).cwiseQuotient(MissionConstants::kSensorImuAccelScaleFactorBodyMps2);
 
     return std::make_tuple(accelBody.x(), accelBody.y(), accelBody.z());
 }
