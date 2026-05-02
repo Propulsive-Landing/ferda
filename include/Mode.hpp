@@ -20,6 +20,7 @@ class Mode
 public:
     enum Phase
     {
+        Standby,
         Calibration,
         ActuatorCalibration,
         TestTVC,
@@ -50,6 +51,7 @@ private:
     // Launch manager instance
     LaunchManager launchManager;
 
+    Mode::Phase UpdateStandby(RF::Command &command, Controller &controller);
     Mode::Phase UpdateCalibration(RF::Command &command, Navigation &navigation, Controller &controller, double currentTime);
     Mode::Phase UpdateActuatorCalibration(RF::Command &command, Navigation &navigation, Controller &controller, double currentTime);
     Mode::Phase UpdateTestTVC(RF::Command &command, Navigation &navigation, Controller &controller, double currentTime);

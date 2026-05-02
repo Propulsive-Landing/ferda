@@ -10,7 +10,7 @@ double LoadCell::ReadSensor(int pin)
     float rawVolt = (float)rawVal / 32767 * 6.144;
 
     // Normalize from 0.0 to 1.0 (0.0V = 0kg, 5.0V = 1000kg)
-    float normalized = rawVolt / 5.0;
+    float normalized = rawVolt / 10.0;
 
     // Convert to kg, then to lbs
     float kg = normalized * 1000.0;

@@ -70,7 +70,7 @@ void driveActuator(int actuator_index, int direction, int speed)
 
         ss << "Actuator: Driving actuator " << actuator_index << " to extend at speed " << speed;
 
-        Telemetry::GetInstance().Log(ss.str());
+        // std::cout << ss.str() << "\n";
 
         pwm_driver->set_pwm(rpwmChannel, 0, speed);
         pwm_driver->set_pwm(lpwmChannel, 0, 0);
@@ -80,7 +80,7 @@ void driveActuator(int actuator_index, int direction, int speed)
 
         ss << "Actuator: Stopping actuator " << actuator_index << " to extend at speed " << speed;
 
-        Telemetry::GetInstance().Log(ss.str());
+        // std::cout << ss.str() << "\n";
 
         pwm_driver->set_pwm(rpwmChannel, 0, 0);
         pwm_driver->set_pwm(lpwmChannel, 0, 0);
@@ -89,7 +89,8 @@ void driveActuator(int actuator_index, int direction, int speed)
     case -1: // retract
         ss << "Actuator: Retracting actuator " << actuator_index << " to retract at speed " << speed;
 
-        Telemetry::GetInstance().Log(ss.str());
+        // std::cout << ss.str() << "\n";
+
         pwm_driver->set_pwm(rpwmChannel, 0, 0);
         pwm_driver->set_pwm(lpwmChannel, 0, speed);
         break;

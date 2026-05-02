@@ -31,6 +31,8 @@ public:
         ChirpTVC,
         GoIdle,
         Ignite,
+        Standby,
+        Calibration,
         ActuatorCalibration,
         StopTVC,
         CenterTVC,
@@ -101,6 +103,10 @@ public:
             ParsedCommand = RF::Command::ChirpTVC;
         else if (input_line == "GoIdle")
             ParsedCommand = RF::Command::GoIdle;
+        else if (input_line == "GoStandby")
+            ParsedCommand = RF::Command::Standby;
+        else if (input_line == "Calibration")
+            ParsedCommand = RF::Command::Calibration;
         else if (input_line == "Ignite")
             ParsedCommand = RF::Command::Ignite;
         else if (input_line == "ActuatorCalibration" || input_line == "ActuatorCalibrate" || input_line == "ACTUATOR_CALIBRATION")

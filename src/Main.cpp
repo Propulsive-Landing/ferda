@@ -170,10 +170,11 @@ int main()
     //  Initialize servos to closed position (179 degrees)
     float pulse = 1500 + ((MissionConstants::kValveClosedAngle - 90) / 90.0) * 1000;
     int ticks = (pulse / MissionConstants::SERVO_PERIOD) * MissionConstants::MAX_TICKS;
-    servo_driver->set_pwm(MissionConstants::kNitrogenServoPin, 0, ticks);
-    servo_driver->set_pwm(MissionConstants::kPurgeServoPin, 0, ticks);
-    servo_driver->set_pwm(MissionConstants::kMainEthanolServoPin, 0, ticks);
-    servo_driver->set_pwm(MissionConstants::kMainNitrousServoPin, 0, ticks);
+    // servo_driver->set_pwm(MissionConstants::kNitrogenServoPin, 0, ticks);
+    // servo_driver->set_pwm(MissionConstants::kPurgeServoPin, 0, ticks);
+    // servo_driver->set_pwm(MissionConstants::kMainEthanolServoPin, 0, ticks);
+    // servo_driver->set_pwm(MissionConstants::kMainNitrousServoPin, 0, ticks);
+    // servo_driver->set_pwm(MissionConstants::kNitrousFillServoPin, 0, ticks);
 
 #endif
     IMU imu;
@@ -209,10 +210,11 @@ int main()
     digitalWrite(MissionConstants::kNitrogenBleedPin, 1);
     digitalWrite(MissionConstants::kSparkPin, 1);
     pwm_driver->set_pwm(MissionConstants::kRPMPin, 0, 0); // 0% duty cycle
-    servo_driver->set_pwm(MissionConstants::kNitrogenServoPin, 0, ticks);
-    servo_driver->set_pwm(MissionConstants::kPurgeServoPin, 0, ticks);
-    servo_driver->set_pwm(MissionConstants::kMainEthanolServoPin, 0, ticks);
-    servo_driver->set_pwm(MissionConstants::kMainNitrousServoPin, 0, ticks);
+    // servo_driver->set_pwm(MissionConstants::kNitrogenServoPin, 0, ticks);
+    // servo_driver->set_pwm(MissionConstants::kPurgeServoPin, 0, ticks);
+    // servo_driver->set_pwm(MissionConstants::kMainEthanolServoPin, 0, ticks);
+    // servo_driver->set_pwm(MissionConstants::kMainNitrousServoPin, 0, ticks);
+    // servo_driver->set_pwm(MissionConstants::kNitrousFillServoPin, 0, ticks);
 
 #endif
 
