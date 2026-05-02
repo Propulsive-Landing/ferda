@@ -88,7 +88,7 @@ namespace MissionConstants
     const Eigen::Vector3d kSensorCameraPosition = Eigen::Vector3d(0.0, 0.0, 0.0);                                                // Position of the camera in the body frame (in meters)
     const Eigen::Vector3d kSensorCameraOrientationRad = Eigen::Vector3d(3.141592653589793 / 2.0, -3.141592653589793 / 2.0, 0.0); // XYZ Euler orientation from camera frame to body frame
     const Eigen::Vector3d kSensorMagnetometerPosition = Eigen::Vector3d(0.0, 0.0, 0.0);                                          // Position of magnetometer in the body frame (in meters)
-    const Eigen::Vector3d kSensorImuAccelBiasSensorMps2 = Eigen::Vector3d(-0.44, 0.43, -1.82);                                         // Accelerometer bias correction in IMU sensor axes
+    const Eigen::Vector3d kSensorImuAccelBiasSensorMps2 = Eigen::Vector3d(-0.44, 0.43, -0.82);                                         // Accelerometer bias correction in IMU sensor axes
     // IMU axis remap from IMU sensor frame to vehicle body frame.
     // Must remain a right-angle transform: each row/column has exactly one +/-1 and zeros elsewhere.
     // Rows are body X/Y/Z, columns are sensor X/Y/Z.
