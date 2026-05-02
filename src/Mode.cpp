@@ -734,7 +734,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
 
     double seconds_since_start = currentTime - startTime;
     navigation.UpdateNavigation();
-
+    controller.UpdateTestTVC(seconds_since_start);
     // Sequence timing (matching original hotfire.ino logic)
     if (seconds_since_start >= 0.5 && seconds_since_start < 0.65)
     {
@@ -796,7 +796,6 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             std::cout << "Time: " << seconds_since_start << "\n";
             sparkPlug.TurnOff();
             valveControl.CloseValve(ValveControl::ASIOxygen);
-            controller.UpdateTestTVC(seconds_since_start);
             fifthPartDone = true;
         }
     }
@@ -807,7 +806,6 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
         {
             // Uncomment for debugging
             std::cout << "Time: " << seconds_since_start << "\n";
-            controller.UpdateTestTVC(seconds_since_start);
             sixthPartDone = true;
         }
     }
@@ -818,10 +816,6 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
         {
             // Uncomment for debugging
             std::cout << "Time: " << seconds_since_start << "\n";
-            // Nuetral ??
-            // controller.HotFireTestTVC(seconds_since_start);
-            controller.Center();
-
             seventhPartDone = true;
         }
     }
@@ -832,7 +826,6 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
         {
             // Uncomment for debugging
             std::cout << "Time: " << seconds_since_start << "\n";
-            controller.tvc.Stop();
             valveControl.CloseValve(ValveControl::ASIEthanol);
             valveControl.CloseValve(ValveControl::MainEthanol);
             eigthPartDone = true;
@@ -893,6 +886,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             ninthPartDone = false;
             tenthPartDone = false;
             eleventhPartDone = false;
+            controller.tvc.Stop();
             return Mode::HotfireIdle;
         }
     }
