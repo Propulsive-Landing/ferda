@@ -125,9 +125,8 @@ Mode::Phase Mode::UpdateCalibration(RF::Command &command, Navigation &navigation
     if (command == RF::Command::StopTVC)
     {
         Telemetry::GetInstance().Log("STOP TVC command received in calibration");
-        Telemetry::GetInstance().Log("ABORTING, EXITING");
-        controller.tvc.Stop();
-        return Mode::Abort;
+        Telemetry::GetInstance().Log("Going to standby, EXITING");
+        return Mode::Standby;
     }
     else if (command == RF::Command::Standby)
     {
@@ -253,8 +252,7 @@ Mode::Phase Mode::UpdateActuatorCalibration(RF::Command &command, Navigation &na
     else if (command == RF::Command::StopTVC)
     {
         Telemetry::GetInstance().Log("STOP TVC command received in actuator calibration");
-        controller.tvc.Stop();
-        return Mode::ActuatorCalibration;
+        return Mode::Standby;
     }
     else if (command == RF::Command::MoveXTVCToLimitExtend)
     {
@@ -310,8 +308,7 @@ Mode::Phase Mode::UpdateTestTVC(RF::Command &command, Navigation &navigation, Co
     else if (command == RF::Command::StopTVC)
     {
         Telemetry::GetInstance().Log("STOP TVC command received in test mode");
-        controller.tvc.Stop();
-        return Mode::Idle;
+        return Mode::Standby;
     }
     else if (command == RF::Command::CenterTVC)
     {
@@ -362,8 +359,7 @@ Mode::Phase Mode::UpdateIdle(RF::Command &command, Navigation &navigation, Contr
     else if (command == RF::Command::StopTVC)
     {
         Telemetry::GetInstance().Log("STOP TVC command received in idle");
-        controller.tvc.Stop();
-        return Mode::Idle;
+        return Mode::Standby;
     }
     else if (command == RF::Command::CenterTVC)
     {
@@ -795,6 +791,8 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
         {
             // Uncomment for debugging
             std::cout << "Time: " << seconds_since_start << "\n";
+            sparkPlug.TurnOff();
+            valveControl.CloseValve(ValveControl::ASIOxygen);
             controller.HotFireTestTVC(seconds_since_start);
             fifthPartDone = true;
         }
@@ -806,8 +804,6 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
         {
             // Uncomment for debugging
             std::cout << "Time: " << seconds_since_start << "\n";
-            sparkPlug.TurnOff();
-            valveControl.CloseValve(ValveControl::ASIOxygen);
             controller.HotFireTestTVC(seconds_since_start);
             sixthPartDone = true;
         }
