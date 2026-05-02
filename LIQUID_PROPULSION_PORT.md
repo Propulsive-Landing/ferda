@@ -81,7 +81,7 @@ Extended `RF::Command` enum with liquid propulsion commands:
 - Valve commands: `ValveNitrogenOpen/Close`, `ValvePurgeOpen/Close`, `ValveMainEthanolOpen/Close`, `ValveMainNitrousOpen/Close`, `ValveASIEthanolOpen/Close`, `ValveASIOxygenOpen/Close`, `ValveNitrogenBleedOpen/Close`
 - Spark commands: `SparkOn`, `SparkOff`
 - Sequence commands: `ASITest`, `WaterFlow`
-- State transition: `GoHotfireIdle`
+- State transition: `HotfireIdle`
 
 **Command String Format:** Maintains compatibility with original Arduino code:
 - `"VALVE: nitrogen open"` → `ValveNitrogenOpen`
@@ -413,10 +413,10 @@ const int kPurgeServoPin = 13;          // GPIO pin for purge servo
 
 1. **Start in Idle State:**
    - System starts in `Calibration` state
-   - Transition to `Idle` via `GoIdle` command
+   - Transition to `Idle` via `Idle` command
 
 2. **Enter HotfireIdle:**
-   - Send RF command: `"GoHotfireIdle"`
+   - Send RF command: `"HotfireIdle"`
    - System transitions to `HotfireIdle` state
    - Hardware is now ready for liquid propulsion operations
 
@@ -451,7 +451,7 @@ At any time, send `"ABORT"` command to immediately exit (closes all valves, turn
 
 ### Returning to Solid Propulsion
 
-From `HotfireIdle`, send `"GoIdle"` to return to `Idle` state (solid propulsion mode).
+From `HotfireIdle`, send `"Idle"` to return to `Idle` state (solid propulsion mode).
 
 ## Code Structure Reference
 

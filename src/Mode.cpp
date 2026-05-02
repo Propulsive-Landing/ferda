@@ -48,7 +48,7 @@ Mode::Phase Mode::UpdateStandby(RF::Command &command, Controller &controller)
     // Stop TVC
     controller.tvc.Stop();
 
-    if (command == RF::Calibration)
+    if (command == RF::GoCalibration)
     {
         Telemetry::GetInstance().Log("Switching mode from standby to calibration");
         return Mode::Calibration;

@@ -29,7 +29,7 @@ public:
         ABORT_GROUND,
         TestTVC,
         ChirpTVC,
-        GoIdle,
+        Idle,
         Ignite,
         Standby,
         Calibration,
@@ -69,7 +69,7 @@ public:
         ASITest,
         WaterFlow,
         ThreeSecondHotfire,
-        GoHotfireIdle,
+        HotfireIdle,
         CameraOn,
         CameraOff,
         LidarOn,
@@ -101,9 +101,9 @@ public:
             ParsedCommand = RF::Command::TestTVC;
         else if (input_line == "ChirpTVC")
             ParsedCommand = RF::Command::ChirpTVC;
-        else if (input_line == "GoIdle")
-            ParsedCommand = RF::Command::GoIdle;
-        else if (input_line == "GoStandby")
+        else if (input_line == "Idle")
+            ParsedCommand = RF::Command::Idle;
+        else if (input_line == "Standby")
             ParsedCommand = RF::Command::Standby;
         else if (input_line == "Calibration")
             ParsedCommand = RF::Command::Calibration;
@@ -196,8 +196,8 @@ public:
             ParsedCommand = RF::Command::WaterFlow;
         else if (input_line == "3second")
             ParsedCommand = RF::Command::ThreeSecondHotfire;
-        else if (input_line == "GoHotfireIdle")
-            ParsedCommand = RF::Command::GoHotfireIdle;
+        else if (input_line == "HotfireIdle")
+            ParsedCommand = RF::Command::HotfireIdle;
         else
             ParsedCommand = RF::Command::None;
 

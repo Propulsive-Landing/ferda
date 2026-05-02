@@ -4,7 +4,7 @@
 
 ### State Transitions
 ```
-Calibration → (GoIdle) → Idle → (GoHotfireIdle) → HotfireIdle
+Calibration → (Idle) → Idle → (HotfireIdle) → HotfireIdle
                                                       ↓
                                               (asitest) → ASITest → HotfireIdle
                                               (waterflow) → WaterFlow → HotfireIdle
@@ -13,8 +13,8 @@ Calibration → (GoIdle) → Idle → (GoHotfireIdle) → HotfireIdle
 ### Essential Commands
 
 **State Control:**
-- `"GoHotfireIdle"` - Enter liquid propulsion mode
-- `"GoIdle"` - Return to solid propulsion mode
+- `"HotfireIdle"` - Enter liquid propulsion mode
+- `"Idle"` - Return to solid propulsion mode
 - `"ABORT"` - Emergency stop (closes all valves, turns off spark)
 
 **Valve Control (while in HotfireIdle):**
