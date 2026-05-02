@@ -796,7 +796,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             std::cout << "Time: " << seconds_since_start << "\n";
             sparkPlug.TurnOff();
             valveControl.CloseValve(ValveControl::ASIOxygen);
-            controller.HotFireTestTVC(seconds_since_start);
+            controller.UpdateTestTVC(seconds_since_start);
             fifthPartDone = true;
         }
     }
@@ -807,7 +807,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
         {
             // Uncomment for debugging
             std::cout << "Time: " << seconds_since_start << "\n";
-            controller.HotFireTestTVC(seconds_since_start);
+            controller.UpdateTestTVC(seconds_since_start);
             sixthPartDone = true;
         }
     }
@@ -820,9 +820,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             std::cout << "Time: " << seconds_since_start << "\n";
             // Nuetral ??
             // controller.HotFireTestTVC(seconds_since_start);
-            controller.tvc.SetTVCX(0);
-            controller.tvc.SetTVCY(0);
-            controller.tvc.UpdateActuatorPositions();
+            controller.Center();
 
             seventhPartDone = true;
         }

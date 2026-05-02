@@ -109,7 +109,7 @@ void ValveControl::CloseValve(ValveType valve)
         nitrousFillOpen = false;
         break;
     case ASIEthanol:
-        Telemetry::GetInstance().Log("Closing Main Ethanol Valve");
+        Telemetry::GetInstance().Log("Closing ASI Ethanol Valve");
         digitalWrite(MissionConstants::kASIEthanolPin, 1); // HIGH = CLOSED
         asiEthanolOpen = false;
         break;
