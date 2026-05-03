@@ -735,8 +735,8 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
     double seconds_since_start = currentTime - startTime;
     navigation.UpdateNavigation();
     controller.UpdateTestTVC(seconds_since_start);
-    // Sequence timing (matching original hotfire.ino logic)
-    if (seconds_since_start >= 0.5 && seconds_since_start < 0.65)
+    //  Sequence timing (matching original hotfire.ino logic)
+    if (seconds_since_start >= 0.5 && seconds_since_start < 0.8)
     {
         //  Close Purge valve and turn on asi oxygen and spark plug on
         if (!firstPartDone)
@@ -750,7 +750,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             firstPartDone = true;
         }
     }
-    else if (seconds_since_start >= 0.65 && seconds_since_start < 0.90)
+    else if (seconds_since_start >= 0.8 && seconds_since_start < 1.3)
     {
         // Turn on asi ethonol
         if (!secondPartDone)
@@ -762,7 +762,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             secondPartDone = true;
         }
     }
-    else if (seconds_since_start >= 0.90 && seconds_since_start < 1.1)
+    else if (seconds_since_start >= 1.3 && seconds_since_start < 1.5)
     {
         // Open main nitrous valve
         if (!thirdPartDone)
@@ -774,7 +774,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             thirdPartDone = true;
         }
     }
-    else if (seconds_since_start >= 1.1 && seconds_since_start < 1.6)
+    else if (seconds_since_start >= 1.5 && seconds_since_start < 2.0)
     {
         // Open main ethonol valve
         if (!fourthPartDone)
@@ -787,7 +787,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
         }
     }
 
-    else if (seconds_since_start >= 1.6 && seconds_since_start < 2.6)
+    else if (seconds_since_start >= 2.0 && seconds_since_start < 3.0)
     {
         // Turn off spark plug and asi oxygen
         if (!fifthPartDone)
@@ -799,7 +799,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             fifthPartDone = true;
         }
     }
-    else if (seconds_since_start >= 2.6 && seconds_since_start < 3.6)
+    else if (seconds_since_start >= 3.0 && seconds_since_start < 4.0)
     {
         // Turn off spark plug and asi oxygen
         if (!sixthPartDone)
@@ -809,7 +809,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             sixthPartDone = true;
         }
     }
-    else if (seconds_since_start >= 3.6 && seconds_since_start < 4.6)
+    else if (seconds_since_start >= 4.0 && seconds_since_start < 5.0)
     {
         // Turn off spark plug and asi oxygen
         if (!seventhPartDone)
@@ -819,7 +819,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             seventhPartDone = true;
         }
     }
-    else if (seconds_since_start >= 4.6 && seconds_since_start < 4.8)
+    else if (seconds_since_start >= 5.0 && seconds_since_start < 5.2)
     {
         // Turn off spark plug and asi oxygen
         if (!eigthPartDone)
@@ -831,7 +831,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             eigthPartDone = true;
         }
     }
-    else if (seconds_since_start >= 4.8 && seconds_since_start < 5.3)
+    else if (seconds_since_start >= 5.2 && seconds_since_start < 5.7)
     {
         // Turn off Main nitrous
         if (!ninthPartDone)
@@ -843,7 +843,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             ninthPartDone = true;
         }
     }
-    else if (seconds_since_start >= 5.3 && seconds_since_start < 6.8)
+    else if (seconds_since_start >= 5.7 && seconds_since_start < 7.2)
     {
         // Open purge
         if (!tenthPartDone)
@@ -856,7 +856,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             tenthPartDone = true;
         }
     }
-    else if (seconds_since_start >= 6.8)
+    else if (seconds_since_start >= 7.2)
     {
         // Close purge
         if (!eleventhPartDone)
@@ -868,7 +868,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             valveControl.CloseValve(ValveControl::Purge);
             eleventhPartDone = true;
         }
-        if (seconds_since_start >= 7)
+        if (seconds_since_start >= 7.5)
         {
             // Uncomment for debugging
             std::cout << "Time: " << seconds_since_start << "\n";
