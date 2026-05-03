@@ -162,6 +162,10 @@ int main()
 
     // Spark plug pins
     // Configure kSparkPin, immidetely write HIGH to command it CLOSED on relay,
+    pinMode(MissionConstants::kSparkPin, OUTPUT);
+    digitalWrite(MissionConstants::kSparkPin, 1);         // HIGH = OFF
+    pwm_driver->set_pwm(MissionConstants::kRPMPin, 0, 0); // 0% duty cycle
+
     // and send a 0% duty cycle wave to the kRPMPin
 
     //  Initialize servos to closed position (179 degrees)

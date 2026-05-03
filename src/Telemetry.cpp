@@ -62,10 +62,12 @@ namespace
     }
 }
 
-void Telemetry::HardwareSaveFrame(Navigation &navigation, Controller &controller, GPS &gps)
+void Telemetry::HardwareSaveFrame(Navigation &navigation, Controller &controller, GPS &gps, PressureTransducer &pt,
+                                  LoadCell &lc)
 {
     WriteElapsedSecondsPrefix(HardwareSaved, StartTime);
     WriteElapsedSecondsPrefix(SensorSaved, StartTime);
+    WriteElapsedSecondsPrefix(LiquidSaved, StartTime);
 
     // Navigation state, U, k matrix current index
     // Write data to file
@@ -102,9 +104,32 @@ void Telemetry::HardwareSaveFrame(Navigation &navigation, Controller &controller
     SensorSaved << std::to_string(std::get<1>(mag)) << ", ";
     SensorSaved << std::to_string(std::get<2>(mag));
 
+    double nitrogen = pt.ReadPSI(PressureTransducer::NitrogenLine);            // 0-1000 PSI
+    double ethanol = pt.ReadPSI(PressureTransducer::EthanolTank);              // 0-1000 PSI
+    double nitrous = pt.ReadPSI(PressureTransducer::NitrousLine);              // 0-1000 PSI
+    double nitrous_tank = pt.ReadPSI(PressureTransducer::NitrousTankLine);     // 0-1000 PSI
+    double oxygen = pt.ReadPSI(PressureTransducer::OxygenLine);                // 0-200 PSI
+    double fuel_inlet = pt.ReadPSI(PressureTransducer::FuelInlet);             // 0-1000 PSI
+    double fuel_outlet = pt.ReadPSI(PressureTransducer::FuelOutlet);           // 0-1000 PSI
+    double chamber_pressure = pt.ReadPSI(PressureTransducer::ChamberPressure); // 0-1000 PSI
+    double load_cell = lc.ReadLBS();
+
+    LiquidSaved << std::to_string(nitrogen) << ", ";
+    LiquidSaved << std::to_string(ethanol) << ", ";
+    LiquidSaved << std::to_string(nitrous) << ", ";
+    LiquidSaved << std::to_string(nitrous_tank) << ", ";
+    LiquidSaved << std::to_string(oxygen) << ", ";
+    LiquidSaved << std::to_string(fuel_inlet) << ", ";
+    LiquidSaved << std::to_string(fuel_outlet) << ", ";
+    LiquidSaved << std::to_string(chamber_pressure) << ", ";
+    LiquidSaved << std::to_string(load_cell) << ", ";
+
     HardwareSaved << "\n"
                   << std::flush;
     SensorSaved << "\n"
+                << std::flush;
+
+    LiquidSaved << "\n"
                 << std::flush;
 }
 
@@ -203,52 +228,52 @@ void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
     json json_msg;
     json_msg["data_type"] = "telem";
     json_msg["type"] = "GNC";
-    json_msg["payload"] = BuildRoundedPayload({
-        // Position
-        navState(0),
-        navState(1),
-        navState(2),
-        // Velocity
-        navState(3),
-        navState(4),
-        navState(5),
-        // True axis-angle rotation vector (axis * angle)
-        rotationVector(0),
-        rotationVector(1),
-        rotationVector(2),
-        // Omegas
-        angularVelocity(0),
-        angularVelocity(1),
-        angularVelocity(2),
-        // Accel Bias
-        navState(10),
-        navState(11),
-        navState(12),
-        // Omega Bias
-        navState(13),
-        navState(14),
-        navState(15),
-        // Tvc commands
-        controller.GetCurrentTVCCommand()(0),
-        controller.GetCurrentTVCCommand()(1),
-        // Rcs command
-        controller.GetCurrentRcsCommand(),
-        // Thrust command,
-        controller.GetCurrentThrustCommand(),
-        // Actuator setpoint errors
-        actuatorSetpointError(0),
-        actuatorSetpointError(1),
-        // Attitude Setpoint errors
-        attitudeSetpointError(0),
-        attitudeSetpointError(1),
-        attitudeSetpointError(2),
-        // Guidance altitude error
-        guidanceAltitudeError,
-        // Guidiance translation errors
-        guidanceTranslationError(0),
-        guidanceTranslationError(1)
+    json_msg["payload"] = BuildRoundedPayload({// Position
+                                               navState(0),
+                                               navState(1),
+                                               navState(2),
+                                               // Velocity
+                                               navState(3),
+                                               navState(4),
+                                               navState(5),
+                                               // True axis-angle rotation vector (axis * angle)
+                                               rotationVector(0),
+                                               rotationVector(1),
+                                               rotationVector(2),
+                                               // Omegas
+                                               angularVelocity(0),
+                                               angularVelocity(1),
+                                               angularVelocity(2),
+                                               // Accel Bias
+                                               navState(10),
+                                               navState(11),
+                                               navState(12),
+                                               // Omega Bias
+                                               navState(13),
+                                               navState(14),
+                                               navState(15),
+                                               // Tvc commands
+                                               controller.GetCurrentTVCCommand()(0),
+                                               controller.GetCurrentTVCCommand()(1),
+                                               // Rcs command
+                                               controller.GetCurrentRcsCommand(),
+                                               // Thrust command,
+                                               controller.GetCurrentThrustCommand(),
+                                               // Actuator setpoint errors
+                                               actuatorSetpointError(0),
+                                               actuatorSetpointError(1),
+                                               // Attitude Setpoint errors
+                                               attitudeSetpointError(0),
+                                               attitudeSetpointError(1),
+                                               attitudeSetpointError(2),
+                                               // Guidance altitude error
+                                               guidanceAltitudeError,
+                                               // Guidiance translation errors
+                                               guidanceTranslationError(0),
+                                               guidanceTranslationError(1)
 
-    }, decimalPlaces);
+                                              },
+                                              decimalPlaces);
 
     RF::GetInstance().SendString(json_msg.dump() + "\n");
 }
@@ -261,16 +286,17 @@ void Telemetry::RfSendLiquidFrame(PressureTransducer &pt, LoadCell &lc)
     json_msg["data_type"] = "telem";
     json_msg["type"] = "Liquid";
     json_msg["payload"] = BuildRoundedPayload({
-        pt.ReadPSI(PressureTransducer::NitrogenLine),    // 0-1000 PSI
-        pt.ReadPSI(PressureTransducer::EthanolTank),     // 0-1000 PSI
-        pt.ReadPSI(PressureTransducer::NitrousLine),     // 0-1000 PSI
-        pt.ReadPSI(PressureTransducer::NitrousTankLine), // 0-1000 PSI
-        pt.ReadPSI(PressureTransducer::OxygenLine),      // 0-200 PSI
-        pt.ReadPSI(PressureTransducer::FuelInlet),       // 0-1000 PSI
-        pt.ReadPSI(PressureTransducer::FuelOutlet),      // 0-1000 PSI
-        pt.ReadPSI(PressureTransducer::ChamberPressure), // 0-1000 PSI
-        lc.ReadLBS()                                     // Load cell in pounds
-    }, decimalPlaces);
+                                                  pt.ReadPSI(PressureTransducer::NitrogenLine),    // 0-1000 PSI
+                                                  pt.ReadPSI(PressureTransducer::EthanolTank),     // 0-1000 PSI
+                                                  pt.ReadPSI(PressureTransducer::NitrousLine),     // 0-1000 PSI
+                                                  pt.ReadPSI(PressureTransducer::NitrousTankLine), // 0-1000 PSI
+                                                  pt.ReadPSI(PressureTransducer::OxygenLine),      // 0-200 PSI
+                                                  pt.ReadPSI(PressureTransducer::FuelInlet),       // 0-1000 PSI
+                                                  pt.ReadPSI(PressureTransducer::FuelOutlet),      // 0-1000 PSI
+                                                  pt.ReadPSI(PressureTransducer::ChamberPressure), // 0-1000 PSI
+                                                  lc.ReadLBS()                                     // Load cell in pounds
+                                              },
+                                              decimalPlaces);
 
     RF::GetInstance().SendString(json_msg.dump() + "\n");
 }
@@ -298,13 +324,14 @@ void Telemetry::RunTelemetry(Navigation &navigation, Controller &controller, GPS
         last_gps_update_count = gps_update_count;
     }
 
+    // Log Navigation sensors and liquid sensor
     if (std::chrono::duration_cast<std::chrono::milliseconds>(hardware_change_time).count() / 1000.0 >= HardwareSaveDelta)
     {
-        HardwareSaveFrame(navigation, controller, gps);
+        HardwareSaveFrame(navigation, controller, gps, pt, lc);
         last_hardware_time = std::chrono::high_resolution_clock::now();
     }
 
-    // Log navigational sensors in RFSendFrame() and Log liquid engine sensors in RfSendLiquidPropulsionData()
+    // Send current navigation, controller, and liquid sensor data through RF
     if (std::chrono::duration_cast<std::chrono::milliseconds>(rf_change_time).count() / 1000.0 >= RFSaveDelta)
     {
         RfSendGNCFrame(navigation, controller);
@@ -324,11 +351,13 @@ Telemetry::Telemetry() : StartTime(std::chrono::steady_clock::now())
 
     Logs.open("../logs/logs" + str + ".txt");
     HardwareSaved.open("../logs/data" + str + ".txt");
+    LiquidSaved.open("../logs/liquid" + str + ".txt");
     SensorSaved.open("../logs/sensors" + str + ".txt");
     GPSSaved.open("../logs/gps" + str + ".txt");
     ActuatorSaved.open("../logs/actuators" + str + ".txt");
 
     HardwareSaved << "TimeSeconds, x, y, z, vx, vy, vz, q1, q2, q3, q4, ab1, ab2, ab3, wb1, wb2, wb3, E, N, U, E_Vel, N_Vel, ux, uy \n";
+    LiquidSaved << "TimeSeconds, nitrogen_line_psi, ethanol_tank_psi, nitrous_fill_psi, nitrous_tank_psi, oxygen_line_psi, fuel_inlet_psi, fuel_outlet_psi, chamber_pressure_psi, load_cell_lbs \n";
     SensorSaved << "TimeSeconds, accelX, accelY, accelZ, gyroX, gryoY, gyroZ, magx, magy, magz \n";
     GPSSaved << "TimeSeconds, gpsE, gpsN, gpsU, gpsVxE, gpsVyN \n";
     ActuatorSaved << "TimeSeconds, commandedAngleXRad, commandedAngleYRad, commandedLengthXIn, commandedLengthYIn, observedLengthXIn, observedLengthYIn, commandedSpeedX, commandedSpeedY \n";
@@ -338,6 +367,7 @@ Telemetry::~Telemetry()
 {
     Logs.close();
     HardwareSaved.close();
+    LiquidSaved.close();
     SensorSaved.close();
     GPSSaved.close();
     ActuatorSaved.close();
