@@ -809,7 +809,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
     {
         // Uncomment for debugging
         controller.UpdateTestTVC(seconds_since_start);
-        std::cout << "Time: " << seconds_since_start << "\n"
+        std::cout << "Time: " << seconds_since_start << "\n";
     }
     else if (seconds_since_start >= 5.0 && seconds_since_start < 5.2)
     {
