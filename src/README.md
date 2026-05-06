@@ -25,7 +25,7 @@ Whenever we do change modes, it is important that we use `Telemety.GetInstance()
 5. Add your Mode enum to the switch statement in `Update()` 
 
 #### Current Flow Diagram Implementation
-
+![Mode Flow Diagram](../ModeFlowDiagram.png)
 
 ### Navigation.cpp
 

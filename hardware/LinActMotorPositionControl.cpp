@@ -12,9 +12,6 @@
 
 float extensionLength;
 
-int maxReading = MissionConstants::kTvcActuator0PotentiometerMaxReading;
-int minReading = MissionConstants::kTvcActuator0PotentiometerMinReading;
-
 float mapFloat(float x, float in_min, float in_max, float out_min, float out_max);
 
 float readPositionInches(int actuator_index)
@@ -175,6 +172,7 @@ void RunChirpTVCMode()
                                     MissionConstants::kTvcChirpControlPeriodMs);
 }
 
+// Legacy function
 // ----------------------
 // Velocity step command
 // Applies a constant signed velocity command for a fixed duration.
@@ -251,6 +249,8 @@ int moveToLimit(int actuator_index, int direction)
     int curr = 0;
     int sensorPin = (actuator_index == 0) ? MissionConstants::kTVCXPotentiometerReading : MissionConstants::kTVCYPotentiometerReading;
 
+    // Either extend or retract the actuator and keep going until the current reading is similar to the prev reading meaning
+    // we are at the limits
     do
     {
         std::stringstream ss;

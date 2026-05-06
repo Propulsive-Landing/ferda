@@ -35,12 +35,11 @@ void Mode::CloseAllValvesAndSparkPlug(ValveControl &valveControl, SparkPlug &spa
     valveControl.OpenValve(ValveControl::NitrogenBleed);
     sparkPlug.TurnOff();
 
-    // TODO: MIGHT HAVE TO DO DELAYS
-    // valveControl.CloseValve(ValveControl::Nitrogen);
-    // valveControl.CloseValve(ValveControl::Purge);
-    // valveControl.CloseValve(ValveControl::MainEthanol);
-    // valveControl.CloseValve(ValveControl::MainNitrous);
-    // valveControl.CloseValve(ValveControl::NitrousFill);
+    valveControl.CloseValve(ValveControl::Nitrogen);
+    valveControl.CloseValve(ValveControl::Purge);
+    valveControl.CloseValve(ValveControl::MainEthanol);
+    valveControl.CloseValve(ValveControl::MainNitrous);
+    valveControl.CloseValve(ValveControl::NitrousFill);
 }
 
 Mode::Phase Mode::UpdateStandby(RF::Command &command, Controller &controller)

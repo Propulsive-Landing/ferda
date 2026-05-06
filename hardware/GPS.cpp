@@ -95,9 +95,6 @@ GPS::~GPS()
 void GPS::Update()
 {
     // Safety check
-    // NOTE: Could have used a boolean flag but to match magnometer, it is better to just have boolean flags for
-    //       gps position nd velocity controls rather than if GPS us actually plugged in. In main, the user will get
-    //       a warning and can decide to quit then but if not, then we will always return so no harm done
     if (fd < 0)
     {
         return;
@@ -428,8 +425,7 @@ void GPS::read_data()
     oss << std::put_time(&tm, "%d-%m-%Y %H:%M:%S")
         << "." << std::setw(3) << std::setfill('0') << ms;
 
-    // Either way, this code fully reads the message and it will only break if buffer exceeds the max size of buffer
-    // which might happeb if the gps settings were not set so we are reading every sentence each 10 times per second
+    // This code fully reads the NMEA message
     int bytes_received = read(fd, buffer, sizeof(buffer));
 
     // Safety check

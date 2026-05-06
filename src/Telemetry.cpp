@@ -275,7 +275,8 @@ void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
                                               },
                                               decimalPlaces);
 
-    RF::GetInstance().SendString(json_msg.dump() + "\n");
+    std::string output = json_msg.dump() + "\n";
+    RF::GetInstance().SendString(output);
 }
 
 void Telemetry::RfSendLiquidFrame(PressureTransducer &pt, LoadCell &lc)
@@ -298,7 +299,8 @@ void Telemetry::RfSendLiquidFrame(PressureTransducer &pt, LoadCell &lc)
                                               },
                                               decimalPlaces);
 
-    RF::GetInstance().SendString(json_msg.dump() + "\n");
+    std::string output = json_msg.dump() + "\n";
+    RF::GetInstance().SendString(output);
 }
 
 void Telemetry::RunTelemetry(Navigation &navigation, Controller &controller, GPS &gps, PressureTransducer &pt, LoadCell &lc, float HardwareSaveDelta, float RFSaveDelta)

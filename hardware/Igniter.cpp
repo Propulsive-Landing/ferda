@@ -1,12 +1,13 @@
-#include "Igniter.hpp"
 #include <wiringPi.h>
+#include "Igniter.hpp"
+#include "MissionConstants.hpp"
 
 void Igniter::Ignite(Igniter::IgnitionSpecifier ignite)
 {
-   // digitalWrite(5, 0);
+    // digitalWrite(MissionConstants::kIgnitionPin, 0);
 }
 
 void Igniter::DisableIgnite(Igniter::IgnitionSpecifier ignite)
 {
-    //digitalWrite(5, 1);
+    // digitalWrite(MissionConstants::kIgnitionPin, 1);
 }

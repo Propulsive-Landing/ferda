@@ -162,20 +162,19 @@ int main()
 
     // Spark plug pins
     // Configure kSparkPin, immidetely write HIGH to command it CLOSED on relay,
+    // and send a 0% duty cycle wave to the kRPMPin
     pinMode(MissionConstants::kSparkPin, OUTPUT);
     digitalWrite(MissionConstants::kSparkPin, 1);         // HIGH = OFF
     pwm_driver->set_pwm(MissionConstants::kRPMPin, 0, 0); // 0% duty cycle
 
-    // and send a 0% duty cycle wave to the kRPMPin
-
     //  Initialize servos to closed position (179 degrees)
     float pulse = 1500 + ((MissionConstants::kValveClosedAngle - 90) / 90.0) * 1000;
     int ticks = (pulse / MissionConstants::SERVO_PERIOD) * MissionConstants::MAX_TICKS;
-    // servo_driver->set_pwm(MissionConstants::kNitrogenServoPin, 0, ticks);
-    // servo_driver->set_pwm(MissionConstants::kPurgeServoPin, 0, ticks);
-    // servo_driver->set_pwm(MissionConstants::kMainEthanolServoPin, 0, ticks);
-    // servo_driver->set_pwm(MissionConstants::kMainNitrousServoPin, 0, ticks);
-    // servo_driver->set_pwm(MissionConstants::kNitrousFillServoPin, 0, ticks);
+    servo_driver->set_pwm(MissionConstants::kNitrogenServoPin, 0, ticks);
+    servo_driver->set_pwm(MissionConstants::kPurgeServoPin, 0, ticks);
+    servo_driver->set_pwm(MissionConstants::kMainEthanolServoPin, 0, ticks);
+    servo_driver->set_pwm(MissionConstants::kMainNitrousServoPin, 0, ticks);
+    servo_driver->set_pwm(MissionConstants::kNitrousFillServoPin, 0, ticks);
 
 #endif
     IMU imu;
