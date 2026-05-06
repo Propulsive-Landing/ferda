@@ -733,7 +733,6 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
 
     double seconds_since_start = currentTime - startTime;
     navigation.UpdateNavigation();
-    controller.UpdateTestTVC(seconds_since_start);
     //  Sequence timing (matching original hotfire.ino logic)
     if (seconds_since_start >= 0.5 && seconds_since_start < 0.8)
     {
@@ -797,26 +796,20 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             valveControl.CloseValve(ValveControl::ASIOxygen);
             fifthPartDone = true;
         }
+        controller.UpdateTestTVC(seconds_since_start);
     }
     else if (seconds_since_start >= 3.0 && seconds_since_start < 4.0)
     {
-        // Turn off spark plug and asi oxygen
-        if (!sixthPartDone)
-        {
-            // Uncomment for debugging
-            std::cout << "Time: " << seconds_since_start << "\n";
-            sixthPartDone = true;
-        }
+        // Uncomment for debugging
+        controller.UpdateTestTVC(seconds_since_start);
+        std::cout << "Time: " << seconds_since_start << "\n";
     }
+
     else if (seconds_since_start >= 4.0 && seconds_since_start < 5.0)
     {
-        // Turn off spark plug and asi oxygen
-        if (!seventhPartDone)
-        {
-            // Uncomment for debugging
-            std::cout << "Time: " << seconds_since_start << "\n";
-            seventhPartDone = true;
-        }
+        // Uncomment for debugging
+        controller.UpdateTestTVC(seconds_since_start);
+        std::cout << "Time: " << seconds_since_start << "\n"
     }
     else if (seconds_since_start >= 5.0 && seconds_since_start < 5.2)
     {
@@ -825,6 +818,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
         {
             // Uncomment for debugging
             std::cout << "Time: " << seconds_since_start << "\n";
+            controller.tvc.Stop();
             valveControl.CloseValve(ValveControl::ASIEthanol);
             valveControl.CloseValve(ValveControl::MainEthanol);
             eigthPartDone = true;
@@ -885,7 +879,6 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             ninthPartDone = false;
             tenthPartDone = false;
             eleventhPartDone = false;
-            controller.tvc.Stop();
             return Mode::HotfireIdle;
         }
     }
