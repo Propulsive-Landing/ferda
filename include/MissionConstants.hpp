@@ -205,7 +205,7 @@ namespace MissionConstants
     const int kNitrogenLinePTPin = ADS1BASE + 0;    // First ADS1115 A0
     const int kEthanolTankPTPin = ADS1BASE + 1;     // First ADS1115  A1
     const int kNitrousTankLinePTPin = ADS1BASE + 2; // First ADS1115 A2
-    const int kNitrousLinePTPin = ADS1BASE + 3;     // First ADS1115 A2
+    const int kNitrousLinePTPin = ADS3BASE + 0;     // Third ADS1115 A0
 
     // NOT USED AT THE MOMENT
     const int kOxygenLinePTPin = ADS2BASE + 2; // Second ADS1115  A2
@@ -213,7 +213,7 @@ namespace MissionConstants
     const int kFuelOutletPTPin = ADS3BASE + 0; // Third ADS1115 A0
 
     // Load Cell Pin (Analog)
-    const int kLoadCellPin = ADS2BASE + 1;          // Second ADS1115 A1
+    const int kLoadCellPin = ADS1BASE + 3;          // First ADS1115 A4
     const int kChamberPressurePTPin = ADS2BASE + 0; // Second ADS1115 A0
 
     // Valve Servo Angles

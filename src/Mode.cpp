@@ -727,7 +727,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
         startTime = currentTime;
         Telemetry::GetInstance().Log("Starting 3 Second Hotfire sequence");
         // Open purge valve
-        valveControl.OpenValve(ValveControl::Purge);
+        // valveControl.OpenValve(ValveControl::Purge);
         sequenceStarted = true;
     }
 
@@ -742,7 +742,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
             // Uncomment for debugging
             std::cout << "Time: " << seconds_since_start << "\n";
 
-            valveControl.CloseValve(ValveControl::Purge);
+            // valveControl.CloseValve(ValveControl::Purge);
             valveControl.OpenValve(ValveControl::ASIOxygen);
             sparkPlug.TurnOn();
             firstPartDone = true;
