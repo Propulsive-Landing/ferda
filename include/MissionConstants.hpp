@@ -212,6 +212,8 @@ namespace MissionConstants
     const int kFuelInletPTPin = ADS2BASE + 3;  // Second ADS1115 A3
     const int kFuelOutletPTPin = ADS3BASE + 0; // Third ADS1115 A0
 
+    // IMPORANT: ON Test Stand, The sceond ADS1115 A1 pin is fried
+
     // Load Cell Pin (Analog)
     const int kLoadCellPin = ADS1BASE + 3;          // First ADS1115 A4
     const int kChamberPressurePTPin = ADS2BASE + 0; // Second ADS1115 A0

@@ -54,6 +54,10 @@ Tips:
    6. ADS1115 -> `0x4A` (ADDR is connected to SDA)
 
 Notes:
+The Xbees are configured using XCTU software/ When configuring them, the Ground Control Xbee should to be the Coordinator
+and the Flight Computer Xbee should be the End Device. The Coordinator is responsibe for setting up the network. We also set the baud rate of both of them to 38400. Also, to send data back and forth, the Channel and the Pan ID have to match.
+Whenever you change the settings, you need to click on `Write`. 
+
 The ADS1115 are our analog-to-digital-converters because the Pi doesn't have any Analog pins and they are used to measure all of our Pressure Transducers
 We use `wiringPi's` `ads1115.c` custom library so we did not have to make our own and we initalize all our ads "variables" but they are not really variables with 
 `ads1115setup()` in `Main.cpp`
@@ -188,6 +192,34 @@ As of May 5th, 2026, the laod cell readings were not good
 normalize it, and then mulitply by that pressure's max PSI value to convert it to a Pressure value 
 
 ### RF.cpp
+We are currentely using 2 XBee ZB S2C series which should have an outdoor line-of-sight range of 4000ft. [XBee ZB S2C](https://www.digi.com/support/knowledge-base/the-major-differences-in-the-xbee-series-1-vs-the). 
+
+In the constructor, we first check to see if the Xbee is connected and if it not, then we just use the terminal to send commands like how we would for user input. However, if the Xbee is connected, then we set some serial settings with the most important one being the baud rate to 38400 to match what the other Xbee on Ground Control should be. 
+
+There are 3 methods at play here:
+`ParseCommand()` which is defined in `RF.hpp`
+`SendString()`
+`GetCommand()`
+
+`ParseCommand()` takes in a string and sees if any of the commands the user typed in Ground Control matches any already defined and if so returns that specified command
+
+`SendString()` is only used in the XBEE is connected and it makes sure it writes the entire message to the other Xbee
+
+`GetCommand()` reads the sent by Ground Control XBEE and waits until it sees a newline because that signified the end of a message and when that happens, we call `ParseCommand()` to see if it is a valid command. If the Xbee is not connected, we constantly look to see if the user inputed a command in the terminal
+
+## How to add a New command
+1. Go To RF.hpp and add the name of the command in the Command enum
+2. In `ParseCommand()`, add another else if statement where if the user entered the command, then we set `ParsedCommand` to that command enum value
+
+IMPORTANT:
+As of May 6th, 2026, in Ground Control, when we are parsing the json payload sometimes we get a parsing error like 
+```
+Received: Unexpected serial parsing error (Expected 9 engine values or 30 GNC values, got 15): {'data_type': 'telem', 'payload': [9.49, 0.0, 0.0, 0.35, 147.29, 755.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 'type': 'GNC'} time: 125.23
+Received: Unexpected serial parsing error (Expected 9 engine values or 30 GNC values, got 24): {'data_type': 'telem', 'payload': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.43, 12.82, 4.14, 124.34], 'type': 'Liquid'} time: 190.24
+```
+I think this is because of how the XBees are sending data because currentely they are in AT mode which is Transparent mode 
+which does not have any structure. Please investigate further
+
 
 ### SparkPlug.cpp
 `Sparkplug` is split into 3 methods `TurnOn()`, `TurnOff()`, and `IsOn()`
