@@ -29,7 +29,6 @@ Whenever we do change modes, it is important that we use `Telemety.GetInstance()
 
 ### Navigation.cpp
 
-
 ### Controller.cpp
 
 ### LaunchManager.cpp

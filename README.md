@@ -6,20 +6,13 @@ All source code utilizes [Hungarian Notation](https://www.cse.iitk.ac.in/users/d
 
 Create features in branches originating from the `dev` branch. When a feature is complete, make a pull request to merge it into `dev`.
 
-## Liquid Propulsion Support
-
-This codebase now supports both solid and liquid propulsion systems. For detailed documentation on the liquid propulsion port, see:
-
-- **[Liquid Propulsion Port Documentation](LIQUID_PROPULSION_PORT.md)** - Comprehensive guide covering architecture, implementation, and remaining work
-- **[Liquid Propulsion Quick Start](LIQUID_PROPULSION_QUICK_START.md)** - Quick reference for operators
-
 
 ## Table of Contents
 
 1. [How to Run](#how-to-run)
    - [How to Run On Linux (Raspberry Pi)](#how-to-run-on-linux-raspberry-pi)
-   - [How to Run On Mac](#how-to-run-Mac)
-   - [How to Run On Windows](#how-to-run-Windows)
+   - [How to Run On Mac](#how-to-run-on-mac)
+   - [How to Run On Windows](#how-to-run-on-windows)
 2. [Building the Source Code](#building-the-source-code)
 3. [Hardware Configuration](#hardware-configuration)
    - [Xbee Port Setup](#xbee-port-setup)
@@ -50,9 +43,16 @@ This codebase now supports both solid and liquid propulsion systems. For detaile
 13. Run `sudo cmake --workflow --preset install`
 14. Build the repo (ensure you're in either debug, simulation, or release mode depending on your need).
 15. Create a logs folder inside repo directory with `mkdir logs`
-15. Run the executable that gets created in the `build/` folder. (NOTE: If working with GPS, build gps_setup.sh)
+16. Run the executable that gets created in the `build/` folder. (NOTE: If working with GPS, run gps_setup.sh first)
 
 ### How to Run on Mac
+1. Clone this repo 
+2. Install the CMake Tools extension on VS Code.
+3. Install brew with `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
+5. Run `brew bundle`
+4. Build the repo (ensure you're in either debug, simulation, or release mode depending on your need).
+5. Create a logs folder inside repo directory with `mkdir logs`
+6. Run the executable that gets created in the `build/` folder. (NOTE: If working with GPS, run gps_setup.sh first)
 
 ### How to Run on Windows
 
@@ -370,18 +370,35 @@ Notes:
 The flight software should be connected with the Simulink simulation, sending actuator commands and receiving simulated sensor data.
 
 # Design
+We have separated all of our header files in the `include` directory, all non-hardware files into `src` firectory and all hardware files into the `hardware` directory. Now depending on the build type that you used, we either use `hardware` if built in `Release` mode, `hardware_test` if built in `Debug` Mode, or `hardware_simulation` if built in `Simulation` mode.
+
+README'S for `Src` and `Hardware` files are located in [Src files README](Src/README.md) and [Hardware files README](hardware/README.md) 
+
+If you add a new sensor, it belongs in the 3 hardware directories
+
+All config files listed below are in the ferda directory but should at somepoint be in a Config folder
+ - Angles.csv
+ - Height.csv
+ - Translation.csv 
+ - linux_library_requirements.txt
+ - Brewfile
+
+We do have a `tests` folder but it has not been touched in a while. If you generate any unit tests, it should go here
 
 ## Flow
 1. Look for command through RF.cpp
-2. Change mode based on command 
+2. Change mode based on command
 
 ## Architecture
 
-We use the **State machine pattern** where we have defined several modes/states and one while loop in main
+We use the **State machine pattern** where we have defined several modes/states and one while loop in main. We use RF
+to change modes but modes can also change based on a condition in the code as well.
 
+In Mode.hpp, we define the Modes:
 ```
 enum Phase
     {
+        Standby,
         Calibration,
         ActuatorCalibration,
         TestTVC,
@@ -390,6 +407,7 @@ enum Phase
         Launch,
         Land,
         Terminate,
+        Abort,
         Safe,
         HotfireIdle,
         ASITest,
@@ -397,8 +415,34 @@ enum Phase
         ThreeSecondHotfire
     };
 ```
+
+In RF.hpp, a subset of the commands look like below where Command is an enum where we add the RF command
+```
+ if (input_line == "ABORT")
+            ParsedCommand = RF::Command::ABORT;
+        else if (input_line == "ABORT_PAD")
+            ParsedCommand = RF::Command::ABORT_PAD;
+        else if (input_line == "ABORT_GROUND")
+            ParsedCommand = RF::Command::ABORT_GROUND;
+        else if (input_line == "TestTVC")
+            ParsedCommand = RF::Command::TestTVC;
+        else if (input_line == "ChirpTVC")
+            ParsedCommand = RF::Command::ChirpTVC;
+        else if (input_line == "Idle")
+            ParsedCommand = RF::Command::Idle;
+        else if (input_line == "Standby")
+            ParsedCommand = RF::Command::Standby;
+```
+
+
+In Main.cpp, the while loop looks like:
 ```
 while (mode.Update(navigation, controller, gps, igniter, imu, magnetometer, valveControl,  sparkPlug, pressureTransducer, loadCell, camera))
     {
     }
 ```
+
+We either exit out of the while loop when the Mode is `Terminate` which returns false from `Update()` or if we hit `Abort`, before we ignite, then we exit the program right then and there
+
+## Ground Control Communication
+So, this is the Flight Software that runs on the Raspberry Pi but like I've mentioned in [Flow](#flow), the flight software is expecting to see commands through the radio which is where Ground Control comes in. All Ground Control is found in [Ground Control Github Link](https://github.com/UConn-Rocketry/ground-control). So to actually communicate with the rocket, we use ground control and the xbees
