@@ -11,8 +11,10 @@ Create features in branches originating from the `dev` branch. When a feature is
 
 1. [How to Run](#how-to-run)
    - [How to Run On Linux (Raspberry Pi)](#how-to-run-on-linux-raspberry-pi)
+      - [Connecting to Raspberry Pi](#connecting-to-raspberry-pi)
    - [How to Run On Mac](#how-to-run-on-mac)
    - [How to Run On Windows](#how-to-run-on-windows)
+   - [Troulbleshooting](#troubleshooting)
 2. [Building the Source Code](#building-the-source-code)
 3. [Hardware Configuration](#hardware-configuration)
    - [Xbee Port Setup](#xbee-port-setup)
@@ -28,33 +30,58 @@ Create features in branches originating from the `dev` branch. When a feature is
 
 ### How to Run on Linux (Raspberry Pi)
 
-1. Clone this repo.
-2. Install the CMake Tools extension on VS Code.
-3. Run `sudo apt update`
-4. Run `xargs -a linux_library_requirements.txt sudo apt-get install -y`
-5. Run `mkdir ThirdPartyLibraries` and then `cd ThirdPartyLibraries`
-6. Clone WiringPi library with `git clone https://github.com/WiringPi/WiringPi.git` 
-7. Run `cd WiringPi/wiringPi`
-8. Run `make`
-9. Run `sudo make install`
-10. Go back to `ThirdPartyLibraries` directory
-11. Clone PCA9685 library with `git clone https://github.com/barulicm/PiPCA9685.git`
-12. Run `cd PiPCA9685`
-13. Run `sudo cmake --workflow --preset install`
-14. Build the repo (ensure you're in either debug, simulation, or release mode depending on your need).
-15. Create a logs folder inside repo directory with `mkdir logs`
-16. Run the executable that gets created in the `build/` folder. (NOTE: If working with GPS, run gps_setup.sh first)
+1. Install git (https://git-scm.com/install/)
+2. Clone this repo.
+3. Install the CMake Tools extension on VS Code.
+4. Run `sudo apt update`
+5. Run `xargs -a linux_library_requirements.txt sudo apt-get install -y`
+6. Run `mkdir ThirdPartyLibraries` and then `cd ThirdPartyLibraries`
+7. Clone WiringPi library with `git clone https://github.com/WiringPi/WiringPi.git` 
+8. Run `cd WiringPi/wiringPi`
+9. Run `make`
+10. Run `sudo make install`
+11. Go back to `ThirdPartyLibraries` directory
+12. Clone PCA9685 library with `git clone https://github.com/barulicm/PiPCA9685.git`
+13. Run `cd PiPCA9685`
+14. Run `sudo cmake --workflow --preset install`
+15. Build the repo (ensure you're in either debug, simulation, or release mode depending on your need).
+16. Create a logs folder inside repo directory with `mkdir logs`
+17. Run the executable that gets created in the `build/` folder. (NOTE: If working with GPS, run gps_setup.sh first)
+
+#### Connecting to Raspberry Pi
+In order to connect to the Raspberry Pi, it needs to be connected to wifi, and you need to know the IP address. 
+All 3 raspberry Pi's including the 2 RPI5's and the 1 RPI4 are autimatically configured to connect to the TP-Link Archer C54 router that
+we bought. Once you know the IP adress, then run the command
+`ssh host@{IP-Adress}` where host is the pi's username and the IP address is the ip address the rpi is connected to 
+
+Troubleshooting:
+- Make sure you are connected to the same wifi as the Pi.
+- If you used the same ip adress as another pi, it will yell at you and in that case run the commad `ssh-keygen -R {IP-address}` 
 
 ### How to Run on Mac
-1. Clone this repo 
-2. Install the CMake Tools extension on VS Code.
+1. Install git (https://git-scm.com/install/)
+2. Clone this repo 
 3. Install brew with `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
-5. Run `brew bundle`
-4. Build the repo (ensure you're in either debug, simulation, or release mode depending on your need).
-5. Create a logs folder inside repo directory with `mkdir logs`
-6. Run the executable that gets created in the `build/` folder. (NOTE: If working with GPS, run gps_setup.sh first)
+4. Run `brew bundle install`
+5. Build the repo (ensure you're in either debug, simulation, or release mode depending on your need).
+6. Create a logs folder inside repo directory with `mkdir logs`
+7. Run the executable that gets created in the `build/` folder. (NOTE: If working with GPS, run gps_setup.sh first)
 
 ### How to Run on Windows
+
+### Troubleshooting
+- Make sure all dependencies are installed
+   - linux_library_requirements.txt for linux operating systems (Raspberry Pi)
+   - Brewfile for mac
+
+- If you get `warning depend.make has modification time` issue:
+	try the commamnds: make clean
+                      make all
+
+- When SSHing into the Pi, the IP address might change so go to the router's ip address to look at the exact the IP adress the Pi is connected to
+
+- On mac, if you installed `CMake Tools extension` on VS Code and you have `ninja` installed, it might try to autimatically select it so when you try to build with `make`,
+it will throw an error
 
 ## Building the Source Code
 
@@ -384,6 +411,11 @@ All config files listed below are in the ferda directory but should at somepoint
  - Brewfile
 
 We do have a `tests` folder but it has not been touched in a while. If you generate any unit tests, it should go here
+
+For all our GPIO pin habdling, we have switched over to `WiringPi` because it was the easiest library to use.
+For more information about Raspberry Pi's GPIO look here [GPIO](<DatasheetsAndRPInfo/RP-006553-WP-2-A history of GPIO usage on Raspberry Pi devices, and current best practices.pdf>)
+
+For all our PWM handling, we wanted to use hardware PWM signals but depending on which Raspberry Pi we are using, it can have a maximum of 4 hardwre PWM GPIO pins, so we decided to buy PCA9685 boards which can generate up to hardware GPIO signals. For more information about the PCA9685 look here [PCA9685](DatasheetsAndRPInfo/PCA9685.pdf)
 
 ## Flow
 1. Look for command through RF.cpp

@@ -22,15 +22,15 @@
 These are all of our Hardware classes that are used in Release mode which should be used when the sensors are connected.
 
 Our current hardware stack is:
-1. 3 ADS1115 (https://www.ti.com/lit/ds/symlink/ads1115.pdf)
-2. 2 Linear Actuators (https://www.firgelliauto.com/products/feedback-rod-actuator?variant=849524071)
-3. 2 PCA9685s (https://cdn-shop.adafruit.com/datasheets/PCA9685.pdf)
-4. 1 BMO055 ((https://cdn-shop.adafruit.com/datasheets/BST_BNO055_DS000_12.pdf))
+1. 3 ADS1115 [Ads1115](DatasheetsAndRPInfo/ads1115.pdf)
+2. 2 Linear Actuators [Linear Actuator](https://www.firgelliauto.com/products/feedback-rod-actuator?variant=849524071)
+3. 2 PCA9685s [PCA9685](DatasheetsAndRPInfo/PCA9685.pdf)
+4. 1 BMO055 (DatasheetsAndRPInfo/BMO055.pdf)
 5. 1 Load Cell
 6. 1 Adafruit GPS (https://www.adafruit.com/product/4279?srsltid=AfmBOoqfHonDixBlvrF8NZrAJvkqtWSKWbYkq4jLcpdUHawGwJptTjV4)
-7. 5 Servos
-8. 2 Xbees
-9. 1 Camera
+7. 5 25KG Servos 
+8. 2 XBee ZB S2C [XBee ZB S2C](https://www.digi.com/support/knowledge-base/the-major-differences-in-the-xbee-series-1-vs-the)
+9. 1 RPI Camera
 10. 7 Pressure Transducers
 11. 3 Solenoid Valves
 12. 1 Relay Board
