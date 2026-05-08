@@ -570,10 +570,9 @@ Mode::Phase Mode::UpdateASITest(RF::Command &command, Navigation &navigation, Va
     double seconds_since_start = currentTime - startTime;
     navigation.UpdateNavigation();
 
-    // Sequence timing (matching original hotfire.ino logic)
     if (seconds_since_start >= 0.3 && seconds_since_start < 2.3)
     {
-        // Open ASI ethanol after 300ms
+        // Open ASI ethanol
         if (!firstPartDone)
         {
             // Uncomment for debugging
@@ -585,7 +584,7 @@ Mode::Phase Mode::UpdateASITest(RF::Command &command, Navigation &navigation, Va
     }
     else if (seconds_since_start >= 2.3 && seconds_since_start < 2.6)
     {
-        // Close ASI ethanol and turn off spark after 2 seconds
+        // Close ASI ethanol and turn off spark plug
         if (!secondPartDone)
         {
             // Uncomment for debugging
@@ -598,7 +597,7 @@ Mode::Phase Mode::UpdateASITest(RF::Command &command, Navigation &navigation, Va
     }
     else if (seconds_since_start >= 2.6)
     {
-        // Close ASI oxygen after 2.3 seconds
+        // Close ASI oxygen
         if (!thirdPartDone)
         {
             // Uncomment for debugging
@@ -620,13 +619,12 @@ Mode::Phase Mode::UpdateASITest(RF::Command &command, Navigation &navigation, Va
     }
     if (command == RF::Command::ABORT)
     {
-        // TODO I think we should just return to Idle??
-        Telemetry::GetInstance().Log("ABORT during ASI Test, EXITING");
+        Telemetry::GetInstance().Log("ABORT during ASI Test, returning to HotfireIdle");
         // Close all valves and turn off spark
         valveControl.CloseValve(ValveControl::ASIOxygen);
         valveControl.CloseValve(ValveControl::ASIEthanol);
         sparkPlug.TurnOff();
-        exit(0);
+        return Mode::HotfireIdle;
     }
 
     return Mode::ASITest;
@@ -635,7 +633,6 @@ Mode::Phase Mode::UpdateASITest(RF::Command &command, Navigation &navigation, Va
 Mode::Phase Mode::UpdateWaterFlow(RF::Command &command, Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug,
                                   double currentTime)
 {
-    // TODO: GO OVER WATER TEST SEQUENCE
     static double startTime;
     static bool sequenceStarted = false;
     static bool firstPartDone = false;
@@ -652,10 +649,9 @@ Mode::Phase Mode::UpdateWaterFlow(RF::Command &command, Navigation &navigation, 
     double seconds_since_start = currentTime - startTime;
     navigation.UpdateNavigation();
 
-    // Sequence timing (matching original hotfire.ino logic)
     if (seconds_since_start >= 1.0 && seconds_since_start < 2.0)
     {
-        // Open main ethanol after 1 seconds
+        // Open main ethanol
         if (!firstPartDone)
         {
             // Uncomment for debugging
@@ -667,7 +663,7 @@ Mode::Phase Mode::UpdateWaterFlow(RF::Command &command, Navigation &navigation, 
     }
     else if (seconds_since_start >= 3.0)
     {
-        // Close both valves after 3 seconds
+        // Close main nitrous and main ethanol valves
         if (!secondPartDone)
         {
             // Uncomment for debugging
@@ -690,12 +686,11 @@ Mode::Phase Mode::UpdateWaterFlow(RF::Command &command, Navigation &navigation, 
 
     if (command == RF::Command::ABORT)
     {
-        // TODO I think we should just return to Idle??
-        Telemetry::GetInstance().Log("ABORT during Water Flow, EXITING");
+        Telemetry::GetInstance().Log("ABORT during Water Flow, returning to HotfireIdle");
         // Close all valves
         valveControl.CloseValve(ValveControl::MainNitrous);
         valveControl.CloseValve(ValveControl::MainEthanol);
-        exit(0);
+        return Mode::HotfireIdle;
     }
 
     return Mode::WaterFlow;
@@ -727,7 +722,6 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
     double seconds_since_start = currentTime - startTime;
     navigation.UpdateNavigation();
 
-    //  Sequence timing
     if (seconds_since_start >= 0.5 && seconds_since_start < 0.8)
     {
         //  Close Purge valve and turn on asi oxygen and spark plug on
@@ -797,6 +791,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
         // Uncomment for debugging
         std::cout << "Time: " << seconds_since_start << "\n";
 
+        // Continue moving TVC
         controller.UpdateTestTVC(seconds_since_start);
     }
 
@@ -805,6 +800,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
         // Uncomment for debugging
         std::cout << "Time: " << seconds_since_start << "\n";
 
+        // Continue moving TVC
         controller.UpdateTestTVC(seconds_since_start);
     }
     else if (seconds_since_start >= 5.0 && seconds_since_start < 5.2)
@@ -879,15 +875,16 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
 
     if (command == RF::Command::ABORT)
     {
-        // TODO I think we should just return to Idle??
-        Telemetry::GetInstance().Log("ABORT during 3 Second Hotfire, EXITING");
-        // Close all valves
+        Telemetry::GetInstance().Log("ABORT during 3 Second Hotfire, returning to HotfireIdle");
+        // Close spark plug, all valves, and TVC
+        sparkPlug.TurnOff();
         valveControl.CloseValve(ValveControl::ASIEthanol);
         valveControl.CloseValve(ValveControl::MainEthanol);
         valveControl.CloseValve(ValveControl::MainNitrous);
         valveControl.CloseValve(ValveControl::Purge);
+        controller.tvc.Stop();
 
-        exit(0);
+        return Mode::HotfireIdle;
     }
 
     return Mode::ThreeSecondHotfire;
@@ -895,7 +892,7 @@ Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigat
 
 Mode::Phase Mode::UpdateAbort(Controller &controller, ValveControl &valvecontrol, SparkPlug &sparkplug)
 {
-    Telemetry::GetInstance().Log("Closing all Valves and Sparkplug");
+    Telemetry::GetInstance().Log("Closing all Valves and Sparkplug, EXITING");
     controller.tvc.Stop();
     CloseAllValvesAndSparkPlug(valvecontrol, sparkplug);
     exit(0);

@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <tuple>
 #include <string>
-#include <termios.h>
 #include <fstream>
 #include <map>
 #include <vector>

@@ -46,7 +46,8 @@ float readPositionInches()
 void driveActuator(int actuator_index, int direction, int speed)
 {
     // In case user chose to continue without PCA9685 for controlling pwm signals for Linear Actuators,
-    // we return  so we don't get Segmentation Fault erros using a null pointer
+    // we return so we don't get Segmentation Fault errors using a null pointer because we can assume the user will test navigation sensors and in Ignite mode and
+    // after, it will call this method
     if (pwm_driver == nullptr)
     {
         return;

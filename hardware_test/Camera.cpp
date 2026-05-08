@@ -1,5 +1,3 @@
-// TODO: Update camera class for hardware implementaiton
-
 // hardware_test/Camera.cpp
 #include "Camera.hpp"
 
@@ -21,7 +19,7 @@ double Camera::GetFrameId()
 
 void Camera::AnnotateDebugFrameMatches(
     double frameId,
-    const std::vector<std::pair<int, int>>& measurementToMarkerMatches)
+    const std::vector<std::pair<int, int>> &measurementToMarkerMatches)
 {
     (void)frameId;
     (void)measurementToMarkerMatches;
@@ -29,7 +27,7 @@ void Camera::AnnotateDebugFrameMatches(
 
 void Camera::AnnotateDebugFrameExpectedVsTrue(
     double frameId,
-    const std::vector<std::pair<int, Eigen::Vector3d>>& expectedMarkerBodyDirections)
+    const std::vector<std::pair<int, Eigen::Vector3d>> &expectedMarkerBodyDirections)
 {
     (void)frameId;
     (void)expectedMarkerBodyDirections;

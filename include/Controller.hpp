@@ -49,7 +49,6 @@ public:
     Controller(TVC &tvc, Engine &engine);
     void UpdateLaunch(Navigation &navigation, double current_time);
     void UpdateTestTVC(double testTime);
-    void HotFireTestTVC(double testTime);
     void AttitudeControl(Navigation &navigation);
     void HeightControl(Navigation &navigation);
     void TranslationControl(Navigation &navigation);

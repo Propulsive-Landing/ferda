@@ -203,7 +203,6 @@ void Telemetry::Log(std::string message)
 
 void Telemetry::RfSendGNCFrame(Navigation &navigation, Controller &controller)
 {
-    // TODO: MAKE SURE THIS FOLLOWS WHAT GROUND CONTROL EXPECTS
     const Eigen::Matrix<double, 16, 1> navState = navigation.GetNavigation();
     const Eigen::Vector3d angularVelocity = navigation.GetAngularVelocity();
     Eigen::Quaterniond q(

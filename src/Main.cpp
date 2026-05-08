@@ -66,7 +66,6 @@ int main()
     }
     catch (...)
     {
-        // TODO: Log with telemetry
         Telemetry::GetInstance().Log("Warning: Could not setup PCA9685 for Servos");
     }
 
@@ -135,14 +134,6 @@ int main()
         digitalWrite(MissionConstants::ADS3BASE, 0);
         digitalWrite(MissionConstants::ADS3BASE + 1, 6);
     }
-
-    /*
-    TODO: ADDRESS HOW TO HANDLE IF USER CONTINUES WITHOUT WARNING MESSAGES:
-           PARTICULARLY THE PCA9685 VARIABLES SINCE THOSE WILL BE NULL POINTERS. I ADDED A BOOLEAN CHECK
-            IN driveActuator() IN LinActMotorPositionCOntrol.cpp. ADS1115 IS FINE SINCE THOSE
-             WILL BE GARBAGE VALUES, BUT WE STILL TECHNICALLY SET SOME PINS TO HIGH WITH DIGITALWRITE
-             SO THAT IS PROBABLY UNSAFE
-             */
 
     /* Liquid propulsion GPIO setup (solenoid pins) */
 

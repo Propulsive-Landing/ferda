@@ -41,20 +41,6 @@ void Controller::UpdateTestTVC(double testTime)
     tvc.UpdateActuatorPositions();
 }
 
-void Controller::HotFireTestTVC(double testTime)
-{
-    double angleA = sin(3 * testTime) * MissionConstants::kMaximumTvcAngle / 2.0; // Rad
-    double angleB = sin(3 * testTime) * MissionConstants::kMaximumTvcAngle / 2.0; // Rad
-
-    input(0) = angleA;
-    input(1) = angleB;
-    // [TOD] Move to hardware tvc_angles = TvcMath(input);
-
-    tvc.SetTVCX(input(0));
-    tvc.SetTVCY(input(1));
-    tvc.UpdateActuatorPositions();
-}
-
 void Controller::UpdateLaunch(Navigation &navigation, double current_time)
 {
     // Use the TVC to stabilize the rocket for landing
@@ -170,7 +156,6 @@ void Controller::CalculateInput(Navigation &navigation)
     }
 
     // Figures out what angle we need to move the servos and then set them
-    // [TODO] Move to hardware tvc_angles = TvcMath(input);
     tvc.SetTVCX(input(0));
     tvc.SetTVCY(input(1));
     tvc.UpdateActuatorPositions();
@@ -266,7 +251,6 @@ void Controller::Center()
     // Center the tvc
     input(0) = 0;
     input(1) = 0;
-    // [TODO] Move to hardware tvc_angles = TvcMath(input);
     tvc.SetTVCX(input(0));
     tvc.SetTVCY(input(1));
     tvc.UpdateActuatorPositions();

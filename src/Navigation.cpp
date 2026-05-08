@@ -432,7 +432,6 @@ void Navigation::UpdateNavigation()
         gps_update_counter = 0;
     }
 
-    // TODO: GO OVER TOGGLE LOGIC FOR CAMREA BELOW TO MAKE SURE IT IS RIGHT
     camera_capture_elapsed_s += loopTime;
     if (camera_capture_elapsed_s >= kCameraCapturePeriodS)
     {

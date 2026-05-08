@@ -34,7 +34,7 @@ RF::RF()
     // If RF through XBEE fails, switch to terminal
     if (SerialFd < 0)
     {
-        // TODO: FIGURE OUT HOW TO INDI RECURSIVE DEPENEDNECY AND USE TELEMTRY LOGGING HERE
+        // TODO: FIGURE OUT BEST WAY TO UNDO RECURSIVE DEPENEDNECY AND USE TELEMTRY LOGGING HERE
         // Telemetry::GetInstance().Log("Switching to terminal controls");
         std::cout << "Switching to terminal controls" << "\n";
         terminal_switch = true;
