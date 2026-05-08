@@ -36,7 +36,7 @@ Our current hardware stack is:
 12. 1 Relay Board
 13. 1 Spark Plug
 
-Tips:
+TIPS:
 1. On the Raspberry Pi, make sure you enabled I2C and Serial Port on the Pi.
    1. Run the command `sudo raspi-config` which will bring up the Configuration Tool GUI
    2. Use the Arrow keys to get to `Interface Options`, and then hit `Enter`
@@ -53,7 +53,7 @@ Tips:
    5. ADS1115 -> `0x49` (ADDR is connected to VDD)
    6. ADS1115 -> `0x4A` (ADDR is connected to SDA)
 
-Notes:
+NOTES: 
 On startup, when you run `./Ferda`, if any sensor is not connected, you will see a warning message issued by Telemetry.
 
 The XBees are configured using XCTU software. When configuring them, the Ground Control XBee should be the Coordinator
@@ -80,7 +80,7 @@ I also left it as it is because it is easier to debug. If the user decides to ig
 Currently, we just have one method, `SetThrust()`.
 
 ### GPS.cpp
-Currently, we only care about RMC and GGA NMEA sentences because those give us all the information we need, but if you ever need to add more, look at the datasheet `https://cdn-shop.adafruit.com/datasheets/PMTK_A11.pdf` and follow the current methods we have defined for parsing.
+Currently, we only care about RMC and GGA NMEA sentences because those give us all the information we need, but if you ever need to add more, look at the datasheet [PMTK_A11.pdf](../DatasheetsAndRPInfo/PMTK_A11.pdf) and follow the current methods we have defined for parsing.
 
 
 To parse all of the NMEA sentences from Adafruit's GPS, we created a custom class. In the constructor, we initialize all of our instance variables
@@ -103,13 +103,14 @@ call `convert_coordinate_frame()`, and increment update_count, which is used in 
 
 
 ### Igniter.cpp
-NOTE: This was used in the past for igniting solid motor engines, but now we are using a liquid-fueled engine, so the
+NOTE:
+This was used in the past for igniting solid motor engines, but now we are using a liquid-fueled engine, so the
 code might change.
 
 Currently, there are 2 methods, `Ignite()` and `DisableIgnite()`, which use a `digitalWrite()` to whatever the ignition pin is set to in `MissionConstants.hpp`.
 
 ### IMU.cpp
-Currently, we are using the BNO055 (https://cdn-shop.adafruit.com/datasheets/BST_BNO055_DS000_12.pdf)
+Currently, we are using the BNO055 ([BMO055.pdf](../DatasheetsAndRPInfo/BMO055.pdf)).
 
 #### Setup
 So, the IMU uses I2C as its communication protocol with the default address being `0x28`
@@ -134,7 +135,7 @@ In order to actually use the IMU, we do the following in the constructor:
 
 The pattern is that you just need to find the register address you want to write to and then look at the different values. Once you have both, you can use either `wiringPiI2cWriteReg8` to write the value or `wiringPiI2CReadReg8` to read the value of the register.
 
-Note:
+NOTE:
 The way we read data is we first use `write` to set the chips internal register pointer
 Then we use `read` to read in all 16 bytes, where we split them across a `uint8_t array` because each data value has 2 registers. One of them has the high 8 bits and the second has the low 8 bits, and to read the full value we need to combine them. Using `read` and `write` is more efficient than `wiringPi's` library, but it is more convenient, so I left both options in.
 

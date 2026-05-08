@@ -20,6 +20,7 @@ Create features in branches originating from the `dev` branch. When a feature is
 3. [Hardware Configuration](#hardware-configuration)
    - [XBee Port Setup](#xbee-port-setup)
    - [GPS Port Setup](#gps-port-setup)
+   - [Startup Script]
 4. [Software-in-the-Loop Testing](#software-in-the-loop-testing)
    - [SIL Testing Using Windows + WSL2](#sil-testing-using-windows--wsl2)
    - [SIL Testing Using Windows](#sil-testing-using-windows)
@@ -164,7 +165,7 @@ The XBee module is a radio module that is used by our flight computer to send an
    Disable settings using a minus sign and enable settings without it.
 4. The device configuration should resemble:
    ```
-   speed 3800 baud; line = 0;
+   speed 38400 baud; line = 0;
    -echo
    ```
 
@@ -183,9 +184,16 @@ These configuration steps are taken care of in `gps_setup.sh`:
 5. Then we need to change the baud rate for our serial port so we do `stty -F "$PORT" 38400 raw -echo -ixon`
 6. Lastly, we change the update rate to be 10 Hz using `'$PMTK220,100*2F\r\n'`.
 
-Documentation on PMTK command packets can be found at `https://cdn-shop.adafruit.com/datasheets/PMTK_A11.pdf`.
-Documentation on the NMEA sentences can be found at `https://cdn-shop.adafruit.com/product-files/746/CD+PA1616S+Datasheet.v03.pdf`
+Documentation on PMTK command packets can be found in [PMTK_A11.pdf](DatasheetsAndRPInfo/PMTK_A11.pdf).
+Documentation on the NMEA sentences can be found in [CD+PA1616S+Datasheet.v03.pdf](DatasheetsAndRPInfo/CD+PA1616S+Datasheet.v03.pdf).
 
+### Startup Script
+
+We curreetly have 2 bash scripts
+ - `gps_setup.sh` 
+ - `startup.sh`
+
+ `gps_setup.sh` is meant to configure all of the GPS settings where `startup.sh` is meant to run `gps_setup.sh` and then run the program
 
 ## Camera Calibration
 
