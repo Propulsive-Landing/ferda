@@ -20,7 +20,7 @@ Create features in branches originating from the `dev` branch. When a feature is
 3. [Hardware Configuration](#hardware-configuration)
    - [XBee Port Setup](#xbee-port-setup)
    - [GPS Port Setup](#gps-port-setup)
-   - [Startup Script]
+   - [Startup Script](#startup-script)
 4. [Software-in-the-Loop Testing](#software-in-the-loop-testing)
    - [SIL Testing Using Windows + WSL2](#sil-testing-using-windows--wsl2)
    - [SIL Testing Using Windows](#sil-testing-using-windows)
@@ -83,6 +83,7 @@ Windows is a little different because it doesn't come installed with a compiler,
 7. Build the repo. Make sure you're in either debug or simulation mode.
 8. Create a logs folder inside the repo directory with `mkdir logs`
 9. Run the executable that gets created in the `build/` folder. (NOTE: If working with GPS, run gps_setup.sh first)
+
 ### Troubleshooting
 - Make sure all dependencies are installed
    - linux_library_requirements.txt for Linux operating systems (Raspberry Pi)
@@ -153,17 +154,17 @@ The XBee module is a radio module that is used by our flight computer to send an
 2. In hardware/RF.cpp, we configure serial port settings. Most importantly, the baud rate should be 38400, but make sure that the XBees are configured properly using XCTU software.
 3. For debugging, use `stty -F /dev/{RFPort} -a` to see all serial line settings because
    most of the time, the baud rate is not set to what the other XBee uses or echo is not turned off.
-2. Use `stty` to configure the device:
+4. Use `stty` to configure the device:
    ```bash
    stty -F /dev/ttyUSB0
    ```
    (`/dev/ttyUSB0` may change per device).
-3. Configure settings:
+5. Configure settings:
    ```bash
-   stty -F /dev/ttyS0 -settingToDisable settingToEnable
+   stty -F /dev/ttyUSB0 -settingToDisable settingToEnable
    ```
    Disable settings using a minus sign and enable settings without it.
-4. The device configuration should resemble:
+6. The device configuration should resemble:
    ```
    speed 38400 baud; line = 0;
    -echo
@@ -189,7 +190,7 @@ Documentation on the NMEA sentences can be found in [CD+PA1616S+Datasheet.v03.pd
 
 ### Startup Script
 
-We curreetly have 2 bash scripts
+We currently have 2 bash scripts
  - `gps_setup.sh` 
  - `startup.sh`
 
@@ -211,7 +212,7 @@ The calibration output stores the camera matrix, distortion coefficients, image 
 
 ## Software-in-the-Loop Testing
 
-Software-in-the-loop (SIL) testing allows you to connect your flight software to MATLAB's Simulink environment for real-time simulation. Follow the steps below to set up and run the SIL testing environment.
+Software-in-the-loop (SIL) testing allows you to connect your flight software to MATLAB's Simulink environment for real-time simulation. Follow the steps below to set up and run the SIL testing environment. SIL is not currently supported on Mac.
 
 ### SIL Testing Using Windows + WSL2
 
@@ -306,7 +307,7 @@ To interact with private GitHub repositories and push code, you need to authenti
    cd build
    make all
    ```
-   Note: Ports may change in future versions of simulation.
+   NOTE: Ports may change in future versions of simulation.
 
 #### Configure the Simulink Model
 
@@ -448,6 +449,8 @@ For all our PWM handling, we wanted to use hardware PWM signals, but depending o
 
 We use the **State machine pattern** where we have defined several modes/states and one while loop in main. We use RF
 to change modes but modes can also change based on a condition in the code as well.
+
+For our current Mode Flow, see [here](src/README.md#current-flow-diagram-implementation)
 
 In Mode.hpp, we define the Modes:
 ```

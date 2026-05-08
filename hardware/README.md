@@ -125,13 +125,13 @@ In order to actually use the IMU, we do the following in the constructor:
 1. We call `wiringPiI2CSetup()` with the IMU's I2C address which should be 0x28 which will open the Linux I2C device file which is most likely `/dev/i2c-1` and then, it sets the target slave address to `0x28`, and finally returns a file descriptor that represents the connection
 2. Then, we do a quick check to see if BNO055 was connected by checking the chip_id.
 3. Then, we set the Power Mode to Normal using `wiringPiI2cWriteReg8`, with the second input as the Power Mode Register Address and the third input as the value we write to that register.
-4. Then we delay 10 seconds for the power mode to change.
+4. Then we delay 10 milliseconds for the power mode to change.
 5. Then we set the operation mode to Config by again using `wiringPiI2CWriteReg8`, with the second input being the Operation Mode Register Address and the third input being the Config Value.
-6. We delay 50 seconds to allow the changes to occur.
+6. We delay 50 milliseconds to allow the changes to occur.
 7. Now, we set the operation mode to AMG
-8. We delay 50 seconds to allow the changes to occur
+8. We delay 50 milliseconds to allow the changes to occur
 9. Then we specify the Unit selection
-10. We delay 50 seconds to allow the changes to occur
+10. We delay 50 milliseconds to allow the changes to occur
 
 The pattern is that you just need to find the register address you want to write to and then look at the different values. Once you have both, you can use either `wiringPiI2cWriteReg8` to write the value or `wiringPiI2CReadReg8` to read the value of the register.
 
@@ -160,7 +160,7 @@ These pins correspond to the PCA9685 pins.
 `moveToLimit()` is used to calibrate the Linear Actuators by extending and retracting them and logging the min and max potentiometer values. We can calibrate the Linear Actuators by going into `ActuatorCalibration` mode. After seeing what the value is, replace the following MissionConstants variable values:
    - `kTvcActuator0PotentiometerMinReading`
    - `kTvcActuator0PotentiometerMaxReading`
-   -  `kTvcActuator1PotentiometerMaxReading`
+   -  `kTvcActuator1PotentiometerMinReading`
    - `kTvcActuator1PotentiometerMaxReading`
 
 `driveActuator()` is the main function that actually moves the actuators.

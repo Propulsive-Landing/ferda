@@ -1,5 +1,4 @@
 # Table of Contents
-
 1. [Introduction](#introduction)
    - [Mode.cpp](#modecpp)
    - [Navigation.cpp](#navigationcpp)
@@ -15,7 +14,7 @@ These are all of our non-hardware files.
 This is the brain of our Flight Software.
 `Mode::Update()` is the key method where we determine what Mode method to call based on what Mode we are in.
 We either change modes based on an RF command, a navigation condition, or a timing condition.
-Whenever we do change modes, it is important that we use `Telemetry.GetInstance().Log()` so that we know we switched correctly.
+Whenever we do change modes, it is important that we use `Telemetry::GetInstance().Log()` so that we know we switched correctly.
 
 #### How to Add More Modes
 1. Go to `Mode.hpp` in the include/ directory
