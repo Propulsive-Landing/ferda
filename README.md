@@ -67,10 +67,9 @@ The main thing is to make sure SSH, I2C, Raspberry Pi Connect, and Serial Port a
 2. Clone this repo.
 3. Install brew with `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
 4. Run `brew bundle install`
-5. Install the CMake Tools extension on VS Code.
-6. Build the repo. Make sure you're in either debug or simulation mode.
-7. Create a logs folder inside the repo directory with `mkdir logs`
-8. Run the executable that gets created in the `build/` folder. (NOTE: If working with GPS, run gps_setup.sh first)
+5. Build the repo. Make sure you're in either debug or simulation mode.
+6. Create a logs folder inside the repo directory with `mkdir logs`
+7. Run the executable that gets created in the `build/` folder. (NOTE: If working with GPS, run gps_setup.sh first)
 
 ### How to Run on Windows
 Windows is a little different because it doesn't come installed with a compiler, and since we use some POSIX libraries, we use WSL instead.

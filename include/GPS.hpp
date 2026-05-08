@@ -4,6 +4,7 @@
 #include <tuple>
 #include <string>
 #include <fstream>
+#include <termios.h>
 #include <map>
 #include <vector>
 #include "MissionConstants.hpp"
