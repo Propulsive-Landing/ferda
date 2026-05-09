@@ -4,70 +4,232 @@
 #include "Navigation.hpp"
 #include "MissionConstants.hpp"
 #include "Telemetry.hpp"
-#include "RF.hpp"
+#include "ValveControl.hpp"
+#include "SparkPlug.hpp"
+#include "PressureTransducer.hpp"
+#include "LoadCell.hpp"
+#include "GPS.hpp"
+#include "LinActMotorPositionControl.hpp"
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <iostream>
 #include <thread>
 
-// CONSTANTS TO BE FIGURED OUT LATER
-int abort_threshold = 1;
-int calibration_time = 1;
-int descent_time = 1;
-int total_time = 1;
-double ignition_height = 1;
-double offset = 0.45;
-double motor_thrust_duration = 2.09;
-double motor_thrust_percentage = 1;
-double fsw_clamp_time = 0.300;
-double second_motor_delta_x = 25.96;
-double gse_height = 0.2800;
+namespace
+{
+    void LogActuatorCalibrationInstructions()
+    {
+        Telemetry::GetInstance().Log("ACTUATOR CALIBRATION MODE");
+        Telemetry::GetInstance().Log("WARNING: Actuators should NOT be connected to the TVC linkage in this mode.");
+        Telemetry::GetInstance().Log("Commands: MoveXTVCToLimitExtend, MoveXTVCToLimitRetract, MoveYTVCToLimitExtend, MoveYTVCToLimitRetract");
+        Telemetry::GetInstance().Log("Use StopTVC to halt motion, CenterTVC to center, and Idle to exit.");
+    }
+}
+
+void Mode::CloseAllValvesAndSparkPlug(ValveControl &valveControl, SparkPlug &sparkPlug)
+{
+
+    valveControl.CloseValve(ValveControl::ASIEthanol);
+    valveControl.CloseValve(ValveControl::ASIOxygen);
+    valveControl.OpenValve(ValveControl::NitrogenBleed);
+    sparkPlug.TurnOff();
+
+    valveControl.CloseValve(ValveControl::Nitrogen);
+    valveControl.CloseValve(ValveControl::Purge);
+    valveControl.CloseValve(ValveControl::MainEthanol);
+    valveControl.CloseValve(ValveControl::MainNitrous);
+    valveControl.CloseValve(ValveControl::NitrousFill);
+}
+
+Mode::Phase Mode::UpdateStandby(RF::Command &command, Controller &controller)
+{
+    // Stop TVC
+    controller.tvc.Stop();
+
+    if (command == RF::Calibration)
+    {
+        Telemetry::GetInstance().Log("Switching mode from standby to calibration");
+        return Mode::Calibration;
+    }
+    if (command == RF::Idle)
+    {
+        Telemetry::GetInstance().Log("Switching mode from standby to Idle");
+        return Mode::Idle;
+    }
+
+    return Mode::Standby;
+}
 
 Mode::Mode(Phase eInitialMode) : eCurrentMode(eInitialMode) {}
 
 void Mode::UploadKmatrices()
 {
-    std::cout << "Enter 0,1, or 2 to choose Launching K_matrix" << std::endl;
-    int launching_KMatrix;
-    std::cin >> launching_KMatrix;
+    AngleKMatrix = "../Angles.csv";
+    HeightKMatrix = "../Height.csv";
+    TranslationKMatrix = "../Translation.csv";
+}
 
-    std::cout << "Enter 0,1, or 2 to choose Landing K_matrix" << std::endl;
-    int landing_KMatrix;
-    std::cin >> landing_KMatrix;
-
-    switch (launching_KMatrix)
+void Mode::CheckForToggleSensorCommands(RF::Command &command, GPS &gps, Camera &camera,
+                                        Magnetometer &magnetometer)
+{
+    if (command == RF::Command::CameraOn)
     {
-    case 0:
-        LaunchKMatrix = "../Normal_Launch.csv";
-        break;
-    case 1:
-        LaunchKMatrix = "../Lazy_Launch.csv";
-        break;
-    case 2:
-        LaunchKMatrix = "../Aggressive_Launch.csv";
-        break;
+        Telemetry::GetInstance().Log("Switching Camera on");
+        camera.setUseCamera(true);
     }
-
-    switch (landing_KMatrix)
+    else if (command == RF::Command::CameraOff)
     {
-    case 0:
-        LandKMatrix = "../Normal_Land.csv";
-        break;
-    case 1:
-        LandKMatrix = "../Lazy_Land.csv";
-        break;
-    case 2:
-        LandKMatrix = "../Aggressive_Land.csv";
-        break;
+        Telemetry::GetInstance().Log("Switching Camera off");
+        camera.setUseCamera(false);
+    }
+    else if (command == RF::Command::GPSPositionOn)
+    {
+        Telemetry::GetInstance().Log("Switching GPS Position on");
+        gps.SetUseGPSPosition(true);
+    }
+    else if (command == RF::Command::GPSPositionOff)
+    {
+        Telemetry::GetInstance().Log("Switching GPS Position off");
+        gps.SetUseGPSPosition(false);
+    }
+    else if (command == RF::Command::GPSVelocityOn)
+    {
+        Telemetry::GetInstance().Log("Switching GPS Velocity on");
+        gps.SetUseGPSVelocity(true);
+    }
+    else if (command == RF::Command::GPSVelocityOff)
+    {
+        Telemetry::GetInstance().Log("Switching GPS Velocity off");
+        gps.SetUseGPSVelocity(false);
+    }
+    else if (command == RF::Command::MagnetometerOn)
+    {
+        Telemetry::GetInstance().Log("Switching Magnometer on");
+        magnetometer.setUseMagnometer(true);
+    }
+    else if (command == RF::Command::MagnetometerOff)
+    {
+        Telemetry::GetInstance().Log("Switching Magnometer off");
+        magnetometer.setUseMagnometer(false);
     }
 }
-Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controller, double currentTime)
+
+void Mode::CheckForToggleValveCommands(RF::Command &command, ValveControl &valveControl, SparkPlug &sparkPlug)
+{
+    if (command == RF::Command::ValveNitrogenOpen)
+    {
+        valveControl.OpenValve(ValveControl::Nitrogen);
+    }
+    else if (command == RF::Command::ValveNitrogenClose)
+    {
+        valveControl.CloseValve(ValveControl::Nitrogen);
+    }
+    else if (command == RF::Command::ValvePurgeOpen)
+    {
+        valveControl.OpenValve(ValveControl::Purge);
+    }
+    else if (command == RF::Command::ValvePurgeClose)
+    {
+        valveControl.CloseValve(ValveControl::Purge);
+    }
+    else if (command == RF::Command::ValveMainEthanolOpen)
+    {
+        valveControl.OpenValve(ValveControl::MainEthanol);
+    }
+    else if (command == RF::Command::ValveMainEthanolClose)
+    {
+        valveControl.CloseValve(ValveControl::MainEthanol);
+    }
+    else if (command == RF::Command::ValveMainNitrousOpen)
+    {
+        valveControl.OpenValve(ValveControl::MainNitrous);
+    }
+    else if (command == RF::Command::ValveMainNitrousClose)
+    {
+        valveControl.CloseValve(ValveControl::MainNitrous);
+    }
+    else if (command == RF::Command::ValveNitrousFillOpen)
+    {
+        valveControl.OpenValve(ValveControl::NitrousFill);
+    }
+    else if (command == RF::Command::ValveNitrousFillClose)
+    {
+        valveControl.CloseValve(ValveControl::NitrousFill);
+    }
+    else if (command == RF::Command::ValveASIEthanolOpen)
+    {
+        valveControl.OpenValve(ValveControl::ASIEthanol);
+    }
+    else if (command == RF::Command::ValveASIEthanolClose)
+    {
+        valveControl.CloseValve(ValveControl::ASIEthanol);
+    }
+    else if (command == RF::Command::ValveASIOxygenOpen)
+    {
+        valveControl.OpenValve(ValveControl::ASIOxygen);
+    }
+    else if (command == RF::Command::ValveASIOxygenClose)
+    {
+        valveControl.CloseValve(ValveControl::ASIOxygen);
+    }
+    else if (command == RF::Command::ValveNitrogenBleedOpen)
+    {
+        valveControl.OpenValve(ValveControl::NitrogenBleed);
+    }
+    else if (command == RF::Command::ValveNitrogenBleedClose)
+    {
+        valveControl.CloseValve(ValveControl::NitrogenBleed);
+    }
+    // Handle spark commands
+    else if (command == RF::Command::SparkOn)
+    {
+        sparkPlug.TurnOn();
+    }
+    else if (command == RF::Command::SparkOff)
+    {
+        sparkPlug.TurnOff();
+    }
+}
+
+Mode::Phase Mode::UpdateCalibration(RF::Command &command, Navigation &navigation, Controller &controller,
+                                    double currentTime)
 {
     static float XTVC = 0.0;
     static float YTVC = 0.0;
-    RF::Command command = RF::GetInstance().GetCommand();
-    if (command == RF::Command::IncrementXTVC)
+
+    if (command == RF::Command::StopTVC)
+    {
+        Telemetry::GetInstance().Log("STOP TVC command received in calibration");
+        Telemetry::GetInstance().Log("Going to standby, EXITING");
+        return Mode::Standby;
+    }
+    else if (command == RF::Command::Standby)
+    {
+        Telemetry::GetInstance().Log("Switching mode from calibration to Standby");
+        return Mode::Standby;
+    }
+    else if (command == RF::Command::CenterTVC)
+    {
+        Telemetry::GetInstance().Log("CENTER TVC command received in calibration");
+        XTVC = 0.0;
+        YTVC = 0.0;
+        controller.Center();
+        return Mode::Calibration;
+    }
+    else if (command == RF::Command::ActuatorCalibration)
+    {
+        Telemetry::GetInstance().Log("Switching mode from calibration to actuator calibration");
+        LogActuatorCalibrationInstructions();
+        controller.Center();
+        return Mode::ActuatorCalibration;
+    }
+    else if (command == RF::Command::ChirpTVC)
+    {
+        Telemetry::GetInstance().Log("Switching mode from calibration to chirp tvc");
+        return Mode::ChirpTVC;
+    }
+    else if (command == RF::Command::IncrementXTVC)
     {
         XTVC += 0.01;
         std::ostringstream os;
@@ -77,7 +239,7 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         controller.tvc.SetTVCX(XTVC);
         return Mode::Calibration;
     }
-    if (command == RF::Command::IncrementYTVC)
+    else if (command == RF::Command::IncrementYTVC)
     {
         YTVC += 0.01;
         std::ostringstream os;
@@ -87,8 +249,7 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         controller.tvc.SetTVCY(YTVC);
         return Mode::Calibration;
     }
-
-    if (command == RF::Command::DecrementXTVC)
+    else if (command == RF::Command::DecrementXTVC)
     {
         XTVC -= 0.01;
         std::ostringstream os;
@@ -98,7 +259,7 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         controller.tvc.SetTVCX(XTVC);
         return Mode::Calibration;
     }
-    if (command == RF::Command::DecrementYTVC)
+    else if (command == RF::Command::DecrementYTVC)
     {
         YTVC -= 0.01;
         std::ostringstream os;
@@ -108,135 +269,210 @@ Mode::Phase Mode::UpdateCalibration(Navigation &navigation, Controller &controll
         controller.tvc.SetTVCY(YTVC);
         return Mode::Calibration;
     }
-
-    if (command == RF::Command::TestTVC)
+    else if (command == RF::Command::TestTVC)
     {
         Telemetry::GetInstance().Log("Switching mode from calibration to test tvc");
         UploadKmatrices();
-        controller.ImportControlParameters(LaunchKMatrix);
+        controller.ImportAngleParameters(AngleKMatrix);
+        controller.ImportHeightParameters(HeightKMatrix);
+        controller.ImportTranslationParameters(TranslationKMatrix);
         controller.Center();
         return Mode::TestTVC;
     }
-    else if (command == RF::Command::GoIdle)
+    else if (command == RF::Command::Idle)
     {
         Telemetry::GetInstance().Log("Switching mode from calibration to idle");
         UploadKmatrices();
-        controller.ImportControlParameters(LaunchKMatrix);
+        controller.ImportAngleParameters(AngleKMatrix);
+        controller.ImportHeightParameters(HeightKMatrix);
+        controller.ImportTranslationParameters(TranslationKMatrix);
         controller.Center();
         return Mode::Idle;
     }
     else if (command == RF::Command::ABORT)
     {
         Telemetry::GetInstance().Log("ABORT, EXITING");
-        exit(0);
+        return Mode::Abort;
     }
 
+    controller.tvc.UpdateActuatorPositions();
     return Mode::Calibration;
 }
 
-void Mode::GetAccelBiasOffset(Navigation &navigation, Controller &controller, IMU &imu, double currentTime)
+Mode::Phase Mode::UpdateActuatorCalibration(RF::Command &command, Navigation &navigation, Controller &controller, double currentTime)
 {
-    static int loops = 1;
-    std::tuple<double, double, double> accel = imu.GetBodyAcceleration();
-    static double accel_x = 0;
-    static double accel_y = 0;
-    static double accel_z = 0;
+    navigation.UpdateNavigation();
 
-    accel_x += std::get<0>(accel);
-    accel_y += std::get<1>(accel);
-    accel_z += std::get<2>(accel);
-
-    if (loops == 100)
+    if (command == RF::Command::ABORT)
     {
-        accel_x /= loops;
-        accel_y /= loops;
-        accel_z /= loops;
-
-        imu.SetAccelBiasX(-accel_x);
-        imu.SetAccelBiasY(-accel_y);
-        imu.SetAccelBiasZ(-accel_z);
+        Telemetry::GetInstance().Log("ABORT, EXITING");
+        return Mode::Abort;
+    }
+    else if (command == RF::Command::Standby)
+    {
+        Telemetry::GetInstance().Log("Switching mode from updateActuatorCalibration to Standby");
+        return Mode::Standby;
+    }
+    else if (command == RF::Command::Idle)
+    {
+        Telemetry::GetInstance().Log("Leaving actuator calibration for idle");
+        controller.tvc.Stop();
+        return Mode::Idle;
+    }
+    else if (command == RF::Command::CenterTVC)
+    {
+        Telemetry::GetInstance().Log("CENTER TVC command received in actuator calibration");
+        controller.Center();
+        return Mode::ActuatorCalibration;
+    }
+    else if (command == RF::Command::StopTVC)
+    {
+        Telemetry::GetInstance().Log("STOP TVC command received in actuator calibration");
+        return Mode::Standby;
+    }
+    else if (command == RF::Command::MoveXTVCToLimitExtend)
+    {
+        Telemetry::GetInstance().Log("MOVE X TVC TO LIMIT (extend) received in actuator calibration");
+        moveToLimit(0, 1);
+        controller.tvc.Stop();
+        return Mode::ActuatorCalibration;
+    }
+    else if (command == RF::Command::MoveXTVCToLimitRetract)
+    {
+        Telemetry::GetInstance().Log("MOVE X TVC TO LIMIT (retract) received in actuator calibration");
+        moveToLimit(0, -1);
+        controller.tvc.Stop();
+        return Mode::ActuatorCalibration;
+    }
+    else if (command == RF::Command::MoveYTVCToLimitExtend)
+    {
+        Telemetry::GetInstance().Log("MOVE Y TVC TO LIMIT (extend) received in actuator calibration");
+        moveToLimit(1, 1);
+        controller.tvc.Stop();
+        return Mode::ActuatorCalibration;
+    }
+    else if (command == RF::Command::MoveYTVCToLimitRetract)
+    {
+        Telemetry::GetInstance().Log("MOVE Y TVC TO LIMIT (retract) received in actuator calibration");
+        moveToLimit(1, -1);
+        controller.tvc.Stop();
+        return Mode::ActuatorCalibration;
     }
 
-    ++loops;
+    controller.tvc.UpdateActuatorPositions();
+    return Mode::ActuatorCalibration;
 }
 
-void Mode::GetGyroBiasOffset(Navigation &navigation, Controller &controller, IMU &imu, double currentTime)
+Mode::Phase Mode::UpdateTestTVC(RF::Command &command, Navigation &navigation, Controller &controller,
+                                double currentTime)
 {
-    static int loops = 1;
-    std::tuple<double, double, double> gyro = imu.GetBodyAngularRate();
-    static double gyro_x = 0;
-    static double gyro_y = 0;
-    static double gyro_z = 0;
-
-    gyro_x += std::get<0>(gyro);
-    gyro_y += std::get<1>(gyro);
-    gyro_z += std::get<2>(gyro);
-
-    if (loops == 100)
-    {
-        gyro_x /= loops;
-        gyro_y /= loops;
-        gyro_z /= loops;
-
-        imu.SetGyroBiasX(-gyro_x);
-        imu.SetGyroBiasY(-gyro_y);
-        imu.SetGyroBiasZ(-gyro_z);
-    }
-
-    ++loops;
-}
-
-Mode::Phase Mode::UpdateTestTVC(Navigation &navigation, Controller &controller, double currentTime)
-{
-
     static double startTime = currentTime;
     double seconds_since_start = currentTime - startTime;
 
     controller.UpdateTestTVC(seconds_since_start);
 
-    RF::Command command = RF::GetInstance().GetCommand();
     if (command == RF::Command::ABORT)
     {
         Telemetry::GetInstance().Log("ABORT, EXITING");
-        exit(0);
+        return Mode::Abort;
+    }
+    else if (command == RF::Command::Standby)
+    {
+        Telemetry::GetInstance().Log("Switching mode from testTVC to Standby");
+        return Mode::Standby;
+    }
+    else if (command == RF::Command::StopTVC)
+    {
+        Telemetry::GetInstance().Log("STOP TVC command received in test mode");
+        return Mode::Standby;
+    }
+    else if (command == RF::Command::CenterTVC)
+    {
+        Telemetry::GetInstance().Log("CENTER TVC command received in test mode");
+        controller.Center();
+        return Mode::Calibration;
     }
     else if (seconds_since_start >= 10)
     {
-        Telemetry::GetInstance().Log("Switching mode from test to idle");
+        Telemetry::GetInstance().Log("Switching mode from test to calibration");
         controller.Center();
-        return Mode::Idle;
+        // Command both Actuators to stop
+        driveActuator(0, 0, 0);
+        driveActuator(1, 0, 0);
+        return Mode::Calibration;
     }
 
     return Mode::TestTVC;
 }
 
-Mode::Phase Mode::UpdateIdle(Navigation &navigation, Controller &controller, IMU &imu, double currentTime)
+Mode::Phase Mode::UpdateChirpTVC(Navigation &navigation, Controller &controller, double currentTime)
 {
+    Telemetry::GetInstance().Log("Starting fixed-parameter chirp TVC test");
+    RunChirpTVCMode();
+    controller.Center();
+    Telemetry::GetInstance().Log("Switching mode from chirp tvc to calibration");
+    return Mode::Calibration;
+}
+
+Mode::Phase Mode::UpdateIdle(RF::Command &command, Navigation &navigation, Controller &controller,
+                             double currentTime)
+{
+    // Enable pad updates while on the pad
+    navigation.SetOnPad(true);
 
     navigation.UpdateNavigation();
 
-    // launch when we get the command
-    RF::Command command = RF::GetInstance().GetCommand();
     if (command == RF::Command::ABORT)
     {
         Telemetry::GetInstance().Log("ABORT, EXITING");
-        exit(0);
+        return Mode::Abort;
+    }
+    else if (command == RF::Command::Standby)
+    {
+        Telemetry::GetInstance().Log("Switching mode from idle to Standby");
+        return Mode::Standby;
+    }
+    else if (command == RF::Command::StopTVC)
+    {
+        Telemetry::GetInstance().Log("STOP TVC command received in idle");
+        return Mode::Standby;
+    }
+    else if (command == RF::Command::CenterTVC)
+    {
+        Telemetry::GetInstance().Log("CENTER TVC command received in idle");
+        controller.Center();
+        return Mode::Idle;
     }
     else if (command == RF::Command::Ignite)
     {
         Telemetry::GetInstance().Log("Switching mode from idle to launch");
-        // GetAccelBiasOffset(navigation, controller, imu, currentTime);
-        // GetGyroBiasOffset(navigation, controller, imu, currentTime);
+        navigation.SetOnPad(false); // Disable pad updates during flight
         navigation.reset();
         return Mode::Launch;
+    }
+    else if (command == RF::Command::HotfireIdle)
+    {
+        Telemetry::GetInstance().Log("Switching mode from idle to HotfireIdle");
+        return Mode::HotfireIdle;
+    }
+    else if (command == RF::Command::ChirpTVC)
+    {
+        Telemetry::GetInstance().Log("Switching mode from idle to chirp tvc");
+        return Mode::ChirpTVC;
+    }
+    else if (command == RF::Command::NAV_RESTART)
+    {
+        Telemetry::GetInstance().Log("NAV_RESTART command received, resetting navigation");
+        navigation.hard_reset();
+        command = RF::Command::None;
     }
 
     return Mode::Idle;
 }
 
-Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, Igniter &igniter, double currentTime)
+Mode::Phase Mode::UpdateLaunch(RF::Command &command, Navigation &navigation, Controller &controller, Igniter &igniter, float currentTime)
 {
-    // Launch rocket and start Controller on first iteration
+    // Manage ignition and controller start on first call, then delegate launch behavior
     static double startTime = currentTime;
     double seconds_since_start = currentTime - startTime;
     static int startup = 1;
@@ -247,6 +483,8 @@ Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, I
         igniter.Ignite(Igniter::IgnitionSpecifier::LAUNCH);
         controller.Start(seconds_since_start);
         startup = 0;
+        // reset launch manager
+        this->launchManager.Reset();
     }
 
     if (seconds_since_start > 0.050)
@@ -254,99 +492,424 @@ Mode::Phase Mode::UpdateLaunch(Navigation &navigation, Controller &controller, I
         igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAUNCH);
     }
 
-    navigation.UpdateNavigation();
-    controller.UpdateLaunch(navigation, seconds_since_start);
-
-    Eigen::Matrix<double, 12, 1> testState = navigation.GetNavigation();
-
-    // If z acceleration is negative and the z height is not the starting height, then we should go to freefall
-    if (testState(5) < -1 && testState(2) > 2)
+    bool handoffToSafe = this->launchManager.Step(command, navigation, controller, igniter, currentTime);
+    if (handoffToSafe)
     {
-        Telemetry::GetInstance().Log("Switching mode from launch to freefall");
-        controller.Center();
-        return Mode::Freefall;
+        return Mode::Safe;
     }
+
     return Mode::Launch;
-}
-
-Mode::Phase Mode::UpdateFreefall(Navigation &navigation, Controller &controller, Igniter &igniter, double currentTime)
-{
-
-    // Continue to update navigation
-    navigation.UpdateNavigation();
-
-    // Get currentState
-    Eigen::Matrix<double, 12, 1> currentState = navigation.GetNavigation();
-
-    // If the current time is greater than the calibration time + motor thrust duration + and offset, then figure out the best time to ignite
-    // TODO THIS LOGIC IS BAD, CURRENT TIME IS VARIABLE DEPENDING ON LAUNCH PROCEDURE
-    double a = -9.81 / 2;
-    double b = currentState(5) + (-9.81 * (motor_thrust_duration * motor_thrust_percentage));
-
-    double average_landing_throttle = 1;
-
-    double c = currentState(5) * (motor_thrust_duration * motor_thrust_percentage) + currentState(2) + -9.81 * 0.5 * pow((motor_thrust_duration * motor_thrust_percentage), 2) + average_landing_throttle * second_motor_delta_x - gse_height;
-
-    double time_till_second_ignite = (-b - sqrt(pow(b, 2) - 4 * a * c)) / (2 * a);
-
-    // Check to see if we should ignite
-    if (time_till_second_ignite <= 0.0)
-    {
-        controller.ResetKIteration(currentTime);
-        controller.UpdateLand(navigation, currentTime);
-        Telemetry::GetInstance().Log("Igniting LAND MOTOR");
-        igniter.Ignite(Igniter::IgnitionSpecifier::LAND);
-        Telemetry::GetInstance().Log("Switching from Freefall to Land");
-        return Mode::Land;
-    }
-    // Start the controller before second ignition
-    else if (time_till_second_ignite <= MissionConstants::timeToStartControllerBeforeIgnite2)
-    {
-        controller.ImportControlParameters(LandKMatrix);
-        controller.ResetKIteration(currentTime);
-        controller.UpdateLand(navigation, currentTime);
-    }
-
-    return Mode::Freefall;
-}
-
-Mode::Phase Mode::UpdateLand(Navigation &navigation, Controller &controller, double currentTime, Igniter &igniter)
-{
-    // Create variables to hold time difference since being in this function
-    static double startTime = currentTime;
-    double seconds_since_start = currentTime - startTime;
-
-    // Turn off ignitor after we have been in this function for 0.05 seconds
-    if (seconds_since_start > 0.050)
-    {
-        igniter.DisableIgnite(Igniter::IgnitionSpecifier::LAND);
-    }
-
-    // Continue to update navigation and controller
-    navigation.UpdateNavigation();
-    controller.UpdateLand(navigation, currentTime);
-
-    return Mode::Land;
 }
 
 Mode::Phase Mode::UpdateSafeMode(Navigation &navigation, Controller &controller, double currentTime)
 {
     // continue collection data
     navigation.UpdateNavigation();
+    controller.UpdateSafe();
 
     return Mode::Terminate;
 }
 
-bool Mode::Update(Navigation &navigation, Controller &controller, Igniter &igniter, IMU &imu)
+// Liquid Propulsion State Implementations
+Mode::Phase Mode::UpdateHotfireIdle(RF::Command &command, Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug)
+{
+    navigation.UpdateNavigation();
+
+    if (command == RF::Command::ABORT)
+    {
+        Telemetry::GetInstance().Log("ABORT, EXITING");
+        return Mode::Abort;
+    }
+    else if (command == RF::Command::Standby)
+    {
+        Telemetry::GetInstance().Log("Switching mode from HotfireIdle to Standby");
+        return Mode::Standby;
+    }
+    else if (command == RF::Command::ASITest)
+    {
+        Telemetry::GetInstance().Log("Switching mode from HotfireIdle to ASITest");
+        return Mode::ASITest;
+    }
+    else if (command == RF::Command::WaterFlow)
+    {
+        Telemetry::GetInstance().Log("Switching mode from HotfireIdle to WaterFlow");
+        return Mode::WaterFlow;
+    }
+    else if (command == RF::Command::ThreeSecondHotfire)
+    {
+        Telemetry::GetInstance().Log("Switching mode from HotfireIdle to ThreeSecondHotfire");
+        return Mode::ThreeSecondHotfire;
+    }
+    else if (command == RF::Command::Idle)
+    {
+        Telemetry::GetInstance().Log("Switching mode from HotfireIdle to Idle");
+        return Mode::Idle;
+    }
+
+    return Mode::HotfireIdle;
+}
+
+Mode::Phase Mode::UpdateASITest(RF::Command &command, Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug,
+                                double currentTime)
+{
+    static double startTime;
+    static bool sequenceStarted = false;
+    static bool firstPartDone = false;
+    static bool secondPartDone = false;
+    static bool thirdPartDone = false;
+
+    if (!sequenceStarted)
+    {
+        startTime = currentTime;
+        Telemetry::GetInstance().Log("Starting ASI Test sequence");
+        valveControl.OpenValve(ValveControl::ASIOxygen);
+        sparkPlug.TurnOn();
+        sequenceStarted = true;
+    }
+
+    double seconds_since_start = currentTime - startTime;
+    navigation.UpdateNavigation();
+
+    if (seconds_since_start >= 0.3 && seconds_since_start < 2.3)
+    {
+        // Open ASI ethanol
+        if (!firstPartDone)
+        {
+            // Uncomment for debugging
+            // std::cout << "Time: " << seconds_since_start << "\n";
+
+            valveControl.OpenValve(ValveControl::ASIEthanol);
+            firstPartDone = true;
+        }
+    }
+    else if (seconds_since_start >= 2.3 && seconds_since_start < 2.6)
+    {
+        // Close ASI ethanol and turn off spark plug
+        if (!secondPartDone)
+        {
+            // Uncomment for debugging
+            // std::cout << "Time: " << seconds_since_start << "\n";
+
+            valveControl.CloseValve(ValveControl::ASIEthanol);
+            sparkPlug.TurnOff();
+            secondPartDone = true;
+        }
+    }
+    else if (seconds_since_start >= 2.6)
+    {
+        // Close ASI oxygen
+        if (!thirdPartDone)
+        {
+            // Uncomment for debugging
+            // std::cout << "Time: " << seconds_since_start << "\n";
+
+            valveControl.CloseValve(ValveControl::ASIOxygen);
+            thirdPartDone = true;
+        }
+        // Return to HotfireIdle after sequence completes
+        if (seconds_since_start >= 3.0)
+        {
+            Telemetry::GetInstance().Log("asitest sequence completed, returning to HotfireIdle");
+            sequenceStarted = false;
+            firstPartDone = false;
+            secondPartDone = false;
+            thirdPartDone = false;
+            return Mode::HotfireIdle;
+        }
+    }
+    if (command == RF::Command::ABORT)
+    {
+        Telemetry::GetInstance().Log("ABORT during ASI Test, returning to HotfireIdle");
+        // Close all valves and turn off spark
+        valveControl.CloseValve(ValveControl::ASIOxygen);
+        valveControl.CloseValve(ValveControl::ASIEthanol);
+        sparkPlug.TurnOff();
+        return Mode::HotfireIdle;
+    }
+
+    return Mode::ASITest;
+}
+
+Mode::Phase Mode::UpdateWaterFlow(RF::Command &command, Navigation &navigation, ValveControl &valveControl, SparkPlug &sparkPlug,
+                                  double currentTime)
+{
+    static double startTime;
+    static bool sequenceStarted = false;
+    static bool firstPartDone = false;
+    static bool secondPartDone = false;
+
+    if (!sequenceStarted)
+    {
+        startTime = currentTime;
+        Telemetry::GetInstance().Log("Starting Water Flow sequence");
+        valveControl.OpenValve(ValveControl::MainNitrous);
+        sequenceStarted = true;
+    }
+
+    double seconds_since_start = currentTime - startTime;
+    navigation.UpdateNavigation();
+
+    if (seconds_since_start >= 1.0 && seconds_since_start < 2.0)
+    {
+        // Open main ethanol
+        if (!firstPartDone)
+        {
+            // Uncomment for debugging
+            // std::cout << "Time: " << seconds_since_start << "\n";
+
+            valveControl.OpenValve(ValveControl::MainEthanol);
+            firstPartDone = true;
+        }
+    }
+    else if (seconds_since_start >= 3.0)
+    {
+        // Close main nitrous and main ethanol valves
+        if (!secondPartDone)
+        {
+            // Uncomment for debugging
+            // std::cout << "Time: " << seconds_since_start << "\n";
+
+            valveControl.CloseValve(ValveControl::MainNitrous);
+            valveControl.CloseValve(ValveControl::MainEthanol);
+            secondPartDone = true;
+        }
+        // Return to HotfireIdle after sequence completes
+        if (seconds_since_start >= 3.5)
+        {
+            Telemetry::GetInstance().Log("Water Flow sequence completed, returning to HotfireIdle");
+            sequenceStarted = false;
+            firstPartDone = false;
+            secondPartDone = false;
+            return Mode::HotfireIdle;
+        }
+    }
+
+    if (command == RF::Command::ABORT)
+    {
+        Telemetry::GetInstance().Log("ABORT during Water Flow, returning to HotfireIdle");
+        // Close all valves
+        valveControl.CloseValve(ValveControl::MainNitrous);
+        valveControl.CloseValve(ValveControl::MainEthanol);
+        return Mode::HotfireIdle;
+    }
+
+    return Mode::WaterFlow;
+}
+
+Mode::Phase Mode::Update3SecondHotfire(RF::Command &command, Navigation &navigation, Controller &controller,
+                                       ValveControl &valveControl, SparkPlug &sparkPlug,
+                                       double currentTime)
+{
+    static double startTime;
+    static bool sequenceStarted = false;
+    static bool firstPartDone = false;
+    static bool secondPartDone = false;
+    static bool thirdPartDone = false;
+    static bool fourthPartDone = false;
+    static bool fifthPartDone = false;
+    static bool sixthPartDone = false;
+    static bool seventhPartDone = false;
+    static bool eigthPartDone = false;
+    static bool ninthPartDone = false;
+
+    if (!sequenceStarted)
+    {
+        startTime = currentTime;
+        Telemetry::GetInstance().Log("Starting 3 Second Hotfire sequence");
+        sequenceStarted = true;
+    }
+
+    double seconds_since_start = currentTime - startTime;
+    navigation.UpdateNavigation();
+
+    if (seconds_since_start >= 0.5 && seconds_since_start < 0.8)
+    {
+        //  Close Purge valve and turn on asi oxygen and spark plug on
+        if (!firstPartDone)
+        {
+            // Uncomment for debugging
+            std::cout << "Time: " << seconds_since_start << "\n";
+
+            valveControl.OpenValve(ValveControl::ASIOxygen);
+            sparkPlug.TurnOn();
+            firstPartDone = true;
+        }
+    }
+    else if (seconds_since_start >= 0.8 && seconds_since_start < 1.3)
+    {
+        // Turn on asi ethonol
+        if (!secondPartDone)
+        {
+            // Uncomment for debugging
+            std::cout << "Time: " << seconds_since_start << "\n";
+
+            valveControl.OpenValve(ValveControl::ASIEthanol);
+            secondPartDone = true;
+        }
+    }
+    else if (seconds_since_start >= 1.3 && seconds_since_start < 1.5)
+    {
+        // Open main nitrous valve
+        if (!thirdPartDone)
+        {
+            // Uncomment for debugging
+            std::cout << "Time: " << seconds_since_start << "\n";
+
+            valveControl.OpenValve(ValveControl::MainNitrous);
+            thirdPartDone = true;
+        }
+    }
+    else if (seconds_since_start >= 1.5 && seconds_since_start < 2.0)
+    {
+        // Open main ethonol valve
+        if (!fourthPartDone)
+        {
+            // Uncomment for debugging
+            std::cout << "Time: " << seconds_since_start << "\n";
+
+            valveControl.OpenValve(ValveControl::MainEthanol);
+            fourthPartDone = true;
+        }
+    }
+
+    else if (seconds_since_start >= 2.0 && seconds_since_start < 3.0)
+    {
+        // Turn off spark plug, asi oxygen, and start moving TVC
+        if (!fifthPartDone)
+        {
+            // Uncomment for debugging
+            std::cout << "Time: " << seconds_since_start << "\n";
+
+            sparkPlug.TurnOff();
+            valveControl.CloseValve(ValveControl::ASIOxygen);
+            fifthPartDone = true;
+        }
+        controller.UpdateTestTVC(seconds_since_start);
+    }
+    else if (seconds_since_start >= 3.0 && seconds_since_start < 4.0)
+    {
+        // Uncomment for debugging
+        std::cout << "Time: " << seconds_since_start << "\n";
+
+        // Continue moving TVC
+        controller.UpdateTestTVC(seconds_since_start);
+    }
+
+    else if (seconds_since_start >= 4.0 && seconds_since_start < 5.0)
+    {
+        // Uncomment for debugging
+        std::cout << "Time: " << seconds_since_start << "\n";
+
+        // Continue moving TVC
+        controller.UpdateTestTVC(seconds_since_start);
+    }
+    else if (seconds_since_start >= 5.0 && seconds_since_start < 5.2)
+    {
+        // Turn off TVC, spark plug, asi oxygen, and Main Ethanol
+        if (!sixthPartDone)
+        {
+            // Uncomment for debugging
+            std::cout << "Time: " << seconds_since_start << "\n";
+            controller.tvc.Stop();
+            valveControl.CloseValve(ValveControl::ASIEthanol);
+            valveControl.CloseValve(ValveControl::MainEthanol);
+            sixthPartDone = true;
+        }
+    }
+    else if (seconds_since_start >= 5.2 && seconds_since_start < 5.7)
+    {
+        // Turn off Main nitrous
+        if (!seventhPartDone)
+        {
+            // Uncomment for debugging
+            std::cout << "Time: " << seconds_since_start << "\n";
+
+            valveControl.CloseValve(ValveControl::MainNitrous);
+            seventhPartDone = true;
+        }
+    }
+    else if (seconds_since_start >= 5.7 && seconds_since_start < 7.2)
+    {
+        // Open purge
+        if (!eigthPartDone)
+        {
+            // Uncomment for debugging
+            std::cout << "Time: " << seconds_since_start << "\n";
+
+            // Open purge
+            valveControl.OpenValve(ValveControl::Purge);
+            eigthPartDone = true;
+        }
+    }
+    else if (seconds_since_start >= 7.2)
+    {
+        // Close purge
+        if (!ninthPartDone)
+        {
+            // Uncomment for debugging
+            std::cout << "Time: " << seconds_since_start << "\n";
+
+            // Close purge
+            valveControl.CloseValve(ValveControl::Purge);
+            ninthPartDone = true;
+        }
+        if (seconds_since_start >= 7.5)
+        {
+            // Uncomment for debugging
+            std::cout << "Time: " << seconds_since_start << "\n";
+
+            Telemetry::GetInstance().Log("3 Second Hotfire sequence completed, returning to HotfireIdle");
+            sequenceStarted = false;
+            firstPartDone = false;
+            secondPartDone = false;
+            thirdPartDone = false;
+            fourthPartDone = false;
+            fifthPartDone = false;
+            sixthPartDone = false;
+            seventhPartDone = false;
+            eigthPartDone = false;
+            ninthPartDone = false;
+            return Mode::HotfireIdle;
+        }
+    }
+
+    if (command == RF::Command::ABORT)
+    {
+        Telemetry::GetInstance().Log("ABORT during 3 Second Hotfire, returning to HotfireIdle");
+        // Close spark plug, all valves, and TVC
+        sparkPlug.TurnOff();
+        valveControl.CloseValve(ValveControl::ASIEthanol);
+        valveControl.CloseValve(ValveControl::MainEthanol);
+        valveControl.CloseValve(ValveControl::MainNitrous);
+        valveControl.CloseValve(ValveControl::Purge);
+        controller.tvc.Stop();
+
+        return Mode::HotfireIdle;
+    }
+
+    return Mode::ThreeSecondHotfire;
+}
+
+Mode::Phase Mode::UpdateAbort(Controller &controller, ValveControl &valvecontrol, SparkPlug &sparkplug)
+{
+    Telemetry::GetInstance().Log("Closing all Valves and Sparkplug, EXITING");
+    controller.tvc.Stop();
+    CloseAllValvesAndSparkPlug(valvecontrol, sparkplug);
+    exit(0);
+}
+
+bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igniter &igniter, IMU &imu,
+                  Magnetometer &magnetometer, ValveControl &valveControl, SparkPlug &sparkPlug,
+                  PressureTransducer &pressureTransducer, LoadCell &loadCell, Camera &camera)
 {
 
     // Track total elapsed time and delta time
     static double currentTime = 0;
     static auto last_time = std::chrono::high_resolution_clock::now();
     // Helpful when running SIL
-    // std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
     auto time_now = std::chrono::high_resolution_clock::now();
-    unsigned int nanoseconds_since_start = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - last_time).count();
+    long long nanoseconds_since_start = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - last_time).count();
     double change_time = nanoseconds_since_start / 1000000000.0;
     last_time = time_now;
 
@@ -356,36 +919,61 @@ bool Mode::Update(Navigation &navigation, Controller &controller, Igniter &ignit
     navigation.loopTime = change_time;
     controller.loopTime = change_time;
 
+    // Get command and first see if it is to toggle any fusion sensors
+    RF::Command command = RF::GetInstance().GetCommand();
+    CheckForToggleSensorCommands(command, gps, camera, magnetometer);
+    CheckForToggleValveCommands(command, valveControl, sparkPlug);
     /* Handle behavior based on current phase. Update phase*/
     switch (this->eCurrentMode)
     {
+    case Standby:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
+        this->eCurrentMode = UpdateStandby(command, controller);
+        break;
     case Calibration:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
-        this->eCurrentMode = UpdateCalibration(navigation, controller, currentTime);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
+        this->eCurrentMode = UpdateCalibration(command, navigation, controller, currentTime);
+        break;
+    case ActuatorCalibration:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
+        this->eCurrentMode = UpdateActuatorCalibration(command, navigation, controller, currentTime);
         break;
     case TestTVC:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
-        this->eCurrentMode = UpdateTestTVC(navigation, controller, currentTime);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
+        this->eCurrentMode = UpdateTestTVC(command, navigation, controller, currentTime);
+        break;
+    case ChirpTVC:
+        this->eCurrentMode = UpdateChirpTVC(navigation, controller, currentTime);
         break;
     case Idle:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.05, 0.08);
-        this->eCurrentMode = UpdateIdle(navigation, controller, imu, currentTime);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
+        this->eCurrentMode = UpdateIdle(command, navigation, controller, currentTime);
         break;
     case Launch:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
-        this->eCurrentMode = UpdateLaunch(navigation, controller, igniter, currentTime);
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
+        this->eCurrentMode = UpdateLaunch(command, navigation, controller, igniter, currentTime);
         break;
-    case Freefall:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
-        this->eCurrentMode = UpdateFreefall(navigation, controller, igniter, currentTime);
+    case HotfireIdle:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
+        this->eCurrentMode = UpdateHotfireIdle(command, navigation, valveControl, sparkPlug);
         break;
-    case Land:
-        Telemetry::GetInstance().RunTelemetry(navigation, controller, 0.01, 0.08);
-        this->eCurrentMode = UpdateLand(navigation, controller, currentTime, igniter);
+    case ASITest:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
+        this->eCurrentMode = UpdateASITest(command, navigation, valveControl, sparkPlug, currentTime);
+        break;
+    case WaterFlow:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
+        this->eCurrentMode = UpdateWaterFlow(command, navigation, valveControl, sparkPlug, currentTime);
+        break;
+    case ThreeSecondHotfire:
+        Telemetry::GetInstance().RunTelemetry(navigation, controller, gps, pressureTransducer, loadCell, 0.05, 0.08);
+        this->eCurrentMode = Update3SecondHotfire(command, navigation, controller, valveControl, sparkPlug, currentTime);
         break;
     case Safe:
         this->eCurrentMode = UpdateSafeMode(navigation, controller, currentTime);
         break;
+    case Abort:
+        this->eCurrentMode = UpdateAbort(controller, valveControl, sparkPlug);
     case Terminate:
         return false;
     }

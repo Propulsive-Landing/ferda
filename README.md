@@ -1,32 +1,104 @@
 # Ferda :rocket:
 
-Holds all flight software for the UConn Propulsive Landing team rockets. :smile:
+Holds all flight software for the UConn Propulsive Landing team's rockets. :smile:
 
 All source code utilizes [Hungarian Notation](https://www.cse.iitk.ac.in/users/dsrkg/cs245/html/Guide.htm).
 
 Create features in branches originating from the `dev` branch. When a feature is complete, make a pull request to merge it into `dev`.
 
+
 ## Table of Contents
 
 1. [How to Run](#how-to-run)
+   - [How to Run On Raspberry Pi](#how-to-run-on-raspberry-pi)
+      - [Connecting to Raspberry Pi](#connecting-to-raspberry-pi)
+      - [Raspberry Pi Configuration](#raspberry-pi-configuration)
+   - [How to Run On Mac](#how-to-run-on-mac)
+   - [How to Run On Windows](#how-to-run-on-windows)
+   - [Troubleshooting](#troubleshooting)
 2. [Building the Source Code](#building-the-source-code)
 3. [Hardware Configuration](#hardware-configuration)
-   - [Serial Port Setup](#serial-port-setup)
+   - [XBee Port Setup](#xbee-port-setup)
+   - [GPS Port Setup](#gps-port-setup)
    - [Startup Script](#startup-script)
 4. [Software-in-the-Loop Testing](#software-in-the-loop-testing)
    - [SIL Testing Using Windows + WSL2](#sil-testing-using-windows--wsl2)
    - [SIL Testing Using Windows](#sil-testing-using-windows)
-5. [Systemd Service Setup](#systemd-service-setup)
+5. [Design](#design)
+   - [Flow](#flow)
+   - [Architecture](#architecture)
 
-## How to Run
+# How to Run 
 
-1. Clone this repo.
-2. Install the CMake Tools extension on VS Code.
-3. Run `sudo apt install`
-4. Run `sudo apt update`
-5. Run `sudo apt install libeigen3-dev`.
-6. Build the repo (ensure you're in either debug or release mode depending on your need).
-7. Run the executable that gets created in the `build/` folder.
+### How to Run on Raspberry Pi
+1. Install git (https://git-scm.com/install/)
+2. Clone this repo.
+3. Run `sudo apt update`
+4. Run `xargs -a linux_library_requirements.txt sudo apt-get install -y`
+5. Run `mkdir ThirdPartyLibraries` and then `cd ThirdPartyLibraries`
+6. Clone WiringPi library with `git clone https://github.com/WiringPi/WiringPi.git` 
+7. Run `cd WiringPi/wiringPi`
+8. Run `make`
+9. Run `sudo make install`
+10. Go back to `ThirdPartyLibraries` directory
+11. Clone PCA9685 library with `git clone https://github.com/barulicm/PiPCA9685.git`
+12. Run `cd PiPCA9685`
+13. Run `sudo cmake --workflow --preset install`
+14. Build the repo. Make sure you're in release mode because we want to use the hardware files.
+15. Create a logs folder inside the repo directory with `mkdir logs`
+16. Run the executable that gets created in the `build/` folder. (NOTE: If working with GPS, run gps_setup.sh first)
+
+#### Connecting to Raspberry Pi
+In order to connect to the Raspberry Pi, it needs to be connected to Wi-Fi, and you need to know the IP address.
+All 3 Raspberry Pis, including the 2 RPI5s and the 1 RPI4, are automatically configured to connect to the TP-Link Archer C54 router that
+we bought. Once you know the IP address, run
+`ssh host@{IP-Address}`, where host is the Pi's username and the IP address is the IP address the RPI is connected to.
+
+Troubleshooting:
+- Make sure you are connected to the same Wi-Fi as the Pi.
+- If you used the same IP address as another Pi, it will yell at you. In that case, run the command `ssh-keygen -R {IP-address}`.
+
+
+#### Raspberry Pi Configuration 
+If you buy more Raspberry Pis, Raspberry Pi's website will help you get started (https://www.raspberrypi.com/documentation/computers/getting-started.html).
+The main thing is to make sure SSH, I2C, Raspberry Pi Connect, and Serial Port are enabled.
+
+### How to Run on Mac
+1. Install git (https://git-scm.com/install/)
+2. Clone this repo.
+3. Install brew with `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
+4. Run `brew bundle install`
+5. Build the repo. Make sure you're in either debug or simulation mode.
+6. Create a logs folder inside the repo directory with `mkdir logs`
+7. Run the executable that gets created in the `build/` folder. (NOTE: If working with GPS, run gps_setup.sh first)
+
+### How to Run on Windows
+Windows is a little different because it doesn't come installed with a compiler, and since we use some POSIX libraries, we use WSL instead.
+1. Follow [WSL tutorial below](#install-wsl2---help)
+2. Follow [Install Required Tools](#install-required-tools)
+3. Follow [Authenticate with GitHub](#authenticate-with-github)
+4. Open a `WSL` session and type `code .`
+5. Install the `WSL` extension on VS Code.
+6. Install the CMake Tools extension on VS Code.
+7. Build the repo. Make sure you're in either debug or simulation mode.
+8. Create a logs folder inside the repo directory with `mkdir logs`
+9. Run the executable that gets created in the `build/` folder. (NOTE: If working with GPS, run gps_setup.sh first)
+
+### Troubleshooting
+- Make sure all dependencies are installed
+   - linux_library_requirements.txt for Linux operating systems (Raspberry Pi)
+   - Brewfile for mac
+
+- If you get `warning depend.make has modification time` issue:
+	try the commands:
+   ```bash
+   make clean
+   make all
+   ```
+
+- When SSHing into the Pi, the IP address might change, so go to the router's IP address to look at the exact IP address the Pi is connected to.
+
+- On Mac, if you installed the `CMake Tools` extension on VS Code and you have `ninja` installed, it might try to automatically select it. When you try to build with `make`, it will throw an error.
 
 ## Building the Source Code
 
@@ -74,98 +146,80 @@ Create features in branches originating from the `dev` branch. When a feature is
 
 ## Hardware Configuration
 
-### Serial Port Setup
+### XBee Port Setup
 
-The Xbee module is a radio module which is used by our flight computer to send and receive data from the ground control, such as when we want to instruct the rocket to launch, or when we want to tell it to abort. To use the Xbee from our Raspberry Pi, we must configure it properly, here's how:
+The XBee module is a radio module that is used by our flight computer to send and receive data from ground control, such as when we want to instruct the rocket to launch or tell it to abort. To use the XBee from our Raspberry Pi, we must configure it properly. Here's how:
 
-1. Xbee is currently (9/28/2024) configured to act as a terminal that only outputs values when there is a newline character.
-2. Use `stty` to configure the device:
+1. XBee is currently (4/24/2026) configured to act as a terminal that only outputs values when there is a newline character.
+2. In hardware/RF.cpp, we configure serial port settings. Most importantly, the baud rate should be 38400, but make sure that the XBees are configured properly using XCTU software.
+3. For debugging, use `stty -F /dev/{RFPort} -a` to see all serial line settings because
+   most of the time, the baud rate is not set to what the other XBee uses or echo is not turned off.
+4. Use `stty` to configure the device:
    ```bash
-   stty -F /dev/ttyS0
+   stty -F /dev/ttyUSB0
    ```
-   (`/dev/ttyS0` may change per device).
-3. Configure settings:
+   (`/dev/ttyUSB0` may change per device).
+5. Configure settings:
    ```bash
-   stty -F /dev/ttyS0 -settingToDisable settingToEnable
+   stty -F /dev/ttyUSB0 -settingToDisable settingToEnable
    ```
    Disable settings using a minus sign and enable settings without it.
-4. The device configuration should resemble:
+6. The device configuration should resemble:
    ```
-   speed 9600 baud; line = 0;
+   speed 38400 baud; line = 0;
    -echo
    ```
 
+### GPS Port Setup
+We use Adafruit's GPS module with a USB-C port to help with our navigation, but first we need
+to configure the GPS to specific settings. Every GPS receiver uses NMEA sentences which are
+ASCII text strings that display information such as position, speed, and time. The ones that we care about are:
+   - RMC (Recommended Minimum Specific GNSS Data)
+   - GGA (Global Positioning System Fix Data)
+To write settings, we use the talker ID `PMTK`. In every PMTK sentence we write, we need to compute the checksum, which is the XOR of every bit, and end with `\r\n`.
+These configuration steps are taken care of in `gps_setup.sh`. For the script to work, make sure python is installed and createa virtual environment where you 
+have installed `pyserial` and `adafruit-circuitpython-gps`
+1. In `gps_setup.sh`, we call `gps_startup.py` to make sure the GPS has a fix because, in my testing, the settings only applied if there was a fix. There are also nice libraries for dealing with Adafruit GPS in Python.
+2. Then we configure the baud rate to 9600 and disable echo.
+3. Then we use printf to write the setting, `$PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n'` which enables the sentences we want.
+4. Then we use printf to write the setting, `$PMTK251,38400*27\r\n'` which changes the baud rate to 38400.
+5. Then we need to change the baud rate for our serial port so we do `stty -F "$PORT" 38400 raw -echo -ixon`
+6. Lastly, we change the update rate to be 10 Hz using `'$PMTK220,100*2F\r\n'`.
+
+Documentation on PMTK command packets can be found in [PMTK_A11.pdf](DatasheetsAndRPInfo/PMTK_A11.pdf).
+Documentation on the NMEA sentences can be found in [CD+PA1616S+Datasheet.v03.pdf](DatasheetsAndRPInfo/CD+PA1616S+Datasheet.v03.pdf).
+
 ### Startup Script
 
-Our Custom PCB communicates with various sensors through different protocols which generate multiple device files which may change. To account for the device files changing, we have a script which creates symbolic links (shortcuts) to each of the devices and each link is in a predictable location which is then referenced from the flight software. Here's how to add that script:
+We currently have 2 bash scripts
+ - `gps_setup.sh` 
+ - `startup.sh`
 
-1. Create a shell script to perform device detection and symbolic link creation:
-   `/home/pi/fsw_startup.sh`
+ `gps_setup.sh` is meant to configure all of the GPS settings where `startup.sh` is meant to run `gps_setup.sh` and then run the program
 
+## Camera Calibration
+
+The camera can now load a persisted OpenCV calibration file at startup. By default it looks for `../calibration/camera_calibration.json` when the executable is run from the `build/` directory.
+
+1. Capture a set of checkerboard images from the camera at the same resolution used for flight.
+2. Build the calibration tool and run it from the `build/` directory:
    ```bash
-   #!/bin/bash
-
-   # Define the home directory for symbolic links
-   HOME_DIR="/home/pi"
-   LOG_FILE="/home/pi/fsw_startup.log"
-
-   # Log function to append messages to the log file
-   log() {
-       echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
-   }
-
-   # Define the symbolic links
-   ACCEL_LINK="${HOME_DIR}/accel_device"
-   BAROMETER_LINK="${HOME_DIR}/barometer_device"
-   GYROSCOPE_LINK="${HOME_DIR}/gyroscope_device"
-
-   # Remove old links if they exist
-   rm -f "$ACCEL_LINK" "$BAROMETER_LINK" "$GYROSCOPE_LINK"
-
-   log "Starting device linking script..."
-
-   sleep 0.5
-
-   # Iterate over the IIO device directories
-   for device in /sys/bus/iio/devices/iio:device*; do
-       if [[ -d "$device" ]]; then
-           if [[ -f "$device/in_accel_scale_available" ]]; then
-               ln -s "$device" "$ACCEL_LINK"
-               echo "IMU device found: $device"
-               log "IMU device found and linked: $device"
-           elif [[ -f "$device/in_pressure_scale" ]]; then
-               ln -s "$device" "$BAROMETER_LINK"
-               echo "Barometer device found: $device"
-               log "Barometer device found and linked: $device"
-           elif [[ -f "$device/in_anglvel_scale" ]]; then
-               ln -s "$device" "$GYROSCOPE_LINK"
-               echo "Gyroscope device found: $device"
-               log "Gyro device found and linked: $device"
-           fi
-       fi
-   done
-
-   sleep 2.0
-
-   # Uncomment if you want fsw to start automatically on next boot
-   # cd /home/pi/ferda/build
-   # /home/pi/ferda/build/Ferda
+   ./CameraCalibrate ../calibration_images ../calibration/camera_calibration.json 9 6 0.024
    ```
+   Replace `9 6` with the checkerboard inner-corner count and `0.024` with the square size in meters.
+3. Restart Ferda. If the calibration file is present and valid, the camera uses it for `cv::undistortPoints()`; otherwise it falls back to the current built-in constants.
 
-2. Make the script executable:
-   ```bash
-   sudo chmod +x fsw_startup.sh
-   ```
+The calibration output stores the camera matrix, distortion coefficients, image size, checkerboard dimensions, and RMS reprojection error. Keep one file per physical camera if the hardware changes.
 
 ## Software-in-the-Loop Testing
 
-Software-in-the-loop (SIL) testing allows you to connect your flight software to MATLAB's Simulink environment for real-time simulation. Follow the steps below to set up and run the SIL testing environment.
+Software-in-the-loop (SIL) testing allows you to connect your flight software to MATLAB's Simulink environment for real-time simulation. Follow the steps below to set up and run the SIL testing environment. SIL is not currently supported on Mac.
 
 ### SIL Testing Using Windows + WSL2
 
 #### Install WSL2 - [help](https://gcore.com/learning/how-to-install-wsl-2-on-windows/)
 
-To run your flight software in a Linux environment on Windows, you need to install WSL2 (Windows Subsystem for Linux). The steps can varry depending on your setup so you may have to do some troubleshooting to install it properly. Follow these steps:
+To run your flight software in a Linux environment on Windows, you need to install WSL2 (Windows Subsystem for Linux). The steps can vary depending on your setup, so you may have to do some troubleshooting to install it properly. Follow these steps:
 
 1. Open PowerShell as Administrator and run:
    ```bash
@@ -254,13 +308,13 @@ To interact with private GitHub repositories and push code, you need to authenti
    cd build
    make all
    ```
-   Note: Ports may change in future versions of simulation.
+   NOTE: Ports may change in future versions of simulation.
 
 #### Configure the Simulink Model
 
 1. In MATLAB, open the Simulink model for flight simulation.
 2. Set the **UDPSend** block to the WSL IP and port 8002, and ensure the **UDPReceive** is set to receive from any source.
-3. Install **Simulink Desktop Real-Time** to run the simulation in real-time using the Add-on manager in Matlab
+3. Install **Simulink Desktop Real-Time** to run the simulation in real time using the Add-On Manager in MATLAB.
 4. Make sure you have the Real-Time Kernel installed. A guide on this is shown [here](https://www.mathworks.com/help/sldrt/ug/real-time-windows-target-kernel.html)
 5. Set Simulink to **Connected IO** mode and start the simulation.
 
@@ -273,7 +327,7 @@ sudo ./Ferda
 
 ### ~~SIL Testing Using Windows~~ (NOT TESTED)
 
-For users who prefer running the flight software directly on Windows without WSL, you can follow this guide to set up and run the simulation loop using Windows native tools and loopback IP. However, please note that the flight computer uses a linux based OS and therefore, discrepancies may occur.
+For users who prefer running the flight software directly on Windows without WSL, you can follow this guide to set up and run the simulation loop using Windows-native tools and loopback IP. However, please note that the flight computer uses a Linux-based OS, so discrepancies may occur.
 
 #### Install the Required Tools
 
@@ -348,7 +402,7 @@ To build and run the flight software natively on Windows, you'll need to install
 5. **Start the Simulation:**
    Start the Simulink simulation. 
    - The rocket should remain static until your flight software commands it.
-   - Make sure your model is running in real-time with **1:1 real-time to simulation**
+   - Make sure your model is running in real time with **1:1 real-time to simulation**
 
 #### Run the Flight Software
 
@@ -362,38 +416,92 @@ To build and run the flight software natively on Windows, you'll need to install
    ```
 
 Notes:
-- Run ferda (FSW) through WSL first if you're having trouble communicating with the simulation
-- WSL can be tricky to initially set up but there is plenty of available documentation to resolve these issues, start [here](https://gcore.com/learning/how-to-install-wsl-2-on-windows/) and use google if you still are having issues.
+- Run Ferda (FSW) through WSL first if you're having trouble communicating with the simulation.
+- WSL can be tricky to initially set up, but there is plenty of available documentation to resolve these issues. Start [here](https://gcore.com/learning/how-to-install-wsl-2-on-windows/) and use Google if you still are having issues.
   
 The flight software should be connected with the Simulink simulation, sending actuator commands and receiving simulated sensor data.
 
-## Systemd Service Setup
+# Design
+We have separated all of our header files into the `include` directory, all non-hardware files into the `src` directory, and all hardware files into the `hardware` directory. Depending on the build type that you used, we either use `hardware` if built in `Release` mode, `hardware_test` if built in `Debug` mode, or `hardware_simulation` if built in `Simulation` mode.
 
-For convenience, it is preferable to have the startup script run automatically. We can accomplish this by using systemd as demonstrated below.
+READMEs for `src` and `hardware` files are located in [src files README](src/README.md) and [hardware files README](hardware/README.md).
 
-1. Create the service file to run the startup script at boot:
-   `/etc/systemd/system/fsw_startup.service`
+If you add a new sensor, it belongs in the 3 hardware directories
 
-   ```ini
-   [Unit]
-   Description=Link IIO Devices
-   After=local-fs.target
+All config files listed below are in the `ferda` directory but should at some point be in a Config folder:
+ - Angles.csv
+ - Height.csv
+ - Translation.csv 
+ - linux_library_requirements.txt
+ - Brewfile
 
-   [Service]
-   Type=oneshot
-   ExecStart=/home/pi/fsw_startup.sh
-   RemainAfterExit=yes
+We do have a `tests` folder, but it has not been touched in a while. If you generate any unit tests, they should go here.
 
-   [Install]
-   WantedBy=multi-user.target
-   ```
+For all our GPIO pin handling, we have switched over to `WiringPi` because it was the easiest library to use.
+For more information about Raspberry Pi's GPIO look here [GPIO](<DatasheetsAndRPInfo/RP-006553-WP-2-A history of GPIO usage on Raspberry Pi devices, and current best practices.pdf>)
 
-2. Enable the service:
-   ```bash
-   sudo systemctl enable fsw_startup.service
-   ```
+For all our PWM handling, we wanted to use hardware PWM signals, but depending on which Raspberry Pi we are using, it can have a maximum of 4 hardware PWM GPIO pins. We decided to buy PCA9685 boards, which can generate hardware PWM signals. For more information about the PCA9685 look here [PCA9685](DatasheetsAndRPInfo/PCA9685.pdf)
 
-3. Start the service (optional):
-   ```bash
-   sudo systemctl start fsw_startup.service
-   ```
+## Flow
+1. Look for command through RF.cpp
+2. Change mode based on command
+
+## Architecture
+
+We use the **State machine pattern** where we have defined several modes/states and one while loop in main. We use RF
+to change modes but modes can also change based on a condition in the code as well.
+
+For our current Mode Flow, see [here](src/README.md#current-flow-diagram-implementation)
+
+In Mode.hpp, we define the Modes:
+```
+enum Phase
+    {
+        Standby,
+        Calibration,
+        ActuatorCalibration,
+        TestTVC,
+        ChirpTVC,
+        Idle,
+        Launch,
+        Land,
+        Terminate,
+        Abort,
+        Safe,
+        HotfireIdle,
+        ASITest,
+        WaterFlow,
+        ThreeSecondHotfire
+    };
+```
+
+In RF.hpp, a subset of the commands look like below where Command is an enum where we add the RF command
+```
+ if (input_line == "ABORT")
+            ParsedCommand = RF::Command::ABORT;
+        else if (input_line == "ABORT_PAD")
+            ParsedCommand = RF::Command::ABORT_PAD;
+        else if (input_line == "ABORT_GROUND")
+            ParsedCommand = RF::Command::ABORT_GROUND;
+        else if (input_line == "TestTVC")
+            ParsedCommand = RF::Command::TestTVC;
+        else if (input_line == "ChirpTVC")
+            ParsedCommand = RF::Command::ChirpTVC;
+        else if (input_line == "Idle")
+            ParsedCommand = RF::Command::Idle;
+        else if (input_line == "Standby")
+            ParsedCommand = RF::Command::Standby;
+```
+
+
+In Main.cpp, the while loop looks like:
+```
+while (mode.Update(navigation, controller, gps, igniter, imu, magnetometer, valveControl,  sparkPlug, pressureTransducer, loadCell, camera))
+    {
+    }
+```
+
+We either exit out of the while loop when the Mode is `Terminate` which returns false from `Update()` or if we hit `Abort`, before we ignite, then we exit the program right then and there
+
+## Ground Control Communication
+This is the flight software that runs on the Raspberry Pi, but like I've mentioned in [Flow](#flow), the flight software is expecting to see commands through the radio, which is where Ground Control comes in. All Ground Control is found in [Ground Control GitHub Link](https://github.com/UConn-Rocketry/ground-control). To communicate with the rocket, we use ground control and the XBees.

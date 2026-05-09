@@ -10,20 +10,27 @@
 #include <iostream>
 #include <iomanip>
 
-Controller::Controller(TVC &inputTvc) : x_control(Eigen::Matrix<double, 8, 1>::Zero()), controller_gain_times(10, 0), tvc(inputTvc) {}
+Controller::Controller(TVC &inputTvc, Engine &inputEngine) : x_control(Eigen::Matrix<double, 6, 1>::Zero()), tvc(inputTvc), engine(inputEngine) {}
 
 void Controller::Start(double current_time)
 {
     // Initialize variables
-    next_tvc_time = current_time;
-    ResetKIteration(current_time); // Sets iteration start time
+    error_integral = Eigen::Vector2d::Zero();
+    height_error_integral = 0.0;
+    translation_error_integral = Eigen::Vector2d::Zero();
+    setpoint_angles = Eigen::Vector2d::Zero();
+    setpoint_angles_prev = Eigen::Vector2d::Zero();
+    current_rcs_command_N = 0.0;
+    current_attitude_setpoint_error = Eigen::Vector3d::Zero();
+    current_guidance_altitude_error = 0.0;
+    current_guidance_translation_error = Eigen::Vector2d::Zero();
 }
 
 void Controller::UpdateTestTVC(double testTime)
 {
 
-    double angleA = sin(testTime) * MissionConstants::kMaximumTvcAngle; // Rad
-    double angleB = cos(testTime) * MissionConstants::kMaximumTvcAngle; // Rad
+    double angleA = sin(3 * testTime) * MissionConstants::kMaximumTvcAngle / 2.0; // Rad
+    double angleB = cos(3 * testTime) * MissionConstants::kMaximumTvcAngle / 2.0; // Rad
 
     input(0) = angleA;
     input(1) = angleB;
@@ -31,134 +38,212 @@ void Controller::UpdateTestTVC(double testTime)
 
     tvc.SetTVCX(input(0));
     tvc.SetTVCY(input(1));
+    tvc.UpdateActuatorPositions();
 }
 
 void Controller::UpdateLaunch(Navigation &navigation, double current_time)
 {
     // Use the TVC to stabilize the rocket for landing
+    const Eigen::Matrix<double, 16, 1> stateEstimate = navigation.GetNavigation();
+    const Eigen::Quaterniond q(
+        stateEstimate(6), // w
+        stateEstimate(7), // x
+        stateEstimate(8), // y
+        stateEstimate(9)  // z
+    );
+    const Eigen::Vector3d omega_b = navigation.GetAngularVelocity();
+    RcsControl(q, omega_b);
 
-    stabilizeAtCenter(navigation, current_time);
+    TranslationControl(navigation);
+    AttitudeControl(navigation);
+    HeightControl(navigation);
 }
 
-// communicate with TVC
-void Controller::UpdateLand(Navigation &navigation, double current_time)
+// TODO: This is untested, please check with SIL first
+void Controller::RcsControl(const Eigen::Quaterniond &q, const Eigen::Vector3d &omega_b)
 {
-    // Use the TVC to stabilize the rocket for landing
+    const Eigen::Quaterniond qNormalized = q.normalized();
+    const double yaw = std::atan2(
+        2.0 * (qNormalized.w() * qNormalized.z() + qNormalized.x() * qNormalized.y()),
+        1.0 - 2.0 * (qNormalized.y() * qNormalized.y() + qNormalized.z() * qNormalized.z()));
+    const double yaw_dot = omega_b(2);
 
-    stabilizeAtCenter(navigation, current_time);
+    int pos = 0;
+    if (yaw > MissionConstants::kControlRcsDeadbandRad)
+    {
+        pos = -1;
+    }
+    else if (yaw < -MissionConstants::kControlRcsDeadbandRad)
+    {
+        pos = 1;
+    }
+
+    int deriv = 0;
+    if (yaw_dot > MissionConstants::kControlRcsDerivativeDeadbandRadPerSec)
+    {
+        deriv = -1;
+    }
+    else if (yaw_dot < -MissionConstants::kControlRcsDerivativeDeadbandRadPerSec)
+    {
+        deriv = 1;
+    }
+
+    // TODO: Implement the hardware interface to actually fire the RCS thrusters
+    current_rcs_command_N = static_cast<double>(pos + deriv) * MissionConstants::kControlRcsThrustCommand;
 }
 
-void Controller::stabilizeAtCenter(Navigation &navigation, double current_time)
+void Controller::AttitudeControl(Navigation &navigation)
 {
-    // IN X_CONRTOL:: FIRST 2 ARE X AND Y VELOCITIES, NEXT 2 ARE EULER INTEGRALS, NEXT 2 ARE ROLL AND PITCH, AND NEXT 2 ARE ROLl and pitch values
-
-    // Calculate desired control inputs for launch and actuate all control surfaces accordingly
-
-    // Create a variable to determine the max amount of Euler Entries;
-    unsigned int maxEulerEntries = MissionConstants::kControlIntegralPeriod / loopTime;
-
     // Create a matrix to store the returned stateEstimate from getNavigation() and store the yaw value into a varible
-    Eigen::Matrix<double, 12, 1> stateEstimate = navigation.GetNavigation();
+    Eigen::Matrix<double, 16, 1> stateEstimate = navigation.GetNavigation();
+    Eigen::Vector3d angularVelocity = navigation.GetAngularVelocity();
 
-    // Extract yaw
-    double yaw = stateEstimate(8);
+    q_current = Eigen::Quaterniond(
+        stateEstimate(6), // w
+        stateEstimate(7), // x
+        stateEstimate(8), // y
+        stateEstimate(9)  // z
+    );
+    Eigen::Quaterniond q_ref = Eigen::Quaterniond::Identity();
+    q_error = q_current * q_ref.inverse();
 
-    // Calculate the rotation matrix to translate the earth frame to the body frame
-    Eigen::Matrix2d rotation;
-    rotation << cos(-yaw), -sin(-yaw), sin(-yaw), cos(-yaw);
+    Eigen::Vector2d theta = 2 * Eigen::Vector2d(q_error.x(), q_error.y());
+    Eigen::Vector2d theta_error = setpoint_angles - theta;
+    current_attitude_setpoint_error(0) = theta_error(0);
+    current_attitude_setpoint_error(1) = theta_error(1);
+    current_attitude_setpoint_error(2) = 0.0;
+    error_integral = error_integral + theta_error * loopTime;
 
-    // Populate x_control so that the first 2 (0,1) entries are the stateEstimates' x and y velocities, its 4-5 entries are stateEstimates' roll and pitch values
-    // and it's last 2 entries are stateEstimates' roll and pitch angular velocities.
+    // Approximate the derivative of theta_error using finite differences
+    Eigen::Vector2d setpoint_angles_dot = (setpoint_angles - setpoint_angles_prev) / loopTime;
 
-    x_control.segment(0, 2) = rotation * stateEstimate.segment(3, 2);
+    // Calculate velocity error: derivative of setpoint angles minus current angular velocity
+    Eigen::Vector2d velocity_error = setpoint_angles_dot - angularVelocity.segment(0, 2);
 
-    // Control velocity by offseting the angle set point based on the current body frame velocity
+    // Update previous setpoint_angles for next iteration
+    setpoint_angles_prev = setpoint_angles;
 
-    // phi_adjusted = phi - v_y*weights_control_velocity
-    stateEstimate[6] = stateEstimate[6] - x_control(1) * MissionConstants::weights_control_velocity;
+    x_control.segment(0, 2) = error_integral; // Body frame x and y velocities
+    x_control.segment(2, 2) = theta_error;    // Roll and pitch error relative to setpoint
+    x_control.segment(4, 2) = velocity_error; // Velocity error term
 
-    // theta_adjusted = theta + v_x*weights_control_velocity
-    stateEstimate[7] = stateEstimate[7] + x_control(0) * MissionConstants::weights_control_velocity;
-
-    // Set velocity to zero (it doesn't work very well in this LQR implementation)
-    x_control(0) = 0;
-    x_control(1) = 0;
-    x_control.segment(4, 2) = stateEstimate.segment(6, 2);
-    x_control.segment(6, 2) = stateEstimate.segment(9, 2);
-
-    // Extract roll and pitch from stateEstimate, and put current integral step into euler_queue
-    std::vector<double> currentIntegralStep = {stateEstimate(6) * loopTime, stateEstimate(7) * loopTime};
-    euler_queue.push_back(currentIntegralStep);
-
-    // Determine if euler_queue apprahced its limit, and if so, delelete its first entry
-    if (euler_queue.size() > maxEulerEntries)
-    {
-        euler_queue.erase(euler_queue.begin());
-    }
-    // Create a vector that will hold the sums of all of the roll and pitch entries in euler_queue
-    std::vector<double> euler_sum{0.0, 0.0};
-    for (unsigned int i = 0; i < euler_queue.size(); i++)
-    {
-        euler_sum[0] += euler_queue[i][0];
-        euler_sum[1] += euler_queue[i][1];
-    }
-
-    // Populate the second and third element with the integrals of roll and pitch
-    x_control[2] = euler_sum[0];
-    x_control[3] = euler_sum[1];
-
-    if (current_iteration_index < MissionConstants::kNumberControllerGains - 1)
-    {
-        GetNextController_Gain_Time_Index(current_time);
-    }
-    // std::cout << "Current time: " << std::to_string(current_time) << " Nexttvc time: " <<std::to_string(next_tvc_time) << std::endl;
-    // Calculate what angle we need to tell the tvc to move
-    if (current_time > next_tvc_time)
-    {
-        // std::cout << "Calc input" << std::endl;
-        // Calculate what angle we need to tell the tvc to move
-        CalculateInput();
-        next_tvc_time += MissionConstants::TVCPeriod;
-    }
+    CalculateInput(navigation);
 }
 
 // shut down rocket functions
 void Controller::UpdateSafe()
 {
-    // TODO. Center TVC, turn off reaction wheel, etc.
+    current_rcs_command_N = 0.0;
+    tvc.Stop();
 }
 
-void Controller::GetNextController_Gain_Time_Index(double current_time)
+void Controller::CalculateInput(Navigation &navigation)
 {
-    // Determine if a certain amount of time has passed, and if so, then increase the current_iteration_index and get the next K value
-
-    double switch_time = (controller_gain_times[current_iteration_index + 1] + controller_gain_times[current_iteration_index]) / 2.0;
-    if (current_time - k_iteration_start_time > switch_time)
-    {
-        current_iteration_index++;
-    }
-}
-
-void Controller::CalculateInput()
-{
-    static double offset1;
-    static double offset2;
-
     // This calculates u = -Kx
 
-    input = controller_gains.block(current_iteration_index * 2, 0, 2, 8) * x_control;
+    const Eigen::Vector3d estimatedMoiBody = navigation.GetEstimatedMomentOfInertiaBodyKgm2();
+    const Eigen::Vector3d estimatedComBody = navigation.GetEstimatedCenterOfMassBodyM();
+    const double lateralMoi = 0.5 * (estimatedMoiBody(0) + estimatedMoiBody(1));
+    const double thrustForScaling = std::max(std::abs(current_thrust_command_N), MissionConstants::kEngineMinThrust);
+    const double momentArm = std::abs(estimatedComBody(2) - MissionConstants::kEngineThrustLocationBodyM(2));
+    const double controlScale = lateralMoi / (thrustForScaling * momentArm);
+
+    input = -controlScale * angle_controller_gains * x_control;
+
     if (input.norm() > MissionConstants::kMaximumTvcAngle)
     {
         input = input * MissionConstants::kMaximumTvcAngle / input.norm();
     }
 
-    offset1 = offset1 + MissionConstants::weights_control_steady_state * input(0) * loopTime;
-    offset2 = offset2 + MissionConstants::weights_control_steady_state * input(1) * loopTime;
-
     // Figures out what angle we need to move the servos and then set them
-    // [TODO] Move to hardware tvc_angles = TvcMath(input);
-    tvc.SetTVCX(input(0) + offset1);
-    tvc.SetTVCY(input(1) + offset2);
+    tvc.SetTVCX(input(0));
+    tvc.SetTVCY(input(1));
+    tvc.UpdateActuatorPositions();
+}
+
+void Controller::TranslationControl(Navigation &navigation)
+{
+    Eigen::Matrix<double, 16, 1> x = navigation.GetNavigation();
+
+    // States (earth frame)
+    double px = x(0); // x position [m]
+    double py = x(1); // y position [m]
+    double vx = x(3); // x velocity [m/s]
+    double vy = x(4); // y velocity [m/s]
+
+    // Errors
+    double e_x = refPositionX - px;
+    double e_y = refPositionY - py;
+    double e_vx = refVelocityX - vx;
+    double e_vy = refVelocityY - vy;
+
+    current_guidance_translation_error(0) = e_x;
+    current_guidance_translation_error(1) = e_y;
+
+    // Integral update
+    translation_error_integral(0) += e_x * loopTime;
+    translation_error_integral(1) += e_y * loopTime;
+
+    // Build state vector: [x_int_err, y_int_err, e_x, e_y, e_vx, e_vy]
+    Eigen::Matrix<double, 6, 1> x_translation;
+    x_translation << translation_error_integral(0),
+        translation_error_integral(1),
+        e_x, e_y,
+        e_vx, e_vy;
+
+    // Compute setpoint angles: [roll_setpoint, pitch_setpoint]
+    double mass = navigation.GetEstimatedMassKg();
+    double thrust = current_thrust_command_N;
+    if (std::abs(thrust) < 1e-6)
+    {
+        thrust = MissionConstants::kEngineMinThrust;
+    }
+    setpoint_angles = translation_controller_gains * x_translation * (mass / thrust);
+}
+
+void Controller::HeightControl(Navigation &navigation)
+{
+    const double g = MissionConstants::kGravity; // m/s^2
+
+    Eigen::Matrix<double, 16, 1> x = navigation.GetNavigation();
+
+    // States
+    double z = x(2);    // position [m]
+    double zdot = x(5); // velocity [m/s]
+
+    // References
+    double z_ref = refPositionZ;
+    double zdot_ref = refVelocityZ;
+
+    // Errors
+    double e_z = z_ref - z;
+    double e_zdot = zdot_ref - zdot;
+
+    current_guidance_altitude_error = e_z;
+
+    // Integral update
+    height_error_integral += e_z * loopTime;
+
+    // Acceleration command
+    Eigen::Vector3d height_control_vector = Eigen::Vector3d(height_error_integral, e_z, e_zdot);
+    double zddot_cmd = height_controller_gains * height_control_vector + refAccelerationZ;
+
+    // Use navigation's current vehicle mass estimate
+    double mass = navigation.GetEstimatedMassKg(); // kg
+
+    // Convert to force and clamp to engine throttle limits
+    double thrust_cmd = (mass * (zddot_cmd + g));
+    if (thrust_cmd < MissionConstants::kEngineMinThrust)
+    {
+        thrust_cmd = MissionConstants::kEngineMinThrust;
+    }
+    else if (thrust_cmd > MissionConstants::kEngineMaxThrust)
+    {
+        thrust_cmd = MissionConstants::kEngineMaxThrust;
+    }
+
+    current_thrust_command_N = thrust_cmd;
+    engine.SetThrust(thrust_cmd, x.segment<3>(0), x.segment<3>(3)); // Newtons + navigation state
 }
 
 void Controller::Center()
@@ -166,63 +251,181 @@ void Controller::Center()
     // Center the tvc
     input(0) = 0;
     input(1) = 0;
-    // [TODO] Move to hardware tvc_angles = TvcMath(input);
     tvc.SetTVCX(input(0));
     tvc.SetTVCY(input(1));
+    tvc.UpdateActuatorPositions();
 }
 
-void Controller::ImportControlParameters(std::string file_name)
+void Controller::ZeroTranslationalSetpointAngles()
 {
-    // Imports the kmatrix file into controller_gains and the time values into controller_gain_times
+    setpoint_angles = Eigen::Vector2d::Zero();
+    setpoint_angles_prev = Eigen::Vector2d::Zero();
+}
+
+void Controller::ImportHeightParameters(std::string file_name)
+{
+    // Imports the kmatrix file into controller_gains
 
     char separator = ',';
     std::string row, item;
     std::ifstream in(file_name);
-    std::getline(in, row);
-    std::stringstream iterationTimeStringStream(row);
 
-    // Get the iteration times of the k-matrix
-    for (int i = 0; i < 10; i++)
+    if (!in.is_open())
     {
-        std::getline(iterationTimeStringStream, item, separator); // This gets values delimited by commas in the string
-
-        controller_gain_times[i] = stod(item);
+        throw std::runtime_error("Could not open file");
     }
 
     // Get the controller values of the k-matrix
-    for (int i = 0; i < 2 * MissionConstants::kNumberControllerGains; i++)
+    int rows_read = 0;
+    while (rows_read < 1 && std::getline(in, row))
     {
-        std::getline(in, row);
+        row.erase(std::remove_if(row.begin(), row.end(), ::isspace), row.end());
+        if (row.empty())
+            continue;
         std::stringstream controllerValueStringStream(row);
-        for (int j = 0; j < 8; j++)
+        for (int j = 0; j < 3; j++)
         {
-            std::getline(controllerValueStringStream, item, separator);
-            controller_gains(i, j) = stod(item);
+            if (!std::getline(controllerValueStringStream, item, separator))
+            {
+                throw std::runtime_error("Not enough columns in row for height_controller_gains");
+            }
+            try
+            {
+                height_controller_gains(rows_read, j) = std::stod(item);
+            }
+            catch (const std::invalid_argument &e)
+            {
+                throw std::runtime_error("Invalid number in CSV for height_controller_gains: '" + item + "'");
+            }
         }
+        rows_read++;
+    }
+    if (rows_read < 1)
+    {
+        throw std::runtime_error("Not enough rows in height_controller_gains CSV");
     }
 
     in.close();
 }
 
-// When we go into landing mode, reset the k_iteration_start_time and current_iteration_index
-void Controller::ResetKIteration(double current_time)
+void Controller::ImportTranslationParameters(std::string file_name)
 {
-    next_tvc_time = current_time;
-    k_iteration_start_time = current_time;
-    current_iteration_index = 0;
+    // Imports the kmatrix file into controller_gains
+
+    char separator = ',';
+    std::string row, item;
+    std::ifstream in(file_name);
+
+    if (!in.is_open())
+    {
+        throw std::runtime_error("Could not open file");
+    }
+
+    // Get the controller values of the k-matrix
+    int rows_read = 0;
+    while (rows_read < 2 && std::getline(in, row))
+    {
+        row.erase(std::remove_if(row.begin(), row.end(), ::isspace), row.end());
+        if (row.empty())
+            continue;
+        std::stringstream controllerValueStringStream(row);
+        for (int j = 0; j < 6; j++)
+        {
+            if (!std::getline(controllerValueStringStream, item, separator))
+            {
+                throw std::runtime_error("Not enough columns in row for translation_controller_gains");
+            }
+            try
+            {
+                translation_controller_gains(rows_read, j) = std::stod(item);
+            }
+            catch (const std::invalid_argument &e)
+            {
+                throw std::runtime_error("Invalid number in CSV for translation_controller_gains: '" + item + "'");
+            }
+        }
+        rows_read++;
+    }
+    if (rows_read < 2)
+    {
+        throw std::runtime_error("Not enough rows in translation_controller_gains CSV");
+    }
+
+    in.close();
 }
 
-Eigen::Matrix<double, 2, 8> Controller::GetCurrentKMatrix()
+void Controller::ImportAngleParameters(std::string file_name)
 {
-    return controller_gains.block(current_iteration_index * 2, 0, 2, 8);
-}
+    // Imports the kmatrix file into controller_gains
 
-int Controller::GetCurrentIterationIndex()
-{
-    return current_iteration_index;
+    char separator = ',';
+    std::string row, item;
+    std::ifstream in(file_name);
+
+    if (!in.is_open())
+    {
+        throw std::runtime_error("Could not open file");
+    }
+
+    // Get the controller values of the k-matrix
+    int rows_read = 0;
+    while (rows_read < 2 && std::getline(in, row))
+    {
+        row.erase(std::remove_if(row.begin(), row.end(), ::isspace), row.end());
+        if (row.empty())
+            continue;
+        std::stringstream controllerValueStringStream(row);
+        for (int j = 0; j < 6; j++)
+        {
+            if (!std::getline(controllerValueStringStream, item, separator))
+            {
+                throw std::runtime_error("Not enough columns in row for angle_controller_gains");
+            }
+            try
+            {
+                angle_controller_gains(rows_read, j) = std::stod(item);
+            }
+            catch (const std::invalid_argument &e)
+            {
+                throw std::runtime_error("Invalid number in CSV for angle_controller_gains: '" + item + "'");
+            }
+        }
+        rows_read++;
+    }
+    if (rows_read < 2)
+    {
+        throw std::runtime_error("Not enough rows in angle_controller_gains CSV");
+    }
+
+    in.close();
 }
 
 Eigen::Matrix<double, 2, 1> Controller::GetCurrentTVCCommand()
 {
     return input;
+}
+
+double Controller::GetCurrentThrustCommand()
+{
+    return current_thrust_command_N;
+}
+
+double Controller::GetCurrentRcsCommand()
+{
+    return current_rcs_command_N;
+}
+
+Eigen::Vector3d Controller::GetCurrentAttitudeSetpointError()
+{
+    return current_attitude_setpoint_error;
+}
+
+double Controller::GetCurrentGuidanceAltitudeError()
+{
+    return current_guidance_altitude_error;
+}
+
+Eigen::Vector2d Controller::GetCurrentGuidanceTranslationError()
+{
+    return current_guidance_translation_error;
 }

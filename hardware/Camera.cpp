@@ -1,0 +1,749 @@
+#include "Camera.hpp"
+
+#include "CameraCalibration.hpp"
+#include "MissionConstants.hpp"
+#include "WhiteCircle.hpp"
+
+#include <Eigen/Dense>
+#include <opencv2/opencv.hpp>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <condition_variable>
+#include <chrono>
+#include <deque>
+#include <filesystem>
+#include <fcntl.h>
+#include <iomanip>
+#include <ios>
+#include <mutex>
+#include <linux/videodev2.h>
+#include <sys/ioctl.h>
+#include <thread>
+#include <string>
+#include <sstream>
+#include <unistd.h>
+#include <utility>
+#include <vector>
+
+namespace
+{
+struct VideoStreamState
+{
+    bool initialized = false;
+    cv::VideoCapture capture;
+    int activeDeviceIndex = -1;
+};
+
+VideoStreamState gVideoStream;
+
+struct CameraCalibrationState
+{
+    CameraCalibration::Data calibration = CameraCalibration::MakeDefaultCalibration();
+    bool loaded = false;
+    std::filesystem::path sourcePath;
+};
+
+CameraCalibrationState gCameraCalibrationState;
+std::once_flag gCameraCalibrationOnceFlag;
+
+std::string DevicePathForIndex(int deviceIndex)
+{
+    return std::string("/dev/video") + std::to_string(deviceIndex);
+}
+
+bool IsCaptureDeviceIndex(int deviceIndex)
+{
+    const std::string devicePath = DevicePathForIndex(deviceIndex);
+    const int fd = ::open(devicePath.c_str(), O_RDONLY | O_NONBLOCK);
+    if (fd < 0) {
+        return false;
+    }
+
+    v4l2_capability caps{};
+    const int ioctlResult = ::ioctl(fd, VIDIOC_QUERYCAP, &caps);
+    ::close(fd);
+    if (ioctlResult < 0) {
+        return false;
+    }
+
+    uint32_t deviceCaps = caps.capabilities;
+    if (caps.capabilities & V4L2_CAP_DEVICE_CAPS) {
+        deviceCaps = caps.device_caps;
+    }
+
+    const bool hasCapture = (deviceCaps & V4L2_CAP_VIDEO_CAPTURE) ||
+                            (deviceCaps & V4L2_CAP_VIDEO_CAPTURE_MPLANE);
+    const bool hasStreaming = (deviceCaps & V4L2_CAP_STREAMING);
+    return hasCapture && hasStreaming;
+}
+
+struct DebugFrameItem
+{
+    double frameId = -1.0;
+    cv::Mat frame;
+    std::string suffix;
+};
+
+class DebugFrameLogger
+{
+public:
+    DebugFrameLogger()
+        : worker(&DebugFrameLogger::Run, this)
+    {
+    }
+
+    ~DebugFrameLogger()
+    {
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            stop = true;
+        }
+        condition.notify_all();
+        if (worker.joinable()) {
+            worker.join();
+        }
+    }
+
+    void Enqueue(double frameId, const cv::Mat& frame, const std::string& suffix = "")
+    {
+        if (!MissionConstants::kSensorCameraSaveDebugFrames) {
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(mutex);
+        if (queue.size() >= kMaxQueueDepth) {
+            queue.pop_front();
+        }
+        queue.push_back(DebugFrameItem{frameId, frame.clone(), suffix});
+        condition.notify_one();
+    }
+
+private:
+    static constexpr size_t kMaxQueueDepth = 8;
+
+    void Run()
+    {
+        const std::filesystem::path debugDir = std::filesystem::absolute(
+            MissionConstants::kSensorCameraDebugFrameDirectory).lexically_normal();
+        std::cerr << "Camera debug frame output directory: " << debugDir.string() << std::endl;
+
+        std::error_code createDirectoryError;
+        std::filesystem::create_directories(
+            debugDir,
+            createDirectoryError);
+        if (createDirectoryError) {
+            std::cerr << "Camera debug frame directory creation failed: "
+                      << debugDir.string()
+                      << " (" << createDirectoryError.message() << ")" << std::endl;
+        }
+
+        for (;;) {
+            DebugFrameItem item;
+            {
+                std::unique_lock<std::mutex> lock(mutex);
+                condition.wait(lock, [&] { return stop || !queue.empty(); });
+                if (stop && queue.empty()) {
+                    return;
+                }
+
+                item = std::move(queue.front());
+                queue.pop_front();
+            }
+
+            std::ostringstream filename;
+            filename << debugDir.string() << "/"
+                     << "frame_" << std::setw(6) << std::setfill('0') << static_cast<int>(item.frameId)
+                     << (item.suffix.empty() ? "" : std::string("_") + item.suffix)
+                     << ".jpg";
+
+            if (!cv::imwrite(filename.str(), item.frame)) {
+                std::cerr << "Camera debug frame write failed: " << filename.str() << std::endl;
+            } else {
+                std::cerr << "Camera debug frame saved: " << filename.str() << std::endl;
+            }
+        }
+    }
+
+    std::mutex mutex;
+    std::condition_variable condition;
+    std::deque<DebugFrameItem> queue;
+    bool stop = false;
+    std::thread worker;
+};
+
+DebugFrameLogger& GetDebugFrameLogger()
+{
+    static DebugFrameLogger logger;
+    return logger;
+}
+
+std::mutex gLatestDebugFrameMutex;
+double gLatestDebugFrameId = -1.0;
+cv::Mat gLatestDebugFrame;
+std::vector<cv::Point2d> gLatestDetectionCentroids;
+
+void LoadCameraCalibration()
+{
+    gCameraCalibrationState.calibration = CameraCalibration::MakeDefaultCalibration();
+    gCameraCalibrationState.sourcePath = CameraCalibration::DefaultCalibrationPath();
+
+    if (!std::filesystem::exists(gCameraCalibrationState.sourcePath)) {
+        std::cerr << "Camera calibration file not found; using built-in defaults: "
+                  << gCameraCalibrationState.sourcePath.string() << std::endl;
+        gCameraCalibrationState.loaded = false;
+        return;
+    }
+
+    std::string errorMessage;
+    if (!CameraCalibration::LoadCalibrationFile(gCameraCalibrationState.sourcePath, gCameraCalibrationState.calibration, &errorMessage)) {
+        std::cerr << "Camera calibration load failed; using built-in defaults: "
+                  << gCameraCalibrationState.sourcePath.string()
+                  << " (" << errorMessage << ")" << std::endl;
+        gCameraCalibrationState.calibration = CameraCalibration::MakeDefaultCalibration();
+        gCameraCalibrationState.loaded = false;
+        return;
+    }
+
+    gCameraCalibrationState.loaded = true;
+    std::cerr << "Camera calibration loaded from " << gCameraCalibrationState.sourcePath.string()
+              << " with RMS reprojection error " << gCameraCalibrationState.calibration.rmsReprojectionError
+              << std::endl;
+
+    // Warn if calibration resolution does not match mission constants
+    if (gCameraCalibrationState.calibration.imageSize.width != MissionConstants::kSensorCameraImageWidthPx ||
+        gCameraCalibrationState.calibration.imageSize.height != MissionConstants::kSensorCameraImageHeightPx) {
+        std::cerr << "WARNING: Camera calibration resolution (" << gCameraCalibrationState.calibration.imageSize.width
+                  << "x" << gCameraCalibrationState.calibration.imageSize.height
+                  << ") does not match mission constants (" << MissionConstants::kSensorCameraImageWidthPx
+                  << "x" << MissionConstants::kSensorCameraImageHeightPx << ")" << std::endl;
+    }
+}
+
+const CameraCalibration::Data& GetCameraCalibration()
+{
+    std::call_once(gCameraCalibrationOnceFlag, LoadCameraCalibration);
+    return gCameraCalibrationState.calibration;
+}
+
+Eigen::Vector3d PixelToUnitVector(double px, double py)
+{
+    const CameraCalibration::Data& calibration = GetCameraCalibration();
+
+    std::vector<cv::Point2f> distortedPoints;
+    distortedPoints.emplace_back(static_cast<float>(px), static_cast<float>(py));
+    std::vector<cv::Point2f> undistortedPoints;
+    cv::undistortPoints(distortedPoints, undistortedPoints, calibration.cameraMatrix, calibration.distortionCoefficients);
+
+    if (undistortedPoints.empty()) {
+        return Eigen::Vector3d::Zero();
+    }
+
+    Eigen::Vector3d ray(
+        static_cast<double>(undistortedPoints[0].x),
+        static_cast<double>(undistortedPoints[0].y),
+        1.0);
+    return ray.normalized();
+}
+
+bool UnitVectorToPixel(const Eigen::Vector3d& unitVectorCamera, cv::Point2d& pixel)
+{
+    if (unitVectorCamera.z() <= 1e-6) {
+        return false;
+    }
+
+    const CameraCalibration::Data& calibration = GetCameraCalibration();
+
+    std::vector<cv::Point3f> objectPoints;
+    objectPoints.emplace_back(
+        static_cast<float>(unitVectorCamera.x() / unitVectorCamera.z()),
+        static_cast<float>(unitVectorCamera.y() / unitVectorCamera.z()),
+        1.0f);
+
+    std::vector<cv::Point2f> imagePoints;
+    cv::projectPoints(
+        objectPoints,
+        cv::Vec3d(0.0, 0.0, 0.0),
+        cv::Vec3d(0.0, 0.0, 0.0),
+        calibration.cameraMatrix,
+        calibration.distortionCoefficients,
+        imagePoints);
+
+    if (imagePoints.empty()) {
+        return false;
+    }
+
+    pixel = imagePoints.front();
+    return true;
+}
+}
+
+Camera::Camera()
+{
+    (void)GetCameraCalibration();
+}
+
+bool Camera::InitializeVideoStream()
+{
+    if (gVideoStream.initialized && gVideoStream.capture.isOpened()) {
+        return true;
+    }
+
+    if (gVideoStream.capture.isOpened()) {
+        gVideoStream.capture.release();
+    }
+    gVideoStream.activeDeviceIndex = -1;
+
+    const int preferredDeviceIndex = MissionConstants::kSensorCameraPreferredDeviceIndex;
+    std::vector<int> deviceCandidates;
+    deviceCandidates.push_back(preferredDeviceIndex);
+    for (int idx = 0; idx <= 5; ++idx) {
+        if (idx != preferredDeviceIndex) {
+            deviceCandidates.push_back(idx);
+        }
+    }
+
+    const std::pair<int, int> resolutionCandidate = {
+        MissionConstants::kSensorCameraImageWidthPx,
+        MissionConstants::kSensorCameraImageHeightPx,
+    };
+
+    auto tryOpenCapture = [&](int deviceIndex, int width, int height) -> bool {
+        gVideoStream.capture.release();
+
+        if (MissionConstants::kSensorCameraUseGStreamer) {
+            std::cerr << "Camera trying native GStreamer pipeline at " << width << "x" << height << " on device index " << deviceIndex << std::endl;
+            
+            std::ostringstream pipeline;
+            // Native libcamera GStreamer pipeline
+            // When only 1 camera is connected on Pi, libcamerasrc generally uses camera-name=/base/axi/... (full path) 
+            // OR auto-selects if we simply omit the camera-name argument. Let's omit it so it auto-selects the only available camera!
+            pipeline << "libcamerasrc ! video/x-raw,width=" << width << ",height=" << height << ",format=RGBx"
+                     << " ! videoconvert ! video/x-raw,format=BGR ! appsink drop=true max-buffers=1 sync=false";
+
+            if (gVideoStream.capture.open(pipeline.str(), cv::CAP_GSTREAMER)) {
+                std::cerr << "Camera opened with native GStreamer pipeline at " << width << "x" << height << std::endl;
+                
+                cv::Mat warmupFrame;
+                bool warmupSucceeded = false;
+                for (int attempt = 0; attempt < 30; ++attempt) {
+                    if (gVideoStream.capture.read(warmupFrame) && !warmupFrame.empty()) {
+                        warmupSucceeded = true;
+                        break;
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                }
+
+                if (warmupSucceeded) {
+                    std::cerr << "Camera warmup succeeded via native GStreamer on device index " << deviceIndex
+                              << " at " << width << "x" << height << std::endl;
+                    gVideoStream.activeDeviceIndex = deviceIndex;
+                    gVideoStream.initialized = true;
+                    return true;
+                }
+                
+                std::cerr << "Camera warmup failed via native GStreamer at " << width << "x" << height << std::endl;
+                gVideoStream.capture.release();
+            } else {
+                std::cerr << "Camera native GStreamer pipeline failed to open at " << width << "x" << height << std::endl;
+            }
+        }
+
+        std::cerr << "Camera trying device index " << deviceIndex
+                  << " at " << width << "x" << height << std::endl;
+        if (!gVideoStream.capture.open(deviceIndex, cv::CAP_V4L2)) {
+            if (MissionConstants::kSensorCameraUseCapAnyFallback) {
+                if (!gVideoStream.capture.open(deviceIndex, cv::CAP_ANY)) {
+                    std::cerr << "Camera open failed for device index " << deviceIndex << std::endl;
+                    return false;
+                }
+            } else {
+                std::cerr << "Camera open failed for device index " << deviceIndex << " using V4L2" << std::endl;
+                return false;
+            }
+        }
+
+        std::cerr << "Camera opened on device index " << deviceIndex
+                  << " with requested resolution " << width << "x" << height << std::endl;
+
+        gVideoStream.capture.set(cv::CAP_PROP_FRAME_WIDTH, width);
+        gVideoStream.capture.set(cv::CAP_PROP_FRAME_HEIGHT, height);
+        gVideoStream.capture.set(cv::CAP_PROP_BUFFERSIZE, 1.0);
+
+        // Grab one frame at startup so the next request returns a recent image.
+        cv::Mat warmupFrame;
+        bool warmupSucceeded = false;
+        for (int attempt = 0; attempt < 20; ++attempt) {
+            if (gVideoStream.capture.read(warmupFrame) && !warmupFrame.empty()) {
+                warmupSucceeded = true;
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        if (warmupSucceeded) {
+            std::cerr << "Camera warmup succeeded on device index " << deviceIndex
+                      << " at " << width << "x" << height << std::endl;
+            gVideoStream.activeDeviceIndex = deviceIndex;
+            gVideoStream.initialized = true;
+            return true;
+        }
+
+        std::cerr << "Camera warmup frame read failed on device index " << deviceIndex
+                  << " at " << width << "x" << height << std::endl;
+        return false;
+    };
+
+    for (const int deviceIndex : deviceCandidates) {
+        if (!MissionConstants::kSensorCameraUseGStreamer && !IsCaptureDeviceIndex(deviceIndex)) {
+            std::cerr << "Camera skipping device index " << deviceIndex
+                      << " because it is not a V4L2 capture device" << std::endl;
+            continue;
+        }
+
+        if (tryOpenCapture(deviceIndex, resolutionCandidate.first, resolutionCandidate.second)) {
+            return true;
+        }
+    }
+
+    gVideoStream.capture.release();
+    gVideoStream.initialized = false;
+    return false;
+}
+
+void Camera::TryProcessPendingLocalCapture()
+{
+    if (!capturePending) {
+        return;
+    }
+
+    if (CaptureLocalFrameAndProcess(pendingCaptureFrameId)) {
+        capturePending = false;
+    }
+}
+
+bool Camera::CaptureLocalFrameAndProcess(double frameId)
+{
+    const auto processing_start_time = std::chrono::steady_clock::now();
+
+    if (!InitializeVideoStream()) {
+        return false;
+    }
+
+    cv::Mat img;
+    if (!gVideoStream.capture.read(img)) {
+        std::cerr << "Camera frame read failed on device index " << gVideoStream.activeDeviceIndex << std::endl;
+        gVideoStream.initialized = false;
+        return false;
+    }
+
+    // Drop one buffered frame when available to bias toward the latest image.
+    cv::Mat latestImg;
+    if (gVideoStream.capture.grab()) {
+        gVideoStream.capture.retrieve(latestImg);
+        if (!latestImg.empty()) {
+            img = latestImg;
+        }
+    }
+
+    if (img.empty()) {
+        std::cerr << "Camera captured empty frame on device index " << gVideoStream.activeDeviceIndex << std::endl;
+        return false;
+    }
+
+    const auto capture_io_end_time = std::chrono::steady_clock::now();
+
+    std::vector<WhiteCircle::MarkerDetection> detections = WhiteCircle::DetectWhiteMarkerCentroids(
+        img,
+        MissionConstants::kSensorCameraMarkerMinAreaPx,
+        MissionConstants::kSensorCameraMaxDetections);
+
+    const auto detection_end_time = std::chrono::steady_clock::now();
+
+    std::vector<cv::Point2d> detectionCentroids;
+    detectionCentroids.reserve(detections.size());
+
+    // Draw bounding boxes around the detected markers for the saved debug frames
+    for (size_t i = 0; i < detections.size(); ++i) {
+        const auto& detection = detections[i];
+        // Approximate a radius based on the pixel area of the circle
+        int radius = static_cast<int>(std::sqrt(detection.areaPx / 3.14159265));
+        
+        // Create a bounding box based on the centroid and radius
+        cv::Rect bbox(
+            static_cast<int>(detection.centroidPx.x) - radius,
+            static_cast<int>(detection.centroidPx.y) - radius,
+            radius * 2,
+            radius * 2
+        );
+
+        // Draw the box in green, and a small red cross at the exact centroid
+        cv::rectangle(img, bbox, cv::Scalar(0, 255, 0), 2);
+        cv::drawMarker(img, detection.centroidPx, cv::Scalar(0, 0, 255), cv::MARKER_CROSS, 10, 1);
+
+        std::ostringstream measurementLabel;
+        measurementLabel << "m" << i;
+        const cv::Point labelPosition(
+            static_cast<int>(detection.centroidPx.x) + 8,
+            static_cast<int>(detection.centroidPx.y) - 8);
+        cv::putText(
+            img,
+            measurementLabel.str(),
+            labelPosition,
+            cv::FONT_HERSHEY_SIMPLEX,
+            0.5,
+            cv::Scalar(0, 255, 255),
+            2,
+            cv::LINE_AA);
+
+        detectionCentroids.push_back(detection.centroidPx);
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(gLatestDebugFrameMutex);
+        gLatestDebugFrameId = frameId;
+        gLatestDebugFrame = img.clone();
+        gLatestDetectionCentroids = detectionCentroids;
+    }
+
+    GetDebugFrameLogger().Enqueue(frameId, img);
+
+    std::vector<std::pair<double, double>> pixelList;
+    pixelList.reserve(detections.size());
+    for (const WhiteCircle::MarkerDetection& detection : detections) {
+        pixelList.emplace_back(detection.centroidPx.x, detection.centroidPx.y);
+    }
+
+    UpdateFromPixelList(frameId, pixelList);
+
+    const auto processing_end_time = std::chrono::steady_clock::now();
+
+    const double capture_io_duration_ms =
+        std::chrono::duration<double, std::milli>(capture_io_end_time - processing_start_time).count();
+    const double detection_duration_ms =
+        std::chrono::duration<double, std::milli>(detection_end_time - capture_io_end_time).count();
+    const double postprocess_duration_ms =
+        std::chrono::duration<double, std::milli>(processing_end_time - detection_end_time).count();
+    const double total_processing_duration_ms =
+        std::chrono::duration<double, std::milli>(processing_end_time - processing_start_time).count();
+
+    std::cerr << "[Camera TIMING] Frame " << frameId
+              << " total=" << total_processing_duration_ms << " ms"
+              << " (capture=" << capture_io_duration_ms << " ms"
+              << ", detect=" << detection_duration_ms << " ms"
+              << ", post=" << postprocess_duration_ms << " ms). ";
+    if (latestUnitVectorList.empty()) {
+        std::cerr << "Found 0 unit vectors." << std::endl;
+    } else {
+        std::cerr << "Found " << latestUnitVectorList.size() << " unit vector(s):";
+        for (const auto& vec : latestUnitVectorList) {
+            std::cerr << " [" << vec.x() << ", " << vec.y() << ", " << vec.z() << "]";
+        }
+        std::cerr << std::endl;
+    }
+
+    return true;
+}
+
+void Camera::RequestCapture()
+{
+    ++nextCaptureFrameId;
+    pendingCaptureFrameId = nextCaptureFrameId;
+    capturePending = true;
+}
+
+void Camera::UpdateFromPixelList(double frameId, const std::vector<std::pair<double, double>>& pixelList)
+{
+    latestUnitVectorList.clear();
+    const size_t n = std::min<size_t>(
+        static_cast<size_t>(MissionConstants::kSensorCameraMaxDetections),
+        pixelList.size());
+    for (size_t i = 0; i < n; ++i) {
+        const Eigen::Vector3d unitVector = PixelToUnitVector(pixelList[i].first, pixelList[i].second);
+        if (unitVector.norm() > 0.5) {
+            latestUnitVectorList.push_back(unitVector);
+        }
+    }
+    latestFrameId = frameId;
+}
+
+std::vector<Eigen::Vector3d> Camera::GetUnitVectorList()
+{
+    TryProcessPendingLocalCapture();
+    return latestUnitVectorList;
+}
+
+double Camera::GetFrameId()
+{
+    TryProcessPendingLocalCapture();
+    return latestFrameId;
+}
+
+void Camera::AnnotateDebugFrameMatches(
+    double frameId,
+    const std::vector<std::pair<int, int>>& measurementToMarkerMatches)
+{
+    if (!MissionConstants::kSensorCameraSaveDebugFrames) {
+        return;
+    }
+
+    cv::Mat labeledFrame;
+    std::vector<cv::Point2d> centroids;
+    {
+        std::lock_guard<std::mutex> lock(gLatestDebugFrameMutex);
+        if (gLatestDebugFrame.empty() || frameId != gLatestDebugFrameId) {
+            return;
+        }
+        labeledFrame = gLatestDebugFrame.clone();
+        centroids = gLatestDetectionCentroids;
+    }
+
+    if (measurementToMarkerMatches.empty()) {
+        cv::putText(
+            labeledFrame,
+            "No marker matches",
+            cv::Point(20, 35),
+            cv::FONT_HERSHEY_SIMPLEX,
+            0.8,
+            cv::Scalar(0, 0, 255),
+            2,
+            cv::LINE_AA);
+    }
+
+    for (const auto& match : measurementToMarkerMatches) {
+        const int measurementIdx = match.first;
+        const int markerIdx = match.second;
+        if (measurementIdx < 0 || measurementIdx >= static_cast<int>(centroids.size())) {
+            continue;
+        }
+
+        std::ostringstream matchLabel;
+        matchLabel << "m" << measurementIdx << " -> id" << markerIdx;
+
+        const cv::Point labelPosition(
+            static_cast<int>(centroids[measurementIdx].x) + 8,
+            static_cast<int>(centroids[measurementIdx].y) + 18);
+
+        cv::putText(
+            labeledFrame,
+            matchLabel.str(),
+            labelPosition,
+            cv::FONT_HERSHEY_SIMPLEX,
+            0.5,
+            cv::Scalar(0, 165, 255),
+            2,
+            cv::LINE_AA);
+    }
+
+    GetDebugFrameLogger().Enqueue(frameId, labeledFrame, "matched");
+}
+
+void Camera::AnnotateDebugFrameExpectedVsTrue(
+    double frameId,
+    const std::vector<std::pair<int, Eigen::Vector3d>>& expectedMarkerBodyDirections)
+{
+    if (!MissionConstants::kSensorCameraSaveDebugFrames) {
+        return;
+    }
+
+    cv::Mat labeledFrame;
+    std::vector<cv::Point2d> centroids;
+    {
+        std::lock_guard<std::mutex> lock(gLatestDebugFrameMutex);
+        if (gLatestDebugFrame.empty() || frameId != gLatestDebugFrameId) {
+            return;
+        }
+        labeledFrame = gLatestDebugFrame.clone();
+        centroids = gLatestDetectionCentroids;
+    }
+
+    if (centroids.empty()) {
+        cv::putText(
+            labeledFrame,
+            "true: no detections",
+            cv::Point(20, 35),
+            cv::FONT_HERSHEY_SIMPLEX,
+            0.7,
+            cv::Scalar(0, 0, 255),
+            2,
+            cv::LINE_AA);
+    } else {
+        for (size_t i = 0; i < centroids.size(); ++i) {
+            const cv::Point2d& centroid = centroids[i];
+            cv::drawMarker(
+                labeledFrame,
+                centroid,
+                cv::Scalar(0, 255, 0),
+                cv::MARKER_CROSS,
+                14,
+                2,
+                cv::LINE_AA);
+
+            std::ostringstream trueLabel;
+            trueLabel << "true m" << i;
+            cv::putText(
+                labeledFrame,
+                trueLabel.str(),
+                cv::Point(static_cast<int>(centroid.x) + 10, static_cast<int>(centroid.y) + 20),
+                cv::FONT_HERSHEY_SIMPLEX,
+                0.5,
+                cv::Scalar(0, 255, 0),
+                2,
+                cv::LINE_AA);
+        }
+    }
+
+    const Eigen::Vector3d eul = MissionConstants::kSensorCameraOrientationRad;
+    const Eigen::Matrix3d DCM_bc =
+        (Eigen::AngleAxisd(eul.x(), Eigen::Vector3d::UnitX()).toRotationMatrix() *
+         Eigen::AngleAxisd(eul.y(), Eigen::Vector3d::UnitY()).toRotationMatrix() *
+         Eigen::AngleAxisd(eul.z(), Eigen::Vector3d::UnitZ()).toRotationMatrix());
+    const Eigen::Matrix3d DCM_cb = DCM_bc.transpose();
+
+    if (expectedMarkerBodyDirections.empty()) {
+        cv::putText(
+            labeledFrame,
+            "expected: none",
+            cv::Point(20, 65),
+            cv::FONT_HERSHEY_SIMPLEX,
+            0.7,
+            cv::Scalar(255, 0, 0),
+            2,
+            cv::LINE_AA);
+    }
+
+    for (const auto& marker : expectedMarkerBodyDirections) {
+        const int markerIdx = marker.first;
+        const Eigen::Vector3d bodyDirection = marker.second;
+        const Eigen::Vector3d cameraDirection = (DCM_cb * bodyDirection).normalized();
+
+        cv::Point2d expectedPixel;
+        if (!UnitVectorToPixel(cameraDirection, expectedPixel)) {
+            continue;
+        }
+
+        cv::drawMarker(
+            labeledFrame,
+            expectedPixel,
+            cv::Scalar(255, 0, 0),
+            cv::MARKER_TILTED_CROSS,
+            16,
+            2,
+            cv::LINE_AA);
+
+        std::ostringstream expectedLabel;
+        expectedLabel << "exp id" << markerIdx;
+        cv::putText(
+            labeledFrame,
+            expectedLabel.str(),
+            cv::Point(static_cast<int>(expectedPixel.x) + 10, static_cast<int>(expectedPixel.y) - 10),
+            cv::FONT_HERSHEY_SIMPLEX,
+            0.5,
+            cv::Scalar(255, 0, 0),
+            2,
+            cv::LINE_AA);
+    }
+
+    GetDebugFrameLogger().Enqueue(frameId, labeledFrame, "expected_vs_true");
+}

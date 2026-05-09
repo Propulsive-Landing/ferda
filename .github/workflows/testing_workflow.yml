@@ -15,7 +15,29 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install -y libgtest-dev libeigen3-dev cmake
+        sudo apt install -y libgtest-dev libeigen3-dev libi2c-dev cmake
+        sudo apt install -y libopencv-dev
+
+    - name: Install WiringPi from source
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential unzip
+        wget https://github.com/WiringPi/WiringPi/archive/master.zip
+        unzip master.zip
+        rm master.zip
+        cd WiringPi-master/wiringPi
+        make
+        sudo make install
+
+    - name: Install PCA9685 from source
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential unzip
+        wget https://github.com/barulicm/PiPCA9685/archive/master.zip
+        unzip master.zip
+        cd PiPCA9685-main
+        xargs -a apt_dependencies.txt sudo apt-get install -y
+        sudo cmake --workflow --preset install
 
     - name: Build Debug Mode
       run: |
@@ -25,16 +47,6 @@ jobs:
     - name: Run Debug Binary for 10 seconds
       run: |
         timeout 10s ./build-debug/Ferda < /dev/null || echo "Exited after timeout"
-
-    - name: Install pigpio from source
-      run: |
-        sudo apt update
-        sudo apt install -y build-essential unzip
-        wget https://github.com/joan2937/pigpio/archive/master.zip
-        unzip master.zip
-        cd pigpio-master
-        make
-        sudo make install
 
     - name: Build Release Mode
       run: |
