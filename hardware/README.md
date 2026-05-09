@@ -75,6 +75,25 @@ release mode, every sensor is attached, so for now you have to uncomment lines u
 I also left it as it is because it is easier to debug. If the user decides to ignore the warning messages, then they will get a segfault, so they know something is wrong right away.
 
 ### Camera.cpp
+`Camera.cpp` is used by Navigation to turn camera images into unit vectors that point from the camera to detected ground markers.
+
+On startup, the camera tries to load calibration data from `../calibration/camera_calibration.json`. If that file is missing or invalid, it falls back to the built-in calibration constants. The calibration is used in `PixelToUnitVector()` with OpenCV's `cv::undistortPoints()` so the marker centroid pixels become normalized camera-frame rays.
+
+`RequestCapture()` does not immediately take a picture. Instead, it marks a capture as pending and assigns the next frame ID. The next time Navigation calls `GetUnitVectorList()` or `GetFrameId()`, the camera runs `TryProcessPendingLocalCapture()`, captures the pending frame, detects markers, and updates the latest unit vector list.
+
+The camera stream setup happens in `InitializeVideoStream()`. It first tries the preferred camera device index from `MissionConstants`, then tries other device indexes. Depending on the mission constants, it can use a native GStreamer pipeline or V4L2/OpenCV capture. After opening a stream, it reads warmup frames so the first processed frame is not stale or empty.
+
+`CaptureLocalFrameAndProcess()` is the main image-processing method:
+1. Captures a frame from OpenCV
+2. Drops one buffered frame when possible so the result is recent
+3. Detects white marker centroids using `WhiteCircle::DetectWhiteMarkerCentroids()`
+4. Draws detection boxes and labels for debug frames
+5. Converts each centroid into a camera-frame unit vector
+6. Saves timing information and optional debug images
+
+There are also two debug annotation helpers:
+1. `AnnotateDebugFrameMatches()` labels which measured marker was matched to which expected marker
+2. `AnnotateDebugFrameExpectedVsTrue()` overlays expected marker positions and actual detected positions
 
 ### Engine.cpp
 Currently, we just have one method, `SetThrust()`.
