@@ -212,7 +212,7 @@ namespace MissionConstants
     const int kFuelInletPTPin = ADS2BASE + 3;  // Second ADS1115 A3
     const int kFuelOutletPTPin = ADS3BASE + 0; // Third ADS1115 A0
 
-    // IMPORANT: ON Test Stand, The sceond ADS1115 A1 pin is fried
+    // IMPORANT: On Test Stand, The sceond ADS1115 A1 pin is fried
 
     // Load Cell Pin (Analog)
     const int kLoadCellPin = ADS1BASE + 3;          // First ADS1115 A4
@@ -222,19 +222,9 @@ namespace MissionConstants
     const int kValveClosedAngle = 179; // degrees
     const int kValveOpenAngle = 91;    // degrees
 
-    // Voltage reading, TODO: USER EDIT PRE-FLIGHT
-    const double kR1 = 100000;
-    const double kR2 = 10000;
-
     // Telemetry Constants
-    const int BAUD_RATE = 9600;
-    const int HARDWARE_SAVE_DELTA = 100;
-    const int RF_SEND_DELTA = 300;
     const int kRfGncPayloadDecimalPlaces = 3;
     const int kRfLiquidPayloadDecimalPlaces = 2;
-
-    // Time after launch until active stabalization begins.
-    const float timeAtOffset = 0.0;
 
     // IMU constants
     const int IMU_I2C_ADDR = 0x28;
