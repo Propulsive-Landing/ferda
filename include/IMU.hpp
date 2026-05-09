@@ -1,25 +1,21 @@
 #pragma once
 
 #include <tuple>
+#include <cstdint>
+
+#ifdef NDEBUG
+#include <wiringPi.h>
+#include <wiringPiI2C.h>
+#endif
 
 class IMU
 {
 public:
     IMU();
     std::tuple<double, double, double> GetBodyAngularRate();  // Returns angular rate, p, q, and r in order
-    std::tuple<double, double, double> GetBodyAcceleration(); // Returns linear acceleration, x, y, z
-    void SetGyroBiasX(double x);
-    void SetGyroBiasY(double y);
-    void SetGyroBiasZ(double z);
-    void SetAccelBiasX(double x);
-    void SetAccelBiasY(double y);
-    void SetAccelBiasZ(double z);
-
-private:
-    double gyroBiasX = 0;
-    double gyroBiasY = 0;
-    double gyroBiasZ = 0;
-    double accelBiasX = 0;
-    double accelBiasY = 0;
-    double accelBiasZ = 0;
+    std::tuple<double, double, double> GetBodyAcceleration(); // Returns linear acceleration, x, y, z order
+    int16_t read16LE(int fd, int reg);                        // Helper: Read 16-bit little-endian
+protected:
+    int fd; // File pointer
+    bool IMUFound;
 };

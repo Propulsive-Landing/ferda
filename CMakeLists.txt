@@ -21,10 +21,27 @@ endif()
 FILE(GLOB CppSources src/*.cpp)
 
 find_package(Eigen3 REQUIRED NO_MODULE)
+find_package(OpenCV QUIET)
+
+if(OpenCV_FOUND)
+    message(STATUS "OpenCV found. Camera features enabled.")
+else()
+    message(WARNING "OpenCV not found. Building without hardware camera support and skipping CameraCalibrate.")
+endif()
+
+if(NOT OpenCV_FOUND AND NOT (CMAKE_BUILD_TYPE STREQUAL Debug) AND NOT (CMAKE_BUILD_TYPE STREQUAL Simulation))
+    list(REMOVE_ITEM EXTRA_CODE "${CMAKE_CURRENT_SOURCE_DIR}/hardware/Camera.cpp")
+    list(APPEND EXTRA_CODE "${CMAKE_CURRENT_SOURCE_DIR}/hardware_test/Camera.cpp")
+endif()
 
 add_executable(Ferda ${CppSources} ${EXTRA_CODE})
 
 target_include_directories(Ferda PRIVATE include)
+
+if(OpenCV_FOUND)
+    add_executable(CameraCalibrate tools/CameraCalibrate.cpp)
+    target_include_directories(CameraCalibrate PRIVATE include ${OpenCV_INCLUDE_DIRS})
+endif()
 
 if(MSVC)
   target_compile_options(Ferda PRIVATE /W4 /WX)
@@ -49,10 +66,21 @@ elseif(CMAKE_BUILD_TYPE STREQUAL Simulation)
         SIM_SERVER_IP="${SIM_SERVER_IP}"
     )
 else()
-    target_link_libraries(Ferda Eigen3::Eigen pigpio nlohmann_json::nlohmann_json)
+    target_link_libraries(Ferda Eigen3::Eigen wiringPi PiPCA9685 i2c nlohmann_json::nlohmann_json)
+    if(OpenCV_FOUND)
+        target_include_directories(Ferda PRIVATE ${OpenCV_INCLUDE_DIRS})
+        target_link_libraries(Ferda ${OpenCV_LIBS})
+    endif()
+endif()
+
+if(OpenCV_FOUND)
+    target_link_libraries(CameraCalibrate PRIVATE Eigen3::Eigen nlohmann_json::nlohmann_json ${OpenCV_LIBS})
 endif()
 
 
 # Add threading library
 find_package(Threads REQUIRED)
 target_link_libraries(Ferda Threads::Threads)
+if(OpenCV_FOUND)
+    target_link_libraries(CameraCalibrate PRIVATE Threads::Threads)
+endif()
