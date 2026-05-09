@@ -1,6 +1,8 @@
 build-essential
 cmake
 pybind11-dev
+python3
+python3-pip
 python3-dev
 libi2c-dev
 libgtest-dev

@@ -177,7 +177,8 @@ ASCII text strings that display information such as position, speed, and time. T
    - RMC (Recommended Minimum Specific GNSS Data)
    - GGA (Global Positioning System Fix Data)
 To write settings, we use the talker ID `PMTK`. In every PMTK sentence we write, we need to compute the checksum, which is the XOR of every bit, and end with `\r\n`.
-These configuration steps are taken care of in `gps_setup.sh`:
+These configuration steps are taken care of in `gps_setup.sh`. For the script to work, make sure python is installed and createa virtual environment where you 
+have installed `pyserial` and `adafruit-circuitpython-gps`
 1. In `gps_setup.sh`, we call `gps_startup.py` to make sure the GPS has a fix because, in my testing, the settings only applied if there was a fix. There are also nice libraries for dealing with Adafruit GPS in Python.
 2. Then we configure the baud rate to 9600 and disable echo.
 3. Then we use printf to write the setting, `$PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n'` which enables the sentences we want.
