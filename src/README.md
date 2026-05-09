@@ -26,6 +26,46 @@ Whenever we do change modes, it is important that we use `Telemetry::GetInstance
 #### Current Flow Diagram Implementation
 ![Mode Flow Diagram](../ModeFlowDiagram.png)
 
+#### Liquid Propulsion Modes
+The liquid propulsion modes live in `Mode.cpp` and are entered from `Idle` through `HotfireIdle`.
+
+To get to the liquid propulsion test modes:
+1. Start in `Standby`
+2. Send `Idle`
+3. Send `HotfireIdle`
+4. From `HotfireIdle`, send one of the liquid test commands: `asitest`, `waterflow`, or `3second`
+
+`HotfireIdle` is the holding mode for liquid propulsion tests. From here, `Standby` returns to standby, `Idle` returns to idle, `ASITest` starts the ASI test sequence, `WaterFlow` starts the water flow sequence, and `ThreeSecondHotfire` starts the three-second hotfire sequence.
+
+`ASITest` sequence:
+1. At start, open `ASIOxygen` and turn the spark plug on
+2. At 0.3 seconds, open `ASIEthanol`
+3. At 2.3 seconds, close `ASIEthanol` and turn the spark plug off
+4. At 2.6 seconds, close `ASIOxygen`
+5. At 3.0 seconds, return to `HotfireIdle`
+
+`WaterFlow` sequence:
+1. At start, open `MainNitrous`
+2. At 1.0 seconds, open `MainEthanol`
+3. At 3.0 seconds, close `MainNitrous` and `MainEthanol`
+4. At 3.5 seconds, return to `HotfireIdle`
+
+`ThreeSecondHotfire` sequence:
+1. At 0.5 seconds, open `ASIOxygen` and turn the spark plug on
+2. At 0.8 seconds, open `ASIEthanol`
+3. At 1.3 seconds, open `MainNitrous`
+4. At 1.5 seconds, open `MainEthanol`
+5. At 2.0 seconds, turn the spark plug off, close `ASIOxygen`, and start moving TVC
+6. From 3.0 to 5.0 seconds, continue moving TVC
+7. At 5.0 seconds, stop TVC and close `ASIEthanol` and `MainEthanol`
+8. At 5.2 seconds, close `MainNitrous`
+9. At 5.7 seconds, open `Purge`
+10. At 7.2 seconds, close `Purge`
+11. At 7.5 seconds, return to `HotfireIdle`
+
+NOTE:
+If `ABORT` is received during `ASITest`, `WaterFlow`, or `ThreeSecondHotfire`, the active sequence stops and closes the valves it opened before returning to `HotfireIdle`. If `ABORT` is received in `HotfireIdle`, the mode transitions to `Abort`, closes all valves and the spark plug, stops TVC, and exits.
+
 ### Navigation.cpp
 This class is in charge of estimating the rocket's current state. The state vector is 16 values:
 position, velocity, quaternion attitude, accelerometer bias, and gyro bias.

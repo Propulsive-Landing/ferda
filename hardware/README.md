@@ -237,6 +237,73 @@ There are 3 methods at play here:
 1. Go To RF.hpp and add the name of the command in the Command enum
 2. In `ParseCommand()`, add another else if statement where if the user entered the command, then we set `ParsedCommand` to that command enum value
 
+## Current RF Commands
+Mode commands:
+1. `Calibration`
+2. `Idle`
+3. `Standby`
+4. `Ignite`
+5. `ABORT`
+6. `ABORT_PAD`
+7. `ABORT_GROUND`
+8. `HotfireIdle`
+
+TVC and navigation commands:
+1. `TestTVC`
+2. `ChirpTVC`
+3. `StopTVC`, `STOP`, or `stop`
+4. `CenterTVC`, `CENTER`, or `center`
+5. `IncrementXTVC`
+6. `IncrementYTVC`
+7. `DecrementXTVC`
+8. `DecrementYTVC`
+9. `NAV_RESTART`
+10. `ActuatorCalibration`, `ActuatorCalibrate`, or `ACTUATOR_CALIBRATION`
+11. `MoveXTVCToLimitExtend`, `MoveXToLimitExtend`, or `MOVE_X_TO_LIMIT`
+12. `MoveXTVCToLimitRetract` or `MoveXToLimitRetract`
+13. `MoveYTVCToLimitExtend`, `MoveYToLimitExtend`, or `MOVE_Y_TO_LIMIT`
+14. `MoveYTVCToLimitRetract` or `MoveYToLimitRetract`
+
+Sensor toggle commands:
+1. `SENSOR: camera ON`
+2. `SENSOR: camera OFF`
+3. `SENSOR: lidar ON`
+4. `SENSOR: lidar OFF`
+5. `SENSOR: gps_velocity ON`
+6. `SENSOR: gps_velocity OFF`
+7. `SENSOR: gps_position ON`
+8. `SENSOR: gps_position OFF`
+9. `SENSOR: magnetometer ON`
+10. `SENSOR: magnetometer OFF`
+
+Liquid propulsion manual commands:
+1. `VALVE: nitrogen open`
+2. `VALVE: nitrogen close`
+3. `VALVE: purge open`
+4. `VALVE: purge close`
+5. `VALVE: main ethanol open`
+6. `VALVE: main ethanol close`
+7. `VALVE: main nitrous open`
+8. `VALVE: main nitrous close`
+9. `VALVE: nitrous fill open`
+10. `VALVE: nitrous fill close`
+11. `VALVE: ASI ethanol open`
+12. `VALVE: ASI ethanol close`
+13. `VALVE: ASI oxygen open`
+14. `VALVE: ASI oxygen close`
+15. `VALVE: nitrogen bleed open`
+16. `VALVE: nitrogen bleed close`
+17. `SPARK: on`
+18. `SPARK: off`
+
+Liquid propulsion sequence commands:
+1. `asitest`
+2. `waterflow`
+3. `3second`
+
+NOTE:
+`LidarOn` and `LidarOff` exist in `RF.hpp`, but as of now `Mode.cpp` does not handle those commands in `CheckForToggleSensorCommands()`.
+
 IMPORTANT:
 As of May 6th, 2026, in Ground Control, when we are parsing the json payload sometimes we get a parsing error like 
 ```
@@ -256,6 +323,30 @@ In `TurnOn()`, we first turn the Relay on by setting the Mission Constant `kSpar
 In `TurnOff()`, we first turn the Relay Off by setting the Mission Constant `kSparkPin` to `HIGH` and then we set a `0%` duty cycle to the 1000 Hz PCA9685 through the Mission Constant `kRPMPin` pin.
 
 ### TVC.cpp
+`TVC.cpp` is in charge of converting commanded TVC gimbal angles into linear actuator lengths and then driving the actuators to those lengths.
+
+The main command path is:
+1. `Controller.cpp` calls `SetTVCX()` and `SetTVCY()` with desired gimbal angles in radians
+2. `SetTVCX()` and `SetTVCY()` add the compile-time trim values from `MissionConstants` and clamp the command to `kMaximumTvcAngle`
+3. `UpdateActuatorPositions()` converts the stored angles into desired actuator lengths
+4. The current actuator lengths are read using `readPositionInches()`
+5. `ProportionalPositionControl()` computes the direction and speed command for each actuator
+6. `driveActuator()` sends the final command to the PCA9685 motor channels
+
+`AnglesToActuatorLengths()` does the TVC geometry. It uses the vehicle-side and engine-side mount points from `MissionConstants.hpp`, builds a rotation matrix from the commanded x/y gimbal angles, rotates the engine mount points, and calculates the actuator extension lengths. The resulting lengths are clamped between `kTvcMinLengthInches` and `kTvcMaxLengthInches`.
+
+`ProportionalPositionControl()` is really a PID-style position controller, but right now the integral and derivative gains are set by the constants in `MissionConstants.hpp`. The output is a desired actuator velocity in inches per second. That velocity gets converted into:
+   - `direction = 1` for extend
+   - `direction = -1` for retract
+   - `direction = 0` for stop
+   - `speed_cmd`, which is clamped from 0 to `kTvcMaxMotorSpeed`
+
+`Stop()` resets the stored TVC angles, clears the controller integral and previous error terms, zeroes the last speed commands, and commands both actuators to stop.
+
+Telemetry logs a row to the actuator log every time `UpdateActuatorPositions()` runs. The row includes commanded angles, desired actuator lengths, observed actuator lengths, and the x/y speed commands.
+
+IMPORTANT:
+The TVC constants in `MissionConstants.hpp` are pre-flight calibration values. Before using TVC with hardware, check the mount point geometry, actuator min/max readings, actuator channel assignments, center trims, and maximum command limits.
 
 ### ValveControl.cpp
 `ValveControl` is split into 3 methods: `OpenValve`, `CloseValve`, and `IsValveOpen`.
