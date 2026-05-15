@@ -943,4 +943,3 @@ bool Mode::Update(Navigation &navigation, Controller &controller, GPS &gps, Igni
 
     return true;
 }
-
